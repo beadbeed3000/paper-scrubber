@@ -26,7 +26,6 @@ const SPECIAL_TOKENS = new Set(['[CLS]', '[SEP]', '[PAD]', '[MASK]', '[UNK]', '<
 const SCORE_THRESHOLD = 0.4;
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const ROSTER_KEY = 'paperScrubber.roster';
 const MODE_KEY = 'paperScrubber.mode';
 
 const REGEX_RULES = [
@@ -49,8 +48,6 @@ const els = {
   inputView: $('inputView'), batchView: $('batchView'), resultsView: $('resultsView'),
   paperText: $('paperText'),
   btnFile: $('btnFile'), btnSample: $('btnSample'), fileInput: $('fileInput'),
-  rosterBox: $('rosterBox'), rosterSummary: $('rosterSummary'), rosterText: $('rosterText'),
-  btnRosterFile: $('btnRosterFile'), btnRosterClear: $('btnRosterClear'), rosterFileInput: $('rosterFileInput'),
   btnScrub: $('btnScrub'), statusArea: $('statusArea'), statusText: $('statusText'),
   progressWrap: $('progressWrap'), progressBar: $('progressBar'),
   btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
@@ -101,41 +98,7 @@ function statusSurface() {
   };
 }
 
-// ---------------------------------------------------------------- roster
-function parseRoster(raw) {
-  const names = new Set();
-  for (const line of String(raw || '').split(/\r?\n/)) {
-    for (let w of line.split(/[,;\s]+/)) {
-      w = w.replace(/\.+$/, '').trim();
-      if (/^[A-Za-z'’\-]{2,}$/.test(w)) names.add(w);
-    }
-  }
-  return [...names];
-}
-function rosterWords() { return parseRoster(els.rosterText.value); }
-function updateRosterSummary() {
-  const n = rosterWords().length;
-  els.rosterSummary.textContent = n
-    ? `Class roster · ${n} name${n === 1 ? '' : 's'} saved ✓`
-    : 'Class roster (optional)';
-}
-function saveRoster() {
-  try { localStorage.setItem(ROSTER_KEY, els.rosterText.value); } catch { /* private mode */ }
-  updateRosterSummary();
-}
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-function rosterFindings(text) {
-  const out = [];
-  for (const w of rosterWords()) {
-    const re = new RegExp(`\\b${escapeRe(w)}\\b`, 'gi');
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      if (m[0][0] !== m[0][0].toUpperCase()) continue; // "Will" the student, not "will" the verb
-      out.push({ type: 'NAME', start: m.index, end: m.index + m[0].length, score: 1, source: 'roster' });
-    }
-  }
-  return out;
-}
 
 // ---------------------------------------------------------------- model loading
 async function getPipe(modeKey, ui) {
@@ -244,7 +207,7 @@ function expandToWord(text, ent) {
 }
 
 function weightOf(f) {
-  return ((f.source === 'regex' || f.source === 'roster') ? 1e9 : 0) + (f.end - f.start) * 100 + f.score;
+  return (f.source === 'regex' ? 1e9 : 0) + (f.end - f.start) * 100 + f.score;
 }
 
 function resolveOverlaps(list) {
@@ -355,7 +318,6 @@ async function detectText(text, modeKey, ui, paperName = '') {
       raw.push({ type: rule.type, start: m.index, end: m.index + m[0].length, score: 1, source: 'regex' });
     }
   }
-  raw.push(...rosterFindings(text));
 
   for (const f of raw) expandToWord(text, f);
   let list = resolveOverlaps(raw);
@@ -559,15 +521,22 @@ async function loadFiles(fileList) {
     }
   } else {
     showView('batch');
-    els.batchTitle.textContent = `Scrubbing ${papers.length} papers…`;
+    els.batchTitle.textContent = `Scrubbing ${papers.length} papers, one at a time…`;
     els.btnZip.disabled = true;
+    els.btnZip.textContent = '⬇️ Download all scrubbed papers';
     renderBatch();
     await scrubPapers(papers);
     const good = papers.filter((p) => p.status === 'done').length;
-    els.batchTitle.textContent = `${good} of ${papers.length} papers scrubbed`;
-    statusSurface().say(good ? 'Review any paper, or download them all below.' : 'No papers could be read.');
+    const bad = papers.length - good;
+    els.batchTitle.textContent = good === papers.length
+      ? `Done — all ${good} papers are scrubbed ✅`
+      : `${good} of ${papers.length} papers scrubbed`;
+    statusSurface().say(good
+      ? `Every paper was scrubbed separately.${bad ? ` ${bad} couldn't be read — see below.` : ''} Check any one you want with the Check button, then get them all with the green button at the bottom.`
+      : 'None of these files could be read. They need to be Word (.docx) or plain text (.txt).');
     statusSurface().barOff();
     els.btnZip.disabled = good === 0;
+    els.btnZip.textContent = `⬇️ Download all ${good} scrubbed paper${good === 1 ? '' : 's'} (one .zip)`;
   }
   if (skipped.length) {
     statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
@@ -701,10 +670,11 @@ function renderBatch() {
     name.textContent = p.name;
     const sub = document.createElement('div');
     sub.className = 'b-sub' + (p.status === 'error' ? ' err' : '');
+    const hits = p.findings.filter((f) => f.enabled).length;
     sub.textContent = {
-      waiting: 'waiting…',
-      scanning: 'scanning…',
-      done: `${p.findings.filter((f) => f.enabled).length} personal details replaced`,
+      waiting: 'waiting its turn…',
+      scanning: 'scrubbing now…',
+      done: hits ? `${hits} personal detail${hits === 1 ? '' : 's'} replaced` : 'nothing personal found',
       error: `couldn't read this file — ${p.error}`,
     }[p.status];
     main.append(name, sub);
@@ -715,12 +685,13 @@ function renderBatch() {
       actions.className = 'b-actions';
       const review = document.createElement('button');
       review.className = 'btn secondary small';
-      review.textContent = 'Review';
+      review.textContent = 'Check';
+      review.title = 'Read this paper and fix anything the scrubber got wrong';
       review.addEventListener('click', () => openReview(i));
       const dl = document.createElement('button');
       dl.className = 'btn secondary small';
-      dl.textContent = '⬇️';
-      dl.title = 'Download this scrubbed paper';
+      dl.textContent = 'Save';
+      dl.title = 'Download just this scrubbed paper';
       dl.addEventListener('click', () => downloadPaper(p, dl));
       actions.append(review, dl);
       row.append(actions);
@@ -749,9 +720,9 @@ async function downloadPaper(p, btn) {
   try {
     if (p.kind === 'docx') saveBlob(await buildScrubbedDocx(p), outName(p, 'docx'));
     else saveBlob(new Blob([scrubbedPlainTextFor(p)], { type: 'text/plain;charset=utf-8' }), outName(p, 'txt'));
-    if (btn) btn.textContent = '✅';
+    if (btn) btn.textContent = 'Saved ✅';
   } finally {
-    if (btn) setTimeout(() => { btn.disabled = false; btn.textContent = old; }, 1500);
+    if (btn) setTimeout(() => { btn.disabled = false; btn.textContent = old; }, 1800);
   }
 }
 
@@ -892,33 +863,13 @@ els.btnZip.addEventListener('click', async () => {
   els.btnZip.textContent = 'Building the zip…';
   try {
     saveBlob(await buildAllZip(), 'scrubbed-papers.zip');
-    els.btnZip.textContent = '✅ Saved to your Downloads!';
+    els.btnZip.textContent = '✅ Saved to your Downloads folder';
   } catch (err) {
     console.error(err);
     els.btnZip.textContent = '⚠️ Something went wrong';
   } finally {
-    setTimeout(() => { els.btnZip.textContent = old; els.btnZip.disabled = false; }, 2500);
+    setTimeout(() => { els.btnZip.textContent = old; els.btnZip.disabled = false; }, 3000);
   }
-});
-
-// roster
-let rosterTimer;
-els.rosterText.addEventListener('input', () => {
-  clearTimeout(rosterTimer);
-  rosterTimer = setTimeout(saveRoster, 300);
-});
-els.btnRosterFile.addEventListener('click', () => els.rosterFileInput.click());
-els.rosterFileInput.addEventListener('change', async () => {
-  const f = els.rosterFileInput.files[0];
-  els.rosterFileInput.value = '';
-  if (!f) return;
-  const text = await f.text();
-  els.rosterText.value = (els.rosterText.value.trim() ? els.rosterText.value.trim() + '\n' : '') + text.trim();
-  saveRoster();
-});
-els.btnRosterClear.addEventListener('click', () => {
-  els.rosterText.value = '';
-  saveRoster();
 });
 
 // mode persistence
@@ -927,11 +878,9 @@ document.querySelectorAll('input[name="mode"]').forEach((r) =>
 
 // ---------------------------------------------------------------- init
 try {
-  els.rosterText.value = localStorage.getItem(ROSTER_KEY) || '';
-  const savedMode = localStorage.getItem(MODE_KEY);
-  if (savedMode === 'max') $('modeMax').checked = true;
+  if (localStorage.getItem(MODE_KEY) === 'max') $('modeMax').checked = true;
+  localStorage.removeItem('paperScrubber.roster');   // cleanup: roster feature removed
 } catch { /* private mode */ }
-updateRosterSummary();
 updateScrubButton();
 
 if ('serviceWorker' in navigator) {

@@ -14,26 +14,34 @@ you can demo it in airplane mode.
 1. Open the link (or the installed app icon).
 2. Paste a paper — or drop `.docx` / `.txt` files anywhere on the page.
    Files start scrubbing automatically; drop a whole class set at once for
-   **batch mode** (per-paper results + "Download all as .zip").
+   **batch mode** (per-paper results + "Download all N scrubbed papers (one .zip)").
 3. First use downloads the AI once (64 MB English engine); after that it's
    stored on the device and works offline.
-4. Review: every name, address, birthdate, email, phone, etc. is highlighted and
-   replaced with `[NAME 1]`, `[EMAIL]`, … Click any highlight to keep the original
-   (book characters, historical figures). Category chips toggle whole groups.
+4. Check: every name, address, birthdate, email, phone, etc. is highlighted and
+   replaced with `[NAME 1]`, `[EMAIL]`, … Click any highlight to put the real word
+   back (book characters, historical figures). Category chips toggle whole groups.
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 
-**Class roster (optional):** paste the class list once (either `Last, First` or
-`First Last`, one per line). Those names are scrubbed on every paper automatically.
-The roster is stored in the browser's local storage on that device only — it is
-never uploaded. Roster matches require a capital letter ("Will Smith" matches;
-"will" the verb doesn't).
+The whole flow is three steps, spelled out on the page itself: add the papers →
+it scrubs each one → check & save. There is no setup and nothing to configure.
 
 **How .docx output works:** the app unzips the Word file in memory, replaces text
 only inside `<w:t>` nodes (body, headers, footers, footnotes, comments), and
 rezips it. Fonts, spacing, bold/italic, tables — everything else is untouched.
 Names split across formatting runs ("**Jas**mine Carter") are still caught,
 because detection runs on the assembled text, not run-by-run.
+
+## Branding
+
+Styled in the cooperative's colors — mountain blue `#1b5ea8`, ridge green
+`#6db544`, warm paper `#f4f1e9` — with the ridgeline motif from the KVEC logo in
+the masthead and footer.
+
+**To show the actual KVEC logo in the masthead**, save the logo image into this
+folder as `icons/kvec-logo.png`. It appears automatically; if the file is absent
+the layout falls back to the "A free tool from KVEC" wordmark with no broken
+image. Nothing else needs to change.
 
 ## The two engines
 
@@ -43,9 +51,11 @@ because detection runs on the assembled text, not run-by-run.
 | Max accuracy · multilingual | [multilang-pii-ner (ONNX)](https://huggingface.co/onnx-community/multilang-pii-ner-ONNX) | 266 MB | MIT | XLM-RoBERTa; trained on EN/DE/IT/FR, handled Spanish well in testing |
 
 Both are token-classification models trained on ai4privacy datasets. On top of the
-model, `app.js` adds deterministic regex rules (email, US phone, SSN, school names)
-and a "name echo" pass: once a name is caught anywhere, identical words are
-scrubbed everywhere in the paper.
+model, `app.js` adds deterministic regex rules (email, US phone, SSN, school names),
+boundary extension (models often catch "Jasmine" but not "Carter", or "118" but not
+"Deer Creek Road"), and a "name echo" pass: once a name is caught anywhere,
+identical words are scrubbed everywhere in the paper. Each of those layers closed a
+real leak found in testing.
 
 > **Why not Piiranha?** It was the original plan, but its browser-ready quantized
 > build turned out badly degraded in testing (missed obvious names), and the
@@ -100,3 +110,8 @@ e.g. `https://theholler.org/scrubber/`. Requirements and notes:
 - Text inside images (scanned/photographed papers) is not read. Roadmap idea: OCR.
 - Other roadmap ideas: per-student consistent pseudonyms ("Student A") across a
   whole batch, Google Docs add-on, printable one-page teacher guide.
+
+A class-roster feature (paste your class list, always scrub those names) was built
+and then **removed on purpose** — it added setup steps for teachers, and testing
+showed the models already catch those names unaided. Don't re-add it without
+evidence that real papers are being missed.

@@ -1,12 +1,12 @@
 {
-  "name": "Paper Scrubber — remove student info before using AI",
+  "name": "Paper Scrubber — a KVEC tool for teachers",
   "short_name": "Paper Scrubber",
-  "description": "Remove student names and personal info from papers before pasting them into AI tools. Runs 100% on your device.",
+  "description": "Remove student names and personal info from papers before pasting them into AI tools. Runs 100% on your device. A free tool from the Kentucky Valley Educational Cooperative.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0f766e",
+  "background_color": "#f4f1e9",
+  "theme_color": "#1b5ea8",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
