@@ -885,6 +885,16 @@ updateScrubButton();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => { /* dev over plain http is fine */ });
+  // When a newer version of the app installs, pick it up right away instead of
+  // making the teacher visit twice. The `had a controller` guard keeps the very
+  // first install (which claims an uncontrolled page) from triggering a reload.
+  let reloading = false;
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading || busy) return;
+    reloading = true;
+    location.reload();
+  });
 }
 
 // dev/testing hook (harmless in production)
