@@ -56,6 +56,7 @@ const els = {
   inputView: $('inputView'), batchView: $('batchView'), resultsView: $('resultsView'),
   paperText: $('paperText'),
   btnFile: $('btnFile'), btnSample: $('btnSample'), fileInput: $('fileInput'), btnInstall: $('btnInstall'),
+  btnCamera: $('btnCamera'), cameraInput: $('cameraInput'),
   btnScrub: $('btnScrub'), statusArea: $('statusArea'), statusText: $('statusText'),
   progressWrap: $('progressWrap'), progressBar: $('progressBar'),
   btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
@@ -991,6 +992,15 @@ els.btnFile.addEventListener('click', () => els.fileInput.click());
 els.fileInput.addEventListener('change', () => {
   if (els.fileInput.files.length) loadFiles(els.fileInput.files);
   els.fileInput.value = '';
+});
+
+// camera button — only on touch devices, where tapping it opens the camera
+// (capture="environment"); a photographed typed page goes through OCR
+if (window.matchMedia?.('(pointer: coarse)').matches) els.btnCamera.hidden = false;
+els.btnCamera.addEventListener('click', () => els.cameraInput.click());
+els.cameraInput.addEventListener('change', () => {
+  if (els.cameraInput.files.length) loadFiles(els.cameraInput.files);
+  els.cameraInput.value = '';
 });
 
 // whole-page drag & drop
