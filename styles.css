@@ -198,6 +198,10 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
 #summaryLine { margin: 0 0 .35rem; font-size: 1.35rem; color: var(--blue-deep); }
 .hint { font-size: .88rem; color: var(--ink-soft); margin: .25rem 0 .95rem; }
 .hint.small { font-size: .81rem; margin-top: .85rem; }
+.hint.warn {
+  background: #fbf3e4; border: 1px solid #ecd9b0; border-radius: 4px;
+  padding: .55rem .75rem; color: #6b4a05;
+}
 .hint strong { color: var(--ink); }
 
 .legend { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }

@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v17';
+const CACHE = 'paper-scrubber-v18';
 const ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,10 @@ const ASSETS = [
   './vendor/ort-wasm-simd-threaded.asyncify.wasm',
   './vendor/pdf.min.mjs',
   './vendor/pdf.worker.min.mjs',
+  './vendor/tesseract.esm.min.js',
+  './vendor/tesseract-worker.min.js',
+  './vendor/tesseract-core-simd-lstm.wasm.js',
+  './vendor/eng.traineddata.gz',
 ];
 
 self.addEventListener('install', (e) => {

@@ -53,7 +53,7 @@ const els = {
   btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
   batchProgressWrap: $('batchProgressWrap'), batchProgressBar: $('batchProgressBar'),
   batchList: $('batchList'), btnZip: $('btnZip'),
-  btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'),
+  btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'), ocrNote: $('ocrNote'),
   summaryLine: $('summaryLine'), legend: $('legend'), outputText: $('outputText'),
   btnCopy: $('btnCopy'), btnDownloadTxt: $('btnDownloadTxt'), btnDownloadDocx: $('btnDownloadDocx'),
 };
@@ -462,7 +462,7 @@ function pdfPageText(items) {
   return text;
 }
 
-async function extractPdfText(arrayBuffer) {
+async function extractPdfText(arrayBuffer, ui, who, paper) {
   const pdfjs = await loadPdfJs();
   let doc;
   try {
@@ -480,32 +480,113 @@ async function extractPdfText(arrayBuffer) {
     }
     const text = pages.join('\n\n').replace(/[ \t]+\n/g, '\n');
     // a page of print yields hundreds of characters; a scan yields none
-    if (text.replace(/\s/g, '').length < 30) {
-      throw new Error("this PDF is a scan or photo, so there's no text inside to read — scanned papers aren't supported yet");
+    if (text.replace(/\s/g, '').length >= 30) return text;
+
+    // no text layer — this PDF is a scan, so read the print off each page
+    paper.ocr = true;
+    const read = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      read.push(await ocrRead(await pdfPageCanvas(page), ui, who, doc.numPages > 1 ? ` (page ${n} of ${doc.numPages})` : ''));
     }
-    return text;
+    const scanText = read.join('\n\n').trim();
+    if (scanText.replace(/\s/g, '').length < 20) throw new Error(NOT_ENOUGH_PRINT);
+    return scanText;
   } finally {
     doc.destroy();
   }
 }
 
+async function pdfPageCanvas(page) {
+  const viewport = page.getViewport({ scale: 2 });   // ~144 dpi — plenty for print
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvas;
+}
+
+// ---------------------------------------------------------------- ocr engine
+// Photos and scans have no text layer, so the print is read with tesseract.js —
+// vendored and offline-capable like everything else. It reads typed print well
+// and handwriting essentially not at all, so every OCR'd paper is flagged for
+// an extra-careful review.
+const NOT_ENOUGH_PRINT = "couldn't find readable print — this works best on a clear, straight-on photo or scan of a typed paper (handwriting can't be read)";
+const OCR_MAX_SIDE = 2400;
+
+let ocrWorkerPromise = null;
+let ocrProgress = null;               // set around recognize() calls; the logger reads it
+
+function loadOcrWorker(ui) {
+  ocrWorkerPromise ??= (async () => {
+    ui.say('Getting the print reader ready — one moment…');
+    const base = new URL('vendor/', document.baseURI).href;
+    const T = (await import('./vendor/tesseract.esm.min.js')).default;
+    return T.createWorker('eng', 1, {
+      workerPath: `${base}tesseract-worker.min.js`,
+      corePath: `${base}tesseract-core-simd-lstm.wasm.js`,
+      langPath: base.replace(/\/$/, ''),
+      logger: (m) => { if (m.status === 'recognizing text' && ocrProgress) ocrProgress(m.progress); },
+    });
+  })().catch((err) => { ocrWorkerPromise = null; throw err; });
+  return ocrWorkerPromise;
+}
+
+async function ocrRead(source, ui, who, pageInfo) {
+  const worker = await loadOcrWorker(ui);
+  const label = `${who || 'the scan'}${pageInfo}`;
+  ocrProgress = (frac) => {
+    ui.say(`Reading print in ${label} — ${Math.round(frac * 100)}%`);
+    ui.bar(frac * 100);
+  };
+  try {
+    const { data } = await worker.recognize(source);
+    return data.text ?? '';
+  } finally {
+    ocrProgress = null;
+  }
+}
+
+async function imageToCanvas(file) {
+  let bmp;
+  try {
+    bmp = await createImageBitmap(file);
+  } catch {
+    throw new Error(/\.hei[cf]$/i.test(file.name)
+      ? 'iPhone HEIC photos can\'t be read by the browser — in Settings → Camera → Formats pick “Most Compatible”, or share the photo as a JPEG first'
+      : 'this image couldn\'t be read — a .png or .jpg photo works best');
+  }
+  const scale = Math.min(1, OCR_MAX_SIDE / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  return canvas;
+}
+
 // ---------------------------------------------------------------- papers
 function newPaper(file) {
-  const lower = file.name.toLowerCase();
+  const m = file.name.toLowerCase().match(/\.(docx|pdf|png|jpe?g|webp|bmp|heic|heif)$/);
   return {
     id: (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())),
     file, name: file.name,
-    kind: lower.endsWith('.docx') ? 'docx' : lower.endsWith('.pdf') ? 'pdf' : 'text',
-    status: 'waiting', text: '', docx: null, findings: [], error: null,
+    kind: !m ? 'text' : m[1] === 'docx' ? 'docx' : m[1] === 'pdf' ? 'pdf' : 'image',
+    status: 'waiting', text: '', docx: null, findings: [], error: null, ocr: false,
   };
 }
 
-async function loadPaperContent(p) {
+async function loadPaperContent(p, ui, who) {
   if (p.kind === 'docx') {
     p.docx = await parseDocx(await p.file.arrayBuffer());
     p.text = p.docx.fullText;
   } else if (p.kind === 'pdf') {
-    p.text = await extractPdfText(await p.file.arrayBuffer());
+    p.text = await extractPdfText(await p.file.arrayBuffer(), ui, who, p);
+  } else if (p.kind === 'image') {
+    p.ocr = true;
+    const text = await ocrRead(await imageToCanvas(p.file), ui, who || 'the photo', '');
+    if (text.replace(/\s/g, '').length < 20) throw new Error(NOT_ENOUGH_PRINT);
+    p.text = text;
   } else {
     p.text = await p.file.text();
   }
@@ -536,7 +617,7 @@ async function scrubPapers(list) {
     p.status = 'scanning';
     if (list.length > 1) renderBatch();
     try {
-      if (!p.text) await loadPaperContent(p);
+      if (!p.text) await loadPaperContent(p, statusSurface(), list.length > 1 ? p.name : '');
       p.findings = await detectText(p.text, mode, statusSurface(), list.length > 1 ? p.name : '');
       p.status = 'done';
     } catch (err) {
@@ -558,14 +639,14 @@ async function scrubPapers(list) {
 async function loadFiles(fileList) {
   if (busy) { setStatus('Still working on the last papers — one moment…'); return; }
   const all = [...fileList];
-  const ok = all.filter((f) => /\.(docx|pdf|txt|md|text)$/i.test(f.name));
+  const ok = all.filter((f) => /\.(docx|pdf|txt|md|text|png|jpe?g|webp|bmp|heic|heif)$/i.test(f.name));
   const skipped = all.filter((f) => !ok.includes(f));
   if (!ok.length) {
     showView('input');
     const hasOldDoc = skipped.some((f) => /\.doc$/i.test(f.name));
     setStatus(hasOldDoc
       ? 'That\'s an old-style .doc file. Open it in Word, use “Save As → .docx”, then try again.'
-      : 'Please use Word (.docx), PDF, or plain text (.txt) files.', { error: true });
+      : 'Please use Word (.docx), PDF, photo, or plain text (.txt) files.', { error: true });
     return;
   }
   papers = ok.sort((a, b) => a.name.localeCompare(b.name)).map(newPaper);
@@ -596,13 +677,13 @@ async function loadFiles(fileList) {
       : `${good} of ${papers.length} papers scrubbed`;
     statusSurface().say(good
       ? `Every paper was scrubbed separately.${bad ? ` ${bad} couldn't be read — see below.` : ''} Check any one you want with the Check button, then get them all with the green button at the bottom.`
-      : 'None of these files could be read. They need to be Word (.docx), PDF, or plain text (.txt).');
+      : 'None of these files could be read. They need to be Word (.docx), PDF, photos, or plain text (.txt).');
     statusSurface().barOff();
     els.btnZip.disabled = good === 0;
     els.btnZip.textContent = `⬇️ Download all ${good} scrubbed paper${good === 1 ? '' : 's'} (one .zip)`;
   }
   if (skipped.length) {
-    statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
+    statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, photos, and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
   }
 }
 
@@ -646,6 +727,7 @@ function openReview(i) {
   const next = papers.findIndex((q, j) => j > current && q.status === 'done');
   els.btnNext.hidden = !(multi && next !== -1);
   els.btnDownloadDocx.hidden = p.kind !== 'docx';
+  els.ocrNote.hidden = !p.ocr;
   renderResults();
   showView('review');
 }
@@ -741,7 +823,8 @@ function renderBatch() {
     sub.textContent = {
       waiting: 'waiting its turn…',
       scanning: 'scrubbing now…',
-      done: hits ? `${hits} personal detail${hits === 1 ? '' : 's'} replaced` : 'nothing personal found',
+      done: (hits ? `${hits} personal detail${hits === 1 ? '' : 's'} replaced` : 'nothing personal found')
+        + (p.ocr ? ' · read from a photo — double-check it' : ''),
       error: `couldn't read this file — ${p.error}`,
     }[p.status];
     main.append(name, sub);

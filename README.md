@@ -14,9 +14,10 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
 ## How it works for a teacher
 
 1. Open the link (or the installed app icon).
-2. Paste a paper — or drop `.docx` / `.pdf` / `.txt` files anywhere on the page.
-   Files start scrubbing automatically; drop a whole class set at once for
-   **batch mode** (per-paper results + "Download all N scrubbed papers (one .zip)").
+2. Paste a paper — or drop `.docx` / `.pdf` / `.txt` files, photos, or scans
+   anywhere on the page. Files start scrubbing automatically; drop a whole class
+   set at once for **batch mode** (per-paper results + "Download all N scrubbed
+   papers (one .zip)").
 3. First use downloads the AI once (64 MB English engine); after that it's
    stored on the device and works offline.
 4. Check: every name, address, birthdate, email, phone, etc. is highlighted and
@@ -39,10 +40,20 @@ because detection runs on the assembled text, not run-by-run.
 Typed PDFs — Google Docs and Word exports, which is what students turn in —
 read cleanly. The scrubbed result comes back as **plain text** (there is no
 practical way to rewrite a PDF with its layout intact in the browser), which
-suits the tool's purpose: pasting into an AI. Scanned/photographed PDFs have
-no text layer; the app detects that and says so instead of returning an empty
-"nothing personal found" — OCR stays a roadmap item. Password-protected PDFs
-get a clear message too.
+suits the tool's purpose: pasting into an AI. Password-protected and broken
+PDFs get clear messages.
+
+**How photos & scans work (OCR):** when a PDF has no text layer, or the file
+is an image (`.png` / `.jpg` / `.webp` / `.bmp`), the print is read with
+tesseract.js (vendored, ~7 MB with the English model, loaded only when needed,
+pre-cached for offline). Scanned PDF pages are rendered to a canvas with
+pdf.js first, then read. OCR reads **typed print** well and **handwriting
+essentially not at all**, so every OCR'd paper is labeled "read from a photo —
+double-check it" in the batch list and carries a warning banner on the review
+screen: misread print can hide a name from the detector, and the teacher is
+the backstop. English print only for now (Spanish OCR would be ~2 MB more if
+teachers ask). iPhone HEIC photos can't be decoded by browsers — the app tells
+the teacher to use "Most Compatible" camera format or share as JPEG.
 
 ## Branding
 
@@ -113,7 +124,8 @@ e.g. `https://theholler.org/scrubber/`. Requirements and notes:
 - Max engine (`Ar86Bat/multilang-pii-ner`): **MIT** — no restrictions.
 - transformers.js (Apache-2.0), ONNX Runtime Web (MIT), JSZip (MIT),
   pdf.js 5.7.284 legacy build (Apache-2.0 — the legacy build keeps older
-  school Chromebooks working).
+  school Chromebooks working), tesseract.js 6.0.1 + tesseract.js-core
+  (Apache-2.0) with the `eng` traineddata (Apache-2.0, tessdata "best-int").
 
 ## Known limits (be honest with teachers)
 
@@ -121,8 +133,10 @@ e.g. `https://theholler.org/scrubber/`. Requirements and notes:
 - Fictional/character names get flagged (models can't know "Scout" is a character);
   that's what click-to-keep is for.
 - Old `.doc` files aren't supported — Word's "Save As → .docx" first.
-- Text inside images (scanned/photographed papers, image-only PDFs) is not read —
-  the app says so when a PDF has no text layer. Roadmap idea: OCR.
+- Photos and scans are read with OCR, which handles **typed print only** —
+  handwriting comes back as nonsense, and the app says so. OCR can also misread
+  print ("Jasm1ne"), which can hide a name from the detector; that's why OCR'd
+  papers get an explicit double-check warning. English print only for now.
 - Other roadmap ideas: per-student consistent pseudonyms ("Student A") across a
   whole batch, Google Docs add-on, printable one-page teacher guide.
 
