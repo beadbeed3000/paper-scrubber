@@ -974,9 +974,11 @@ function updateScrubButton() {
 els.paperText.addEventListener('input', updateScrubButton);
 
 els.btnSample.addEventListener('click', () => {
+  if (busy) return;
   els.paperText.value = SAMPLE;
   updateScrubButton();
   hideStatus();
+  els.btnScrub.click();   // one click should show the whole magic trick
 });
 
 els.btnFile.addEventListener('click', () => els.fileInput.click());
