@@ -27,10 +27,18 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 6. If the AI's reply mentions or quotes what was scrubbed ("Nice hook,
    `[NAME 1]`!", a quoted sentence, a scrubbed book character), paste the reply
-   into the fold-out at the bottom of that paper's review screen — the tags flip
-   back to the real words, on-device, using that paper's own mapping. Replies
-   with no tags need nothing. The box is per-paper on purpose: `[NAME 1]` is a
-   different student on every paper, so a batch-wide box would guess wrong.
+   into the fold-out at the bottom of the review screen — the tags flip back to
+   the real words, on-device. Replies with no tags need nothing.
+
+**Tags are consistent across a batch.** The same name, email, or number gets
+the same tag in every paper of a set ("Dalton Hall" is `[NAME 4]` everywhere he
+appears, in his own paper or a classmate's), so a teacher can hand an AI several
+papers at once and it can track who's who — and the batch screen has its own
+un-scrub box that works for a reply about any paper in the set, since no tag
+means two different things. Matching is by exact text (case-insensitive):
+"Dalton" and "Dalton Hall" are different tags on purpose — two Daltons in one
+class must never be merged by a guess. Numbers belong to values, not positions,
+so toggling a highlight never renumbers the rest.
 
 The whole flow is three steps, spelled out on the page itself: add the papers →
 it scrubs each one → check & save. There is no setup and nothing to configure.
@@ -167,8 +175,7 @@ firewall blocks Hugging Face. Requirements and notes:
   handwriting comes back as nonsense, and the app says so. OCR can also misread
   print ("Jasm1ne"), which can hide a name from the detector; that's why OCR'd
   papers get an explicit double-check warning. English print only for now.
-- Other roadmap ideas: per-student consistent pseudonyms ("Student A") across a
-  whole batch, Google Docs add-on, printable one-page teacher guide.
+- Other roadmap ideas: Google Docs add-on, printable one-page teacher guide.
 
 A class-roster feature (paste your class list, always scrub those names) was built
 and then **removed on purpose** — it added setup steps for teachers, and testing

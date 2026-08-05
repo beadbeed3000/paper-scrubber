@@ -113,8 +113,16 @@
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all scrubbed papers</button>
       <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.
-        And when an AI reply about one paper comes back full of <code>[NAME 1]</code> tags, open that paper's <strong>Check</strong> screen — the box at the bottom swaps that paper's tags back to the real names.</p>
+        <strong>The whole set shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every paper — so you can hand an AI several papers at once and it can keep track of who's who.</p>
     </div>
+
+    <details class="unscrub">
+      <summary>Got an AI reply about these papers? Put the real names back — any paper, one box</summary>
+      <p class="hint small">Because the tags are shared across the set, a reply about any paper — or several at once — un-scrambles here. Paste it below and the <code>[NAME 4]</code>-style tags flip back to the real words, on this device. No tags in the reply? Nothing to fix.</p>
+      <textarea id="unscrubBatchIn" placeholder="Paste the AI's feedback here…"></textarea>
+      <div id="unscrubBatchOut" class="output small" hidden></div>
+      <button id="btnCopyUnscrubBatch" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
+    </details>
   </section>
 
   <!-- ============ REVIEW VIEW ============ -->

@@ -66,6 +66,7 @@ const els = {
   summaryLine: $('summaryLine'), legend: $('legend'), outputText: $('outputText'),
   btnCopy: $('btnCopy'), btnDownloadTxt: $('btnDownloadTxt'), btnDownloadDocx: $('btnDownloadDocx'),
   unscrubIn: $('unscrubIn'), unscrubOut: $('unscrubOut'), btnCopyUnscrub: $('btnCopyUnscrub'),
+  unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -252,7 +253,10 @@ function mergeAdjacent(list, text) {
 const STREET_WORDS = /^(?:Road|Rd|Street|St|Avenue|Ave|Lane|Ln|Drive|Dr|Court|Ct|Circle|Cir|Way|Trail|Fork|Branch|Hollow|Creek|Ridge|Pike|Highway|Hwy|Route|Boulevard|Blvd)\.?,?$/i;
 function extendEntities(text, list) {
   for (const f of list) {
-    if (!['NAME', 'ADDRESS', 'ORG'].includes(f.type)) continue;
+    // CITY/STATE included because place names are also first names (Dalton,
+    // Austin, Savannah…) — when the model calls "Dalton" a city, the "Hall"
+    // right after it must not leak
+    if (!['NAME', 'ADDRESS', 'ORG', 'CITY', 'STATE'].includes(f.type)) continue;
     if (f.type === 'ADDRESS') {
       // pull a leading house number into the address ("118 |Deer Creek Road")
       const m = text.slice(Math.max(0, f.start - 10), f.start).match(/(\d{1,6}[A-Za-z]?) $/);
@@ -690,6 +694,7 @@ async function loadFiles(fileList) {
     els.batchTitle.textContent = `Scrubbing ${papers.length} papers, one at a time…`;
     els.btnZip.disabled = true;
     els.btnZip.textContent = '⬇️ Download all scrubbed papers';
+    batchUnscrub.reset();   // new set, new tag mapping
     renderBatch();
     await scrubPapers(papers);
     const good = papers.filter((p) => p.status === 'done').length;
@@ -710,16 +715,24 @@ async function loadFiles(fileList) {
 }
 
 // ---------------------------------------------------------------- placeholders
+// Tags belong to VALUES, batch-wide: the same name/email/number gets the same
+// tag in every paper of a set, so an AI reading several papers can track who's
+// who — and a reply about any of them un-scrubs with one shared mapping.
+// Numbering counts every finding (kept ones too), so toggling a highlight
+// never renumbers the others; a tag may vanish, but it never changes meaning.
 function placeholderAssigner(paper) {
-  const enabled = paper.findings.filter((f) => f.enabled);
   const norm = (s) => s.toLowerCase().replace(/\s+/g, ' ').replace(/[.,;:!?]+$/, '').trim();
   const seen = {};
+  for (const q of papers) {
+    for (const f of q.findings) {
+      const key = norm(q.text.slice(f.start, f.end));
+      seen[f.type] ??= new Map();
+      if (!seen[f.type].has(key)) seen[f.type].set(key, seen[f.type].size + 1);
+    }
+  }
   const byId = {};
-  for (const f of enabled) {
-    const key = norm(paper.text.slice(f.start, f.end));
-    seen[f.type] ??= new Map();
-    if (!seen[f.type].has(key)) seen[f.type].set(key, seen[f.type].size + 1);
-    byId[f.id] = seen[f.type].get(key);
+  for (const f of paper.findings) {
+    byId[f.id] = seen[f.type]?.get(norm(paper.text.slice(f.start, f.end)));
   }
   return (f) => {
     const multi = (seen[f.type]?.size ?? 0) > 1;
@@ -751,7 +764,7 @@ function openReview(i) {
   els.btnNext.hidden = !(multi && next !== -1);
   els.btnDownloadDocx.hidden = p.kind !== 'docx';
   els.ocrNote.hidden = !p.ocr;
-  resetUnscrub();   // the tag mapping is per-paper
+  paperUnscrub.reset();   // fresh box per paper
   renderResults();
   showView('review');
 }
@@ -794,7 +807,7 @@ function renderResults() {
       ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'} — all kept as-is.`
       : `Replaced ${n} personal detail${n === 1 ? '' : 's'}.`;
 
-  renderUnscrub();   // toggling findings can renumber the tags
+  paperUnscrub.render();   // keep the un-scrubbed preview in sync with toggles
 }
 
 function renderLegend() {
@@ -844,29 +857,59 @@ function unscrubMapFor(paper) {
   return map;
 }
 
-function renderUnscrub() {
-  const raw = els.unscrubIn.value;
-  if (!raw.trim() || current < 0) {
-    els.unscrubOut.hidden = true;
-    els.btnCopyUnscrub.hidden = true;
-    return;
+// one shared mapping for the whole batch — tags are batch-unique, so a reply
+// about any paper (or several at once) resolves correctly
+function unscrubMapAll() {
+  const map = new Map();
+  for (const q of papers) {
+    if (q.status !== 'done') continue;
+    for (const [tag, original] of (q.unscrubMap ?? unscrubMapFor(q))) {
+      if (!map.has(tag)) map.set(tag, original);
+    }
   }
-  let out = raw;
-  const map = papers[current].unscrubMap ?? unscrubMapFor(papers[current]);
-  for (const [tag, original] of map) {
-    out = out.split(tag).join(original);
-  }
-  els.unscrubOut.textContent = out;
-  els.unscrubOut.hidden = false;
-  els.btnCopyUnscrub.hidden = false;
+  return map;
 }
 
-function resetUnscrub() {
-  els.unscrubIn.value = '';
-  els.unscrubOut.textContent = '';
-  els.unscrubOut.hidden = true;
-  els.btnCopyUnscrub.hidden = true;
+function copyToClipboard(text) {
+  return navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  });
 }
+
+function wireUnscrub(inEl, outEl, btnEl, getMap) {
+  const label = btnEl.textContent;
+  const render = () => {
+    const raw = inEl.value;
+    if (!raw.trim()) { outEl.hidden = true; btnEl.hidden = true; return; }
+    let out = raw;
+    for (const [tag, original] of getMap()) out = out.split(tag).join(original);
+    outEl.textContent = out;
+    outEl.hidden = false;
+    btnEl.hidden = false;
+  };
+  inEl.addEventListener('input', render);
+  btnEl.addEventListener('click', async () => {
+    await copyToClipboard(outEl.textContent);
+    btnEl.textContent = '✅ Copied!';
+    setTimeout(() => { btnEl.textContent = label; }, 2000);
+  });
+  const reset = () => {
+    inEl.value = '';
+    outEl.textContent = '';
+    outEl.hidden = true;
+    btnEl.hidden = true;
+  };
+  return { render, reset };
+}
+
+const paperUnscrub = wireUnscrub(els.unscrubIn, els.unscrubOut, els.btnCopyUnscrub,
+  () => (current >= 0 ? (papers[current].unscrubMap ?? unscrubMapFor(papers[current])) : new Map()));
+const batchUnscrub = wireUnscrub(els.unscrubBatchIn, els.unscrubBatchOut, els.btnCopyUnscrubBatch, unscrubMapAll);
 
 // ---------------------------------------------------------------- batch view
 function renderBatch() {
@@ -1069,24 +1112,6 @@ els.btnCopy.addEventListener('click', async () => {
   }
   els.btnCopy.textContent = '✅ Copied!';
   setTimeout(() => { els.btnCopy.textContent = '📋 Copy scrubbed text'; }, 2000);
-});
-
-els.unscrubIn.addEventListener('input', renderUnscrub);
-
-els.btnCopyUnscrub.addEventListener('click', async () => {
-  const text = els.unscrubOut.textContent;
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-  }
-  els.btnCopyUnscrub.textContent = '✅ Copied!';
-  setTimeout(() => { els.btnCopyUnscrub.textContent = '📋 Copy with real names'; }, 2000);
 });
 
 els.btnDownloadTxt.addEventListener('click', () => {
