@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v16';
+const CACHE = 'paper-scrubber-v17';
 const ASSETS = [
   './',
   './index.html',
@@ -27,7 +27,10 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // only purge our own old versions — transformers.js keeps the downloaded
+      // models in its own cache ('transformers-cache'), which must survive
+      // app updates or every deploy re-downloads 64+ MB of model
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('paper-scrubber-') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
