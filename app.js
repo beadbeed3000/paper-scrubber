@@ -10,6 +10,9 @@ import { SAMPLE } from './sample.js';
 env.allowLocalModels = false;          // fetch models from the HF hub (cached by the browser)
 // absolute URL so it resolves the same from the page and from inside the library
 env.backends.onnx.wasm.wasmPaths = new URL('vendor/', document.baseURI).href;
+// run inference in a worker so the page never freezes mid-scan — matters most
+// on the low-end Chromebooks in classrooms
+env.backends.onnx.wasm.proxy = true;
 
 const MODELS = {
   fast: {
