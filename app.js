@@ -429,12 +429,73 @@ async function buildScrubbedDocx(paper) {
   return paper.docx.zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: DOCX_MIME });
 }
 
+// ---------------------------------------------------------------- pdf engine
+// pdf.js is imported only when a PDF actually arrives — no reason to parse
+// ~1.8 MB of module on page load. The service worker still pre-caches both
+// files, so PDFs keep working offline.
+let pdfjsPromise = null;
+function loadPdfJs() {
+  pdfjsPromise ??= import('./vendor/pdf.min.mjs').then((lib) => {
+    lib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.mjs', document.baseURI).href;
+    return lib;
+  });
+  return pdfjsPromise;
+}
+
+// Rebuild readable text from pdf.js's positioned fragments: new line when the
+// baseline moves, a space when two fragments on the same line don't touch.
+function pdfPageText(items) {
+  let text = '';
+  let last = null;
+  for (const it of items) {
+    if (typeof it.str !== 'string') continue;
+    const x = it.transform[4];
+    const y = it.transform[5];
+    if (last) {
+      if (Math.abs(y - last.y) > 2) text += '\n';
+      else if (x - last.endX > 1.5 && it.str && !/^\s/.test(it.str) && !/\s$/.test(text)) text += ' ';
+    }
+    text += it.str;
+    if (it.hasEOL) { text += '\n'; last = null; }
+    else last = { y, endX: x + (it.width ?? 0) };
+  }
+  return text;
+}
+
+async function extractPdfText(arrayBuffer) {
+  const pdfjs = await loadPdfJs();
+  let doc;
+  try {
+    doc = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
+  } catch (err) {
+    if (err?.name === 'PasswordException') throw new Error('this PDF is password-protected — remove the password and try again');
+    if (err?.name === 'InvalidPDFException') throw new Error('this does not look like a working PDF');
+    throw err;
+  }
+  try {
+    const pages = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      pages.push(pdfPageText((await page.getTextContent()).items));
+    }
+    const text = pages.join('\n\n').replace(/[ \t]+\n/g, '\n');
+    // a page of print yields hundreds of characters; a scan yields none
+    if (text.replace(/\s/g, '').length < 30) {
+      throw new Error("this PDF is a scan or photo, so there's no text inside to read — scanned papers aren't supported yet");
+    }
+    return text;
+  } finally {
+    doc.destroy();
+  }
+}
+
 // ---------------------------------------------------------------- papers
 function newPaper(file) {
+  const lower = file.name.toLowerCase();
   return {
     id: (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())),
     file, name: file.name,
-    kind: file.name.toLowerCase().endsWith('.docx') ? 'docx' : 'text',
+    kind: lower.endsWith('.docx') ? 'docx' : lower.endsWith('.pdf') ? 'pdf' : 'text',
     status: 'waiting', text: '', docx: null, findings: [], error: null,
   };
 }
@@ -443,6 +504,8 @@ async function loadPaperContent(p) {
   if (p.kind === 'docx') {
     p.docx = await parseDocx(await p.file.arrayBuffer());
     p.text = p.docx.fullText;
+  } else if (p.kind === 'pdf') {
+    p.text = await extractPdfText(await p.file.arrayBuffer());
   } else {
     p.text = await p.file.text();
   }
@@ -495,14 +558,14 @@ async function scrubPapers(list) {
 async function loadFiles(fileList) {
   if (busy) { setStatus('Still working on the last papers — one moment…'); return; }
   const all = [...fileList];
-  const ok = all.filter((f) => /\.(docx|txt|md|text)$/i.test(f.name));
+  const ok = all.filter((f) => /\.(docx|pdf|txt|md|text)$/i.test(f.name));
   const skipped = all.filter((f) => !ok.includes(f));
   if (!ok.length) {
     showView('input');
     const hasOldDoc = skipped.some((f) => /\.doc$/i.test(f.name));
     setStatus(hasOldDoc
       ? 'That\'s an old-style .doc file. Open it in Word, use “Save As → .docx”, then try again.'
-      : 'Please use Word (.docx) or plain text (.txt) files.', { error: true });
+      : 'Please use Word (.docx), PDF, or plain text (.txt) files.', { error: true });
     return;
   }
   papers = ok.sort((a, b) => a.name.localeCompare(b.name)).map(newPaper);
@@ -533,13 +596,13 @@ async function loadFiles(fileList) {
       : `${good} of ${papers.length} papers scrubbed`;
     statusSurface().say(good
       ? `Every paper was scrubbed separately.${bad ? ` ${bad} couldn't be read — see below.` : ''} Check any one you want with the Check button, then get them all with the green button at the bottom.`
-      : 'None of these files could be read. They need to be Word (.docx) or plain text (.txt).');
+      : 'None of these files could be read. They need to be Word (.docx), PDF, or plain text (.txt).');
     statusSurface().barOff();
     els.btnZip.disabled = good === 0;
     els.btnZip.textContent = `⬇️ Download all ${good} scrubbed paper${good === 1 ? '' : 's'} (one .zip)`;
   }
   if (skipped.length) {
-    statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
+    statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
   }
 }
 

@@ -47,16 +47,16 @@
 
     <div class="card">
       <div id="dropCard" class="drop-zone">
-        <textarea id="paperText" placeholder="Paste a student's paper here…&#10;&#10;— or —&#10;&#10;Drag Word files anywhere onto this page. Drop a whole stack at once and each paper gets scrubbed separately."></textarea>
+        <textarea id="paperText" placeholder="Paste a student's paper here…&#10;&#10;— or —&#10;&#10;Drag Word or PDF files anywhere onto this page. Drop a whole stack at once and each paper gets scrubbed separately."></textarea>
         <div class="drop-overlay" aria-hidden="true"><span>Let go — I'll scrub every one 📄</span></div>
       </div>
 
       <div class="input-actions">
         <button id="btnFile" class="btn secondary" type="button">Choose papers…</button>
         <button id="btnSample" class="btn ghost" type="button">Show me an example first</button>
-        <input type="file" id="fileInput" accept=".docx,.txt,.md,.text" multiple hidden>
+        <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.md,.text" multiple hidden>
       </div>
-      <p class="filetypes">Word <code>.docx</code> comes back as Word, with your formatting intact. Plain <code>.txt</code> works too.
+      <p class="filetypes">Word <code>.docx</code> comes back as Word, with your formatting intact. <code>.pdf</code> and plain <code>.txt</code> come back as text.
         <strong>Selecting a whole class set at once is the fast way</strong> — click one file, then press Ctrl+A.</p>
 
       <fieldset class="mode-toggle">
@@ -96,7 +96,7 @@
     <div id="batchList" class="batch-list"></div>
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all scrubbed papers</button>
-      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files.</p>
+      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.</p>
     </div>
   </section>
 

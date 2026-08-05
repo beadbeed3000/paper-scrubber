@@ -14,7 +14,7 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
 ## How it works for a teacher
 
 1. Open the link (or the installed app icon).
-2. Paste a paper — or drop `.docx` / `.txt` files anywhere on the page.
+2. Paste a paper — or drop `.docx` / `.pdf` / `.txt` files anywhere on the page.
    Files start scrubbing automatically; drop a whole class set at once for
    **batch mode** (per-paper results + "Download all N scrubbed papers (one .zip)").
 3. First use downloads the AI once (64 MB English engine); after that it's
@@ -33,6 +33,16 @@ only inside `<w:t>` nodes (body, headers, footers, footnotes, comments), and
 rezips it. Fonts, spacing, bold/italic, tables — everything else is untouched.
 Names split across formatting runs ("**Jas**mine Carter") are still caught,
 because detection runs on the assembled text, not run-by-run.
+
+**How PDFs work:** text is extracted in the browser with Mozilla's pdf.js
+(vendored, ~1.8 MB, loaded only when a PDF arrives, pre-cached for offline).
+Typed PDFs — Google Docs and Word exports, which is what students turn in —
+read cleanly. The scrubbed result comes back as **plain text** (there is no
+practical way to rewrite a PDF with its layout intact in the browser), which
+suits the tool's purpose: pasting into an AI. Scanned/photographed PDFs have
+no text layer; the app detects that and says so instead of returning an empty
+"nothing personal found" — OCR stays a roadmap item. Password-protected PDFs
+get a clear message too.
 
 ## Branding
 
@@ -101,7 +111,9 @@ e.g. `https://theholler.org/scrubber/`. Requirements and notes:
   free non-commercial use with attribution (the footer links it). Fine for a free
   teacher tool; the tool must never be sold while this model is the default.
 - Max engine (`Ar86Bat/multilang-pii-ner`): **MIT** — no restrictions.
-- transformers.js (Apache-2.0), ONNX Runtime Web (MIT), mammoth.js (BSD-2).
+- transformers.js (Apache-2.0), ONNX Runtime Web (MIT), JSZip (MIT),
+  pdf.js 5.7.284 legacy build (Apache-2.0 — the legacy build keeps older
+  school Chromebooks working).
 
 ## Known limits (be honest with teachers)
 
@@ -109,7 +121,8 @@ e.g. `https://theholler.org/scrubber/`. Requirements and notes:
 - Fictional/character names get flagged (models can't know "Scout" is a character);
   that's what click-to-keep is for.
 - Old `.doc` files aren't supported — Word's "Save As → .docx" first.
-- Text inside images (scanned/photographed papers) is not read. Roadmap idea: OCR.
+- Text inside images (scanned/photographed papers, image-only PDFs) is not read —
+  the app says so when a PDF has no text layer. Roadmap idea: OCR.
 - Other roadmap ideas: per-student consistent pseudonyms ("Student A") across a
   whole batch, Google Docs add-on, printable one-page teacher guide.
 
