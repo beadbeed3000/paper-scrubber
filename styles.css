@@ -55,11 +55,16 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
 
 /* ---------- trust strip ---------- */
 .trust-strip {
-  max-width: 860px; margin: 0 auto; padding: 0 1rem 1.4rem;
+  max-width: 860px; margin: 0 auto; padding: 0 1rem .35rem;
   display: flex; flex-wrap: wrap; gap: .35rem 1.6rem;
   list-style: none; font-size: .87rem; font-weight: 600; color: var(--green-deep);
 }
 .trust-strip li::before { content: "✓ "; color: var(--green); font-weight: 800; }
+.trust-note {
+  max-width: 860px; margin: 0 auto; padding: 0 1rem 1.4rem;
+  font-size: .84rem; color: var(--ink-soft);
+}
+.trust-note a { color: var(--blue); }
 
 /* ---------- steps ---------- */
 .steps {
@@ -249,6 +254,13 @@ mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 .t-dob      { background: #f9bfc7; color: #85253a; }
 .t-date     { background: #fbd7ae; color: #8a4a12; }
 .t-age      { background: #fbeaa0; color: #755b0c; }
+
+/* ---------- privacy page ---------- */
+.privacy-card { margin-top: 1.4rem; }
+.privacy-card h2 { color: var(--blue-deep); font-size: 1.2rem; margin: 1.4rem 0 .4rem; }
+.privacy-card h2:first-child { margin-top: 0; }
+.privacy-card p, .privacy-card li { font-size: .95rem; }
+.privacy-card a { color: var(--blue); }
 
 /* ---------- global drop overlay ---------- */
 #globalDrop {

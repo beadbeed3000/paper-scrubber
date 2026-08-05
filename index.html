@@ -34,6 +34,8 @@
   <li>Works offline after the first use</li>
   <li>No sign-in, no cost, ever</li>
 </ul>
+<p class="trust-note">Don't take our word for it — after your first scrub, turn the Wi-Fi off. Everything still works, because the work never leaves this machine.
+  <a href="privacy.html">How it protects student privacy</a></p>
 
 <main>
 
@@ -54,6 +56,7 @@
       <div class="input-actions">
         <button id="btnFile" class="btn secondary" type="button">Choose papers…</button>
         <button id="btnSample" class="btn ghost" type="button">Show me an example first</button>
+        <button id="btnInstall" class="btn ghost" type="button" hidden>📌 Install as an app</button>
         <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.md,.text,.png,.jpg,.jpeg,.webp,.bmp,.heic,.heif" multiple hidden>
       </div>
       <p class="filetypes">Word <code>.docx</code> comes back as Word, with your formatting intact. <code>.pdf</code>, photos, and plain <code>.txt</code> come back as text.
@@ -138,7 +141,9 @@
     <p class="colophon">Runs entirely in your browser using open AI models —
       <a href="https://huggingface.co/Isotonic/distilbert_finetuned_ai4privacy_v2" target="_blank" rel="noopener">ai4privacy&nbsp;DistilBERT</a> and
       <a href="https://huggingface.co/Ar86Bat/multilang-pii-ner" target="_blank" rel="noopener">multilang-pii-ner</a>.
-      No accounts, no uploads, no tracking, no charge.</p>
+      No accounts, no uploads, no tracking, no charge.
+      The <a href="https://github.com/beadbeed3000/paper-scrubber" target="_blank" rel="noopener">code is public</a> — anyone can read exactly what it does.
+      <a href="privacy.html">Privacy, in plain English</a>.</p>
   </div>
 </footer>
 

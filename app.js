@@ -47,7 +47,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   inputView: $('inputView'), batchView: $('batchView'), resultsView: $('resultsView'),
   paperText: $('paperText'),
-  btnFile: $('btnFile'), btnSample: $('btnSample'), fileInput: $('fileInput'),
+  btnFile: $('btnFile'), btnSample: $('btnSample'), fileInput: $('fileInput'), btnInstall: $('btnInstall'),
   btnScrub: $('btnScrub'), statusArea: $('statusArea'), statusText: $('statusText'),
   progressWrap: $('progressWrap'), progressBar: $('progressBar'),
   btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
@@ -1033,6 +1033,30 @@ els.btnZip.addEventListener('click', async () => {
   } finally {
     setTimeout(() => { els.btnZip.textContent = old; els.btnZip.disabled = false; }, 3000);
   }
+});
+
+// install-as-app button — only appears when the browser says installing is
+// possible (Chrome/Edge, not already installed). One click, desktop icon,
+// works offline; no IT rights needed.
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  els.btnInstall.hidden = false;
+});
+els.btnInstall.addEventListener('click', async () => {
+  const p = installPrompt;
+  installPrompt = null;
+  els.btnInstall.hidden = true;   // the saved prompt is single-use either way
+  if (!p || typeof p.prompt !== 'function') return;
+  try {
+    p.prompt();
+    await p.userChoice;
+  } catch { /* teacher dismissed it — the browser menu can still install */ }
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  els.btnInstall.hidden = true;
 });
 
 // mode persistence

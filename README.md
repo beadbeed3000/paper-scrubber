@@ -95,10 +95,31 @@ node dev-server.mjs 8137
 Then open http://localhost:8137/. (Any static server works; this one just sets the
 correct MIME types for `.mjs`, `.wasm`, and `.webmanifest`.)
 
-## Deploying to theholler.org / a KVEC site
+## Getting it onto a KVEC address
 
-The app is 100% static files — upload this folder to any web host and link to it,
-e.g. `https://theholler.org/scrubber/`. Requirements and notes:
+**Recommended: point a subdomain at GitHub Pages (hosts zero bytes on KVEC servers).**
+The trust win is the domain name, not the hosting. One DNS record does it:
+
+1. In theholler.org's DNS, add a `CNAME` record:
+   `scrubber` → `beadbeed3000.github.io.`
+2. Wait for DNS to resolve (`dig scrubber.theholler.org` shows the CNAME), **then**
+   set the custom domain to `scrubber.theholler.org` in the repo's Settings → Pages
+   (this creates a `CNAME` file in the repo — don't add that file before DNS is
+   live, or the site 404s for everyone in between). Tick "Enforce HTTPS" once the
+   certificate is issued (automatic, a few minutes).
+3. Done. Same push-to-deploy workflow, automatic HTTPS, the old github.io URL
+   redirects to the new address, and KVEC hosts nothing.
+
+Heads-up for the changeover: caches are per-address, so on their next visit
+teachers re-download the app and model once at the new address, and anyone who
+installed the PWA should reinstall from the new address.
+
+**Alternative: fully self-host on a KVEC server** — the app is 100% static files;
+upload this folder and link to it. Sizes, so there are no surprises: the app
+folder is **~35 MB** (mostly the AI runtime in `vendor/`). Optionally also
+self-host the models (+64 MB English, +266 MB multilingual) to remove the app's
+only third-party request (huggingface.co) — that's the fix if a district
+firewall blocks Hugging Face. Requirements and notes:
 
 - **HTTPS is required** (service worker + install button need it). Any normal host
   already has this.

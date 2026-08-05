@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy, in plain English — Paper Scrubber</title>
+<meta name="description" content="Exactly what Paper Scrubber does with student work: nothing leaves the device. What downloads, what's stored, what's sent, and how to verify it yourself.">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1b5ea8">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="wordmark">
+      <h1>Privacy, in plain English</h1>
+      <p class="tagline">Exactly what Paper Scrubber does with student work — written to be forwarded to a principal or tech director.</p>
+    </div>
+    <div class="coop">
+      <span class="coop-text">A free tool from <strong>KVEC</strong></span>
+    </div>
+  </div>
+  <svg class="ridge" viewBox="0 0 1200 90" preserveAspectRatio="none" aria-hidden="true">
+    <path class="ridge-back" d="M0,90 L0,52 L120,26 L245,58 L340,30 L455,62 L560,34 L690,66 L800,38 L930,64 L1050,32 L1200,58 L1200,90 Z"/>
+    <path class="ridge-front" d="M0,90 L0,70 L145,44 L270,72 L395,48 L505,76 L640,50 L760,78 L880,52 L1010,76 L1130,50 L1200,72 L1200,90 Z"/>
+  </svg>
+</header>
+
+<main>
+  <section class="card privacy-card">
+    <h2>The short version</h2>
+    <p><strong>Student papers never leave the computer.</strong> The AI that finds names and
+    personal details runs <em>inside the browser tab</em>, on the teacher's own machine.
+    There is no server to send papers to — this site is a folder of files, not a service.
+    No accounts, no cookies, no analytics, no tracking of any kind.</p>
+
+    <h2>What gets sent over the internet</h2>
+    <p>Two things, neither of which contains anything about you or your students:</p>
+    <ul>
+      <li><strong>The app itself</strong> (about 35&nbsp;MB), the first time you open the page —
+        the same as loading any website. It's then saved on the device and works offline.</li>
+      <li><strong>The AI model</strong> (64&nbsp;MB, or 266&nbsp;MB for the multilingual one), once,
+        from <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging&nbsp;Face</a> —
+        a public library of open AI models. That download happens <em>before</em> any paper is
+        touched and carries no information about who you are or what you'll scrub.</li>
+    </ul>
+    <p>After those one-time downloads, the tool runs with the Wi-Fi off. Papers, names,
+    findings, and anything you type are processed and kept in memory on the device — full stop.</p>
+
+    <h2>What's stored on the device</h2>
+    <ul>
+      <li>The app files and AI model, in the browser's offline cache (so it works without internet).</li>
+      <li>Your language choice (English / multilingual), in the browser's local storage.</li>
+      <li><strong>Not stored:</strong> papers. When you close or reload the tab, they're gone.
+        Scrubbed copies exist only where you save them.</li>
+    </ul>
+    <p>Clearing the site's data in the browser removes all of the above.</p>
+
+    <h2>Check it yourself — no trust required</h2>
+    <ol>
+      <li>Open the tool and scrub the built-in example once (this fetches the one-time downloads).</li>
+      <li>Turn off Wi-Fi, or put the device in airplane mode.</li>
+      <li>Scrub a real paper. It works — because nothing needed the internet.</li>
+    </ol>
+    <p>For the technically inclined: the
+    <a href="https://github.com/beadbeed3000/paper-scrubber" target="_blank" rel="noopener">source code is public</a>,
+    and the browser's network inspector will show you every request the page makes.</p>
+
+    <h2>FERPA-minded by design</h2>
+    <p>Paper Scrubber is built so student work is never transmitted, collected, or stored by
+    anyone — there is nothing to intercept, subpoena, or breach. It exists precisely so that
+    what <em>does</em> get pasted into ChatGPT, Claude, or Gemini has the personally
+    identifiable information already removed, with a teacher checking the result.
+    (This page describes how the tool is built; your district's own policies still apply,
+    and the teacher is always the last set of eyes.)</p>
+
+    <h2>Who made this</h2>
+    <p>The <strong>Kentucky Valley Educational Cooperative</strong>. Questions, concerns, or a
+    district review? Email <a href="mailto:alex@theholler.org?subject=Paper%20Scrubber%20privacy">alex@theholler.org</a> —
+    happy to walk your tech director through any of it.</p>
+
+    <p><a href="./">← Back to Paper Scrubber</a></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <svg class="ridge footer-ridge" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+    <path class="ridge-front" d="M0,60 L0,38 L150,14 L280,42 L400,18 L520,46 L650,20 L780,48 L900,22 L1030,46 L1150,20 L1200,40 L1200,60 Z"/>
+  </svg>
+  <div class="footer-inner">
+    <p class="coop-line"><strong>Kentucky Valley Educational Cooperative</strong><br>
+      <em>Educational Excellence in the Heart of the Mountains</em></p>
+  </div>
+</footer>
+
+</body>
+</html>
