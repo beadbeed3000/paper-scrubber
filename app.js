@@ -888,10 +888,13 @@ if ('serviceWorker' in navigator) {
   // When a newer version of the app installs, pick it up right away instead of
   // making the teacher visit twice. The `had a controller` guard keeps the very
   // first install (which claims an uncontrolled page) from triggering a reload.
+  // Never reload while papers are loaded (scrubbing OR reviewing) — findings
+  // live only in memory, so a reload would silently destroy the teacher's work;
+  // they get the update on their next natural visit instead.
   let reloading = false;
   const hadController = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloading || busy) return;
+    if (!hadController || reloading || busy || papers.length) return;
     reloading = true;
     location.reload();
   });
