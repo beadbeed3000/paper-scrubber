@@ -267,10 +267,13 @@ function extendEntities(text, list) {
     }
     let extra = 0;
     while (extra < 3) {
-      const m = text.slice(f.end).match(/^ ([A-Za-z'’.\-]+)/);
+      // places never span sentences — "Whitesburg, Kentucky. Email me" must
+      // not swallow "Email" (names keep extending: "Mrs." ends with a period)
+      if ((f.type === 'CITY' || f.type === 'STATE') && /[.!?]$/.test(text.slice(f.start, f.end))) break;
+      const m = text.slice(f.end).match(/^ ([\p{L}'’.\-]+)/u);
       if (!m) break;
       const word = m[1];
-      const isCap = /^[A-Z][a-z'’\-]+\.?$/.test(word);
+      const isCap = /^\p{Lu}[\p{Ll}'’\-]+\.?$/u.test(word);   // Unicode-aware: Márquez, Peña
       const isStreet = f.type === 'ADDRESS' && STREET_WORDS.test(word);
       if (!isCap && !isStreet) break;
       const nextEnd = f.end + 1 + word.length;
@@ -289,9 +292,9 @@ function propagateNames(text, list) {
   const words = new Set();
   for (const f of list) {
     if (f.type !== 'NAME') continue;
-    for (const w of text.slice(f.start, f.end).split(/[^A-Za-z'’\-]+/)) {
+    for (const w of text.slice(f.start, f.end).split(/[^\p{L}'’\-]+/u)) {
       const clean = w.replace(/[’']s$/i, '');
-      if (clean.length >= 3 && /^[A-Z]/.test(clean) && !HONORIFICS.has(clean.toLowerCase())) words.add(clean);
+      if (clean.length >= 3 && /^\p{Lu}/u.test(clean) && !HONORIFICS.has(clean.toLowerCase())) words.add(clean);
     }
   }
   const extra = [];
@@ -724,6 +727,7 @@ function placeholderAssigner(paper) {
   const norm = (s) => s.toLowerCase().replace(/\s+/g, ' ').replace(/[.,;:!?]+$/, '').trim();
   const seen = {};
   for (const q of papers) {
+    if (!q?.findings) continue;
     for (const f of q.findings) {
       const key = norm(q.text.slice(f.start, f.end));
       seen[f.type] ??= new Map();
@@ -1188,6 +1192,36 @@ try {
   localStorage.removeItem('paperScrubber.roster');   // cleanup: roster feature removed
 } catch { /* private mode */ }
 updateScrubButton();
+
+// Google Docs hand-off: the add-on passes the document in the URL fragment,
+// which never leaves the browser — fragments aren't sent to any server, so
+// the paper travels straight from the Doc to this tab. Runs at load AND on
+// hashchange (the browser may hand a link to an already-open scrubber tab).
+function handleGdocFragment() {
+  const m = location.hash.match(/^#gdoc=([A-Za-z0-9\-_]+=*)$/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);   // keep the text out of the URL bar and history
+  if (busy) return;   // mid-scrub of something else — the teacher can re-click the link
+  try {
+    const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const { t, x } = JSON.parse(new TextDecoder().decode(bytes));
+    if (typeof x !== 'string' || !x.trim()) return;
+    papers = [{
+      id: 'gdoc', file: null, name: typeof t === 'string' ? t : '', kind: 'text', status: 'waiting',
+      text: x, docx: null, findings: [], error: null, ocr: false,
+    }];
+    current = -1;
+    showView('input');
+    setStatus(`Reading ${papers[0].name || 'your Google Doc'}…`);
+    scrubPapers(papers).then((started) => {
+      if (started && papers[0].status === 'done') { hideStatus(); openReview(0); }
+      else if (papers[0]?.status === 'error') setStatus(`Something went wrong: ${papers[0].error}`, { error: true });
+    });
+  } catch { /* malformed fragment — just show the normal page */ }
+}
+window.addEventListener('hashchange', handleGdocFragment);
+handleGdocFragment();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => { /* dev over plain http is fine */ });

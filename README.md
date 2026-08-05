@@ -175,7 +175,17 @@ firewall blocks Hugging Face. Requirements and notes:
   handwriting comes back as nonsense, and the app says so. OCR can also misread
   print ("Jasm1ne"), which can hide a name from the detector; that's why OCR'd
   papers get an explicit double-check warning. English print only for now.
-- Other roadmap ideas: Google Docs add-on, printable one-page teacher guide.
+- Other roadmap ideas: printable one-page teacher guide.
+
+## Google Docs add-on
+
+`google-docs-addon/` holds a tiny bridge add-on: a **Paper Scrubber** menu in
+Google Docs that opens this web app with the document's text carried in the
+URL fragment — which browsers never send to any server, so the privacy story
+is unchanged (the doc already lives in Google; nothing new sees it). The app
+side accepts `#gdoc=<base64url JSON {t: title, x: text}>`, strips the fragment
+from history immediately, and auto-scrubs. Deployment steps (and the honest
+Marketplace-verification caveats) are in that folder's README.
 
 A class-roster feature (paste your class list, always scrub those names) was built
 and then **removed on purpose** — it added setup steps for teachers, and testing

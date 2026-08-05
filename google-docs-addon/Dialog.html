@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_blank">
+  <style>
+    body { font-family: "Segoe UI", system-ui, sans-serif; margin: 14px; color: #17293c; }
+    p { font-size: 13px; line-height: 1.5; margin: 0 0 14px; }
+    .btn {
+      display: inline-block; background: #447a22; color: #fff; font-weight: 600;
+      padding: 10px 18px; border-radius: 4px; text-decoration: none; font-size: 14px;
+    }
+    .fine { font-size: 11px; color: #5a6b7c; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <p>Your paper is ready. Names and personal details get found and replaced
+  <b>in your own browser</b> — the text rides along inside the link itself
+  (the part after <code>#</code>), which browsers never send to any server.</p>
+  <a class="btn" href="<?= url ?>" onclick="setTimeout(google.script.host.close, 400)">Open Paper Scrubber</a>
+  <p class="fine">A free tool from the Kentucky Valley Educational Cooperative.</p>
+</body>
+</html>
