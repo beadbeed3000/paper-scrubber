@@ -110,7 +110,8 @@
     <div id="batchList" class="batch-list"></div>
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all scrubbed papers</button>
-      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.</p>
+      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.
+        And when an AI reply about one paper comes back full of <code>[NAME 1]</code> tags, open that paper's <strong>Check</strong> screen — the box at the bottom swaps that paper's tags back to the real names.</p>
     </div>
   </section>
 
@@ -137,8 +138,8 @@
     <p class="hint small">Give it a quick read before you share it. No tool catches everything — you're still the last set of eyes.</p>
 
     <details class="unscrub">
-      <summary>Got the AI's feedback back? Put the real names in it</summary>
-      <p class="hint small">Paste the AI's reply below and the <code>[NAME 1]</code>-style tags flip back to the real words — right here on this device, like everything else. It only swaps exact tags, so if the AI reworded one, fix that by hand.</p>
+      <summary>Next step: paste the scrubbed paper into your AI — and if its reply uses the tags, bring it back here</summary>
+      <p class="hint small">The AI's reply will use the same <code>[NAME 1]</code>-style tags anywhere it mentions or quotes what you scrubbed — "Nice hook, [NAME&nbsp;1]!", or a quoted sentence with an address in it. Paste the reply below and the tags flip back to the real words, so the feedback reads naturally when you hand it to the student. <strong>No tags in the reply? Then there's nothing to fix — skip this.</strong> Exact tags only (if the AI reworded one, fix it by hand), and it all happens on this device, as always.</p>
       <textarea id="unscrubIn" placeholder="Paste the AI's feedback here…"></textarea>
       <div id="unscrubOut" class="output small" hidden></div>
       <button id="btnCopyUnscrub" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
