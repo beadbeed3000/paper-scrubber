@@ -32,6 +32,11 @@ const REGEX_RULES = [
   { type: 'EMAIL', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
   { type: 'PHONE', re: /(?:\+?1[\s.\-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.\-])\d{3}[\s.\-]\d{4}(?!\d)/g },
   { type: 'SSN',   re: /\b\d{3}-\d{2}-\d{4}\b/g },
+  // bare digit runs — student IDs, lunch numbers, unformatted phones. The
+  // models are inconsistent on these (one slipped through in testing), and
+  // essays rarely contain legitimate 7+ digit runs (big numbers get commas).
+  // Teachers can toggle the whole ID category off if a paper is math-heavy.
+  { type: 'ID',    re: /\b\d{7,16}\b/g },
   // school names — the models have no "school" label, so catch the common shapes
   { type: 'ORG',   re: /\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}(?:Elementary|Middle|High|Academy|University|College)(?: School)?\b|\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}School\b/g },
 ];
@@ -205,6 +210,8 @@ function expandToWord(text, ent) {
   const ok = (ch) => (loose ? /[^\s()[\]{}<>,;:"']/ : /[A-Za-z0-9'’\-]/).test(ch);
   while (ent.start > 0 && ok(text[ent.start - 1])) ent.start--;
   while (ent.end < text.length && ok(text[ent.end])) ent.end++;
+  // sentence punctuation isn't part of an email/link — give the period back
+  if (loose) while (ent.end > ent.start && /[.!?,;:]/.test(text[ent.end - 1])) ent.end--;
 }
 
 function weightOf(f) {
