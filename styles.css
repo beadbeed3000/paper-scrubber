@@ -6,7 +6,7 @@
   --blue-deep: #12457c;
   --blue-wash: #eaf1f9;
   --green: #6db544;
-  --green-deep: #4f8b2c;
+  --green-deep: #447a22;   /* ≥4.5:1 both on the paper bg and under white text */
   --green-wash: #eef6e7;
   --ink: #17293c;
   --ink-soft: #5a6b7c;
@@ -104,7 +104,7 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
   border: 2px dashed #c4cdd6; border-radius: 4px;
   background: #fff; color: var(--ink);
 }
-#paperText::placeholder { color: #8b98a5; }
+#paperText::placeholder { color: #66757f; }   /* 4.76:1 on white */
 #paperText:focus { outline: none; border-color: var(--blue); }
 .drop-zone.dragging #paperText { border-color: var(--green); background: var(--green-wash); }
 .drop-overlay {
