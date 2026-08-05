@@ -660,6 +660,9 @@ async function loadFiles(fileList) {
   }
   papers = ok.sort((a, b) => a.name.localeCompare(b.name)).map(newPaper);
   current = -1;
+  const skipNote = skipped.length
+    ? ` Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, photos, and .txt work): ${skipped.map((f) => f.name).join(', ')}.`
+    : '';
 
   if (papers.length === 1) {
     showView('input');
@@ -684,15 +687,15 @@ async function loadFiles(fileList) {
     els.batchTitle.textContent = good === papers.length
       ? `Done — all ${good} papers are scrubbed ✅`
       : `${good} of ${papers.length} papers scrubbed`;
-    statusSurface().say(good
+    statusSurface().say((good
       ? `Every paper was scrubbed separately.${bad ? ` ${bad} couldn't be read — see below.` : ''} Check any one you want with the Check button, then get them all with the green button at the bottom.`
-      : 'None of these files could be read. They need to be Word (.docx), PDF, photos, or plain text (.txt).');
+      : 'None of these files could be read. They need to be Word (.docx), PDF, photos, or plain text (.txt).') + skipNote);
     statusSurface().barOff();
     els.btnZip.disabled = good === 0;
     els.btnZip.textContent = `⬇️ Download all ${good} scrubbed paper${good === 1 ? '' : 's'} (one .zip)`;
   }
-  if (skipped.length) {
-    statusSurface().say(`Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, photos, and .txt work): ${skipped.map((f) => f.name).join(', ')}`);
+  if (papers.length === 1 && skipNote) {
+    statusSurface().say(skipNote.trim());
   }
 }
 
