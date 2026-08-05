@@ -580,10 +580,13 @@ async function imageToCanvas(file) {
 // ---------------------------------------------------------------- papers
 function newPaper(file) {
   const m = file.name.toLowerCase().match(/\.(docx|pdf|png|jpe?g|webp|bmp|heic|heif)$/);
+  // phone photo pickers sometimes deliver gallery images with no usable
+  // filename — the browser-reported MIME type still identifies them
+  const kind = m ? (m[1] === 'docx' ? 'docx' : m[1] === 'pdf' ? 'pdf' : 'image')
+    : (file.type || '').startsWith('image/') ? 'image' : 'text';
   return {
     id: (crypto.randomUUID ? crypto.randomUUID() : String(Math.random())),
-    file, name: file.name,
-    kind: !m ? 'text' : m[1] === 'docx' ? 'docx' : m[1] === 'pdf' ? 'pdf' : 'image',
+    file, name: file.name, kind,
     status: 'waiting', text: '', docx: null, findings: [], error: null, ocr: false,
   };
 }
@@ -651,7 +654,7 @@ async function scrubPapers(list) {
 async function loadFiles(fileList) {
   if (busy) { setStatus('Still working on the last papers — one moment…'); return; }
   const all = [...fileList];
-  const ok = all.filter((f) => /\.(docx|pdf|txt|md|text|png|jpe?g|webp|bmp|heic|heif)$/i.test(f.name));
+  const ok = all.filter((f) => /\.(docx|pdf|txt|md|text|png|jpe?g|webp|bmp|heic|heif)$/i.test(f.name) || (f.type || '').startsWith('image/'));
   const skipped = all.filter((f) => !ok.includes(f));
   if (!ok.length) {
     showView('input');
