@@ -125,6 +125,14 @@
       <button id="btnDownloadTxt" class="btn secondary" type="button">Save as .txt</button>
     </div>
     <p class="hint small">Give it a quick read before you share it. No tool catches everything — you're still the last set of eyes.</p>
+
+    <details class="unscrub">
+      <summary>Got the AI's feedback back? Put the real names in it</summary>
+      <p class="hint small">Paste the AI's reply below and the <code>[NAME 1]</code>-style tags flip back to the real words — right here on this device, like everything else. It only swaps exact tags, so if the AI reworded one, fix that by hand.</p>
+      <textarea id="unscrubIn" placeholder="Paste the AI's feedback here…"></textarea>
+      <div id="unscrubOut" class="output small" hidden></div>
+      <button id="btnCopyUnscrub" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
+    </details>
   </section>
 
 </main>

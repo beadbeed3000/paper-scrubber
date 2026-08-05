@@ -56,6 +56,7 @@ const els = {
   btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'), ocrNote: $('ocrNote'),
   summaryLine: $('summaryLine'), legend: $('legend'), outputText: $('outputText'),
   btnCopy: $('btnCopy'), btnDownloadTxt: $('btnDownloadTxt'), btnDownloadDocx: $('btnDownloadDocx'),
+  unscrubIn: $('unscrubIn'), unscrubOut: $('unscrubOut'), btnCopyUnscrub: $('btnCopyUnscrub'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -393,6 +394,7 @@ async function parseDocx(arrayBuffer) {
 // Every node is first reset to its original text so repeated downloads (after
 // the teacher toggles findings) always start from a clean slate.
 async function buildScrubbedDocx(paper) {
+  paper.unscrubMap = unscrubMapFor(paper);   // un-scrub against the tags the AI actually saw
   const ph = placeholderAssigner(paper);
   for (const part of paper.docx.parts) {
     for (const { node, start, end } of part.nodes) node.textContent = part.text.slice(start, end);
@@ -706,6 +708,7 @@ function placeholderAssigner(paper) {
 }
 
 function scrubbedPlainTextFor(paper) {
+  paper.unscrubMap = unscrubMapFor(paper);   // un-scrub against the tags the AI actually saw
   const ph = placeholderAssigner(paper);
   let out = '';
   let pos = 0;
@@ -728,6 +731,7 @@ function openReview(i) {
   els.btnNext.hidden = !(multi && next !== -1);
   els.btnDownloadDocx.hidden = p.kind !== 'docx';
   els.ocrNote.hidden = !p.ocr;
+  resetUnscrub();   // the tag mapping is per-paper
   renderResults();
   showView('review');
 }
@@ -769,6 +773,8 @@ function renderResults() {
     : n === 0
       ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'} — all kept as-is.`
       : `Replaced ${n} personal detail${n === 1 ? '' : 's'}.`;
+
+  renderUnscrub();   // toggling findings can renumber the tags
 }
 
 function renderLegend() {
@@ -801,6 +807,45 @@ function renderLegend() {
     frag.appendChild(label);
   }
   els.legend.replaceChildren(frag);
+}
+
+// ---------------------------------------------------------------- un-scrub
+// The other half of the workflow: the AI's feedback comes back full of
+// [NAME 1] tags, and the teacher needs the real names in it before handing it
+// to the student. The tag → original-word mapping never leaves this device.
+function unscrubMapFor(paper) {
+  const ph = placeholderAssigner(paper);
+  const map = new Map();
+  for (const f of paper.findings) {
+    if (!f.enabled) continue;
+    const tag = ph(f);
+    if (!map.has(tag)) map.set(tag, paper.text.slice(f.start, f.end));
+  }
+  return map;
+}
+
+function renderUnscrub() {
+  const raw = els.unscrubIn.value;
+  if (!raw.trim() || current < 0) {
+    els.unscrubOut.hidden = true;
+    els.btnCopyUnscrub.hidden = true;
+    return;
+  }
+  let out = raw;
+  const map = papers[current].unscrubMap ?? unscrubMapFor(papers[current]);
+  for (const [tag, original] of map) {
+    out = out.split(tag).join(original);
+  }
+  els.unscrubOut.textContent = out;
+  els.unscrubOut.hidden = false;
+  els.btnCopyUnscrub.hidden = false;
+}
+
+function resetUnscrub() {
+  els.unscrubIn.value = '';
+  els.unscrubOut.textContent = '';
+  els.unscrubOut.hidden = true;
+  els.btnCopyUnscrub.hidden = true;
 }
 
 // ---------------------------------------------------------------- batch view
@@ -993,6 +1038,24 @@ els.btnCopy.addEventListener('click', async () => {
   }
   els.btnCopy.textContent = '✅ Copied!';
   setTimeout(() => { els.btnCopy.textContent = '📋 Copy scrubbed text'; }, 2000);
+});
+
+els.unscrubIn.addEventListener('input', renderUnscrub);
+
+els.btnCopyUnscrub.addEventListener('click', async () => {
+  const text = els.unscrubOut.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+  els.btnCopyUnscrub.textContent = '✅ Copied!';
+  setTimeout(() => { els.btnCopyUnscrub.textContent = '📋 Copy with real names'; }, 2000);
 });
 
 els.btnDownloadTxt.addEventListener('click', () => {

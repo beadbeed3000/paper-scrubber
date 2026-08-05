@@ -25,6 +25,9 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    back (book characters, historical figures). Category chips toggle whole groups.
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
+6. When the AI's feedback comes back full of `[NAME 1]` tags, paste it into
+   **"Put the real names in it"** on the same review screen — the tags flip back
+   to the real words, on-device, using the mapping from that paper.
 
 The whole flow is three steps, spelled out on the page itself: add the papers →
 it scrubs each one → check & save. There is no setup and nothing to configure.
