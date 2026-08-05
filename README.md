@@ -9,6 +9,8 @@ inside the browser (WebAssembly via transformers.js + ONNX Runtime). There is no
 server, no account, no upload, no tracking. After first use it works fully offline —
 you can demo it in airplane mode.
 
+Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
+
 ## How it works for a teacher
 
 1. Open the link (or the installed app icon).
