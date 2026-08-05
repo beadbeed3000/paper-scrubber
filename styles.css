@@ -227,6 +227,7 @@ mark.kept {
   border-bottom: 2px solid #b9c3cc; white-space: normal;
 }
 mark.demo { cursor: default; }
+mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 
 .t-name     { background: #ffe08a; color: #6b4a05; }
 .t-org      { background: #d4edb9; color: #3d5f1c; }

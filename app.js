@@ -597,14 +597,18 @@ function renderResults() {
     const original = p.text.slice(f.start, f.end);
     const mark = document.createElement('mark');
     mark.dataset.id = f.id;
+    mark.setAttribute('role', 'button');   // clickable AND keyboard-toggleable
+    mark.tabIndex = 0;
     if (f.enabled) {
       mark.className = `t-${f.type.toLowerCase()}`;
       mark.textContent = ph(f);
       mark.title = `Was: “${original}” — click to keep the original`;
+      mark.setAttribute('aria-label', `${ph(f)} — was “${original}”. Press to keep the original.`);
     } else {
       mark.className = 'kept';
       mark.textContent = original;
       mark.title = `Detected as ${TYPES[f.type].title} — click to scrub it`;
+      mark.setAttribute('aria-label', `${original} — kept. Detected as ${TYPES[f.type].title}; press to scrub it.`);
     }
     frag.appendChild(mark);
     pos = f.end;
@@ -742,12 +746,25 @@ async function buildAllZip() {
 }
 
 // ---------------------------------------------------------------- events
-els.outputText.addEventListener('click', (e) => {
-  const mark = e.target.closest('mark[data-id]');
-  if (!mark) return;
+function toggleMark(mark) {
   const p = papers[current];
   const f = p.findings.find((x) => x.id === Number(mark.dataset.id));
-  if (f) { f.enabled = !f.enabled; renderResults(); }
+  if (!f) return;
+  f.enabled = !f.enabled;
+  renderResults();
+  // renderResults rebuilds the marks, so put keyboard focus back where it was
+  els.outputText.querySelector(`mark[data-id="${f.id}"]`)?.focus();
+}
+els.outputText.addEventListener('click', (e) => {
+  const mark = e.target.closest('mark[data-id]');
+  if (mark) toggleMark(mark);
+});
+els.outputText.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const mark = e.target.closest('mark[data-id]');
+  if (!mark) return;
+  e.preventDefault();   // Space must toggle, not scroll the page
+  toggleMark(mark);
 });
 
 function updateScrubButton() {
