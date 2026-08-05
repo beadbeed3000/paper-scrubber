@@ -527,26 +527,29 @@ async function pdfPageCanvas(page) {
 const NOT_ENOUGH_PRINT = "couldn't find readable print — this works best on a clear, straight-on photo or scan of a typed paper (handwriting can't be read)";
 const OCR_MAX_SIDE = 2400;
 
-let ocrWorkerPromise = null;
+const ocrWorkers = {};                // one per language combo, created on demand
 let ocrProgress = null;               // set around recognize() calls; the logger reads it
 
-function loadOcrWorker(ui) {
-  ocrWorkerPromise ??= (async () => {
+function loadOcrWorker(ui, langs) {
+  ocrWorkers[langs] ??= (async () => {
     ui.say('Getting the print reader ready — one moment…');
     const base = new URL('vendor/', document.baseURI).href;
     const T = (await import('./vendor/tesseract.esm.min.js')).default;
-    return T.createWorker('eng', 1, {
+    return T.createWorker(langs, 1, {
       workerPath: `${base}tesseract-worker.min.js`,
       corePath: `${base}tesseract-core-simd-lstm.wasm.js`,
       langPath: base.replace(/\/$/, ''),
       logger: (m) => { if (m.status === 'recognizing text' && ocrProgress) ocrProgress(m.progress); },
     });
-  })().catch((err) => { ocrWorkerPromise = null; throw err; });
-  return ocrWorkerPromise;
+  })().catch((err) => { delete ocrWorkers[langs]; throw err; });
+  return ocrWorkers[langs];
 }
 
 async function ocrRead(source, ui, who, pageInfo) {
-  const worker = await loadOcrWorker(ui);
+  // Spanish classes already pick the multilingual mode, so their scans get
+  // Spanish print reading too (accents and ñ come out right)
+  const langs = currentMode() === 'max' ? 'eng+spa' : 'eng';
+  const worker = await loadOcrWorker(ui, langs);
   const label = `${who || 'the scan'}${pageInfo}`;
   ocrProgress = (frac) => {
     ui.say(`Reading print in ${label} — ${Math.round(frac * 100)}%`);

@@ -57,9 +57,11 @@ pdf.js first, then read. OCR reads **typed print** well and **handwriting
 essentially not at all**, so every OCR'd paper is labeled "read from a photo —
 double-check it" in the batch list and carries a warning banner on the review
 screen: misread print can hide a name from the detector, and the teacher is
-the backstop. English print only for now (Spanish OCR would be ~2 MB more if
-teachers ask). iPhone HEIC photos can't be decoded by browsers — the app tells
-the teacher to use "Most Compatible" camera format or share as JPEG.
+the backstop. Reads English print — and **Spanish** too when the
+"Spanish, French & more" mode is selected (accents and ñ come out right;
+the language toggle the teacher already set tells OCR what to expect).
+iPhone HEIC photos can't be decoded by most browsers — the app tells the
+teacher to use "Most Compatible" camera format or share as JPEG.
 
 ## Branding
 
@@ -152,7 +154,8 @@ firewall blocks Hugging Face. Requirements and notes:
 - transformers.js (Apache-2.0), ONNX Runtime Web (MIT), JSZip (MIT),
   pdf.js 5.7.284 legacy build (Apache-2.0 — the legacy build keeps older
   school Chromebooks working), tesseract.js 6.0.1 + tesseract.js-core
-  (Apache-2.0) with the `eng` traineddata (Apache-2.0, tessdata "best-int").
+  (Apache-2.0) with the `eng` and `spa` traineddata (Apache-2.0,
+  tessdata "best-int").
 
 ## Known limits (be honest with teachers)
 
