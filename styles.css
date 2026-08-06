@@ -273,6 +273,57 @@ mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 .privacy-card p, .privacy-card li { font-size: .95rem; }
 .privacy-card a { color: var(--blue); }
 
+/* ---------- help ---------- */
+.help-fab {
+  position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 40;
+  width: 2.9rem; height: 2.9rem; border-radius: 50%;
+  background: var(--blue); color: #fff; border: 2px solid #fff;
+  font-family: Georgia, serif; font-size: 1.35rem; font-weight: 700;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(23, 41, 60, .35);
+  transition: transform .12s, background .12s;
+}
+.help-fab:hover { background: var(--blue-deep); transform: scale(1.08); }
+.help-fab:focus-visible { outline: 3px solid #bcdca4; }
+
+#helpDialog {
+  border: none; border-top: 4px solid var(--blue); border-radius: 6px;
+  padding: 0; max-width: 620px; width: calc(100vw - 2.5rem);
+  max-height: 85vh; background: var(--paper); color: var(--ink);
+  box-shadow: 0 12px 40px rgba(23, 41, 60, .35);
+}
+#helpDialog::backdrop { background: rgba(23, 41, 60, .45); }
+.help-body { padding: 1.1rem 1.4rem 1.3rem; overflow-y: auto; max-height: calc(85vh - 4px); }
+.help-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
+.help-head h2 { margin: 0; color: var(--blue-deep); font-size: 1.45rem; }
+.help-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.7rem; line-height: 1; color: var(--ink-soft); padding: .1rem .4rem;
+}
+.help-close:hover { color: var(--ink); }
+.hsteps { list-style: none; margin: 0; padding: 0; counter-reset: hstep; }
+.hsteps li {
+  counter-increment: hstep; position: relative;
+  padding: .5rem 0 .5rem 2.3rem; border-bottom: 1px dashed var(--rule);
+  font-size: .92rem; line-height: 1.55;
+}
+.hsteps li:last-child { border-bottom: none; }
+.hsteps li::before {
+  content: counter(hstep); position: absolute; left: 0; top: .55rem;
+  width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  background: var(--green); color: #fff; font-weight: 700; font-size: .95rem;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Georgia, serif;
+}
+.hsteps strong { color: var(--blue-deep); }
+.know {
+  background: var(--green-wash); border: 1px solid #c8e0b4; border-radius: 4px;
+  padding: .7rem .95rem; margin-top: 1rem; font-size: .89rem;
+}
+.know > strong { color: var(--green-deep); }
+.know ul { margin: .3rem 0 0; padding-left: 1.15rem; }
+.know li { margin: .18rem 0; }
+.know a { color: var(--blue); }
+
 /* ---------- global drop overlay ---------- */
 #globalDrop {
   display: none; position: fixed; inset: 0; z-index: 50;

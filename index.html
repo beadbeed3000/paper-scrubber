@@ -172,10 +172,44 @@
       <a href="https://huggingface.co/Ar86Bat/multilang-pii-ner" target="_blank" rel="noopener">multilang-pii-ner</a>.
       No accounts, no uploads, no tracking, no charge.
       The <a href="https://github.com/beadbeed3000/paper-scrubber" target="_blank" rel="noopener">code is public</a> — anyone can read exactly what it does.
-      <a href="privacy.html">Privacy, in plain English</a> ·
-      <a href="guide.html">Print the one-page teacher guide</a>.</p>
+      <a href="privacy.html">Privacy, in plain English</a>.</p>
   </div>
 </footer>
+
+<button id="btnHelp" class="help-fab" type="button" aria-label="Help — how Paper Scrubber works">?</button>
+
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <div class="help-body">
+    <div class="help-head">
+      <h2 id="helpTitle">How it works</h2>
+      <button id="btnHelpClose" class="help-close" type="button" aria-label="Close help">×</button>
+    </div>
+    <ol class="hsteps">
+      <li><strong>Feed it papers.</strong> Paste one, or drop Word, PDF, or photo files anywhere on the page —
+        a whole class set at once is the fast way. On a phone, tap <strong>📷 Take a photo</strong> and shoot the page straight on.</li>
+      <li><strong>Let it scrub.</strong> The first scrub downloads the scrubber once (give it a minute); after that
+        it works with the Wi-Fi off. Every personal detail becomes a tag like <mark class="t-name demo">[NAME 1]</mark>,
+        and the same kid gets the same tag in every paper of a set.</li>
+      <li><strong>Be the last set of eyes.</strong> Book characters get flagged too — the scrubber has no idea
+        Atticus Finch isn't in your third period — so click any highlight (or Tab to it and press Enter) to put that
+        word back. No tool catches everything; you're the teacher for a reason.</li>
+      <li><strong>Send it to the AI.</strong> Copy the scrubbed text into ChatGPT, Claude, or Gemini and ask for
+        feedback, a rubric check, or revision ideas. Word files can also come back as real Word files, formatting intact.</li>
+      <li><strong>Put the names back.</strong> When the reply says "Nice hook, [NAME 1]!", paste it into the box at
+        the bottom of the review screen and the real names return — on your device, like everything else.</li>
+    </ol>
+    <div class="know">
+      <strong>Good to know</strong>
+      <ul>
+        <li>Nothing leaves the machine. Don't take our word for it — after your first scrub, turn the Wi-Fi off and keep scrubbing.</li>
+        <li>Photos and scans work when the paper is typed. Handwriting comes back as alphabet soup, and the app will say so.</li>
+        <li>Teaching Spanish? Pick "Spanish, French &amp; more" before you scrub and the accents come out right.</li>
+        <li>Something it missed, or an idea? Email <a href="mailto:alex@theholler.org?subject=Paper%20Scrubber%20feedback">alex@theholler.org</a>.
+          There's also a <a href="privacy.html">plain-English privacy page</a> to forward to your principal.</li>
+      </ul>
+    </div>
+  </div>
+</dialog>
 
 <div id="globalDrop" aria-hidden="true"><span>Let go — I'll scrub every one 📄</span></div>
 

@@ -67,6 +67,7 @@ const els = {
   btnCopy: $('btnCopy'), btnDownloadTxt: $('btnDownloadTxt'), btnDownloadDocx: $('btnDownloadDocx'),
   unscrubIn: $('unscrubIn'), unscrubOut: $('unscrubOut'), btnCopyUnscrub: $('btnCopyUnscrub'),
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
+  btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -1180,6 +1181,14 @@ els.btnInstall.addEventListener('click', async () => {
 window.addEventListener('appinstalled', () => {
   installPrompt = null;
   els.btnInstall.hidden = true;
+});
+
+// help dialog — Escape closes it natively; clicking the backdrop closes too
+// (the padded inner .help-body means content clicks never hit the dialog itself)
+els.btnHelp.addEventListener('click', () => els.helpDialog.showModal());
+els.btnHelpClose.addEventListener('click', () => els.helpDialog.close());
+els.helpDialog.addEventListener('click', (e) => {
+  if (e.target === els.helpDialog) els.helpDialog.close();
 });
 
 // mode persistence
