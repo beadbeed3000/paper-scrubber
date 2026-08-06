@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The one-page guide — Paper Scrubber</title>
+<meta name="description" content="A printable one-page how-to for Paper Scrubber: scrub student names out of papers before they go to an AI. A free tool from KVEC.">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1b5ea8">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .guide-head { padding: 1rem 0 .4rem; }
+  .guide-head h1 { font-size: 1.9rem; }
+  .guide-intro { font-size: .95rem; margin: .9rem 0 1rem; }
+  .guide-card { padding: 1.1rem 1.3rem; }
+  .gsteps { list-style: none; margin: 0; padding: 0; counter-reset: g; }
+  .gsteps li {
+    display: flex; gap: .7rem; align-items: flex-start;
+    padding: .45rem 0; border-bottom: 1px dashed var(--rule);
+  }
+  .gsteps li:last-child { border-bottom: none; }
+  .gsteps .num {
+    flex: none; margin-top: .1rem; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--green); color: #fff; font-weight: 700; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .gsteps strong { color: var(--blue-deep); }
+  .gsteps p { margin: 0; font-size: .92rem; line-height: 1.5; }
+  .qr-row { display: flex; gap: 1rem; align-items: center; }
+  .qr-row svg { flex: none; background: #fff; }
+  .know {
+    background: var(--green-wash); border: 1px solid #c8e0b4; border-radius: 4px;
+    padding: .7rem .95rem; margin-top: 1rem; font-size: .9rem;
+  }
+  .know strong { color: var(--green-deep); }
+  .know ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .know li { margin: .15rem 0; }
+  .guide-foot { text-align: center; font-size: .85rem; color: var(--ink-soft); margin: 1rem 0 2rem; }
+  .print-actions { display: flex; gap: .6rem; justify-content: center; margin: 1.1rem 0; }
+  @media print {
+    .no-print { display: none !important; }
+    @page { margin: 11mm; }
+    body { background: #fff; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .masthead { background: var(--blue); }
+    .card { box-shadow: none; border-color: #bbb; }
+    .guide-foot { margin-bottom: 0; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner guide-head">
+    <div class="wordmark">
+      <h1>Paper Scrubber — the one-page guide</h1>
+      <p class="tagline">Take the student out of the paper — before the paper goes to an AI.</p>
+    </div>
+    <div class="coop"><span class="coop-text">A free tool from <strong>KVEC</strong></span></div>
+  </div>
+  <svg class="ridge" viewBox="0 0 1200 90" preserveAspectRatio="none" aria-hidden="true">
+    <path class="ridge-back" d="M0,90 L0,52 L120,26 L245,58 L340,30 L455,62 L560,34 L690,66 L800,38 L930,64 L1050,32 L1200,58 L1200,90 Z"/>
+    <path class="ridge-front" d="M0,90 L0,70 L145,44 L270,72 L395,48 L505,76 L640,50 L760,78 L880,52 L1010,76 L1130,50 L1200,72 L1200,90 Z"/>
+  </svg>
+</header>
+
+<main>
+  <p class="guide-intro">AI tools are great at giving feedback on writing — and terrible at forgetting what you paste into them.
+  Paper Scrubber swaps every name, address, and birthday for a tag like <mark class="t-name demo">[NAME 1]</mark>
+  right on your computer, so the robot helps with the essay without ever learning who wrote it.</p>
+
+  <div class="print-actions no-print">
+    <button class="btn primary" onclick="window.print()">🖨️ Print this page</button>
+    <a class="btn secondary" href="./">← Back to Paper Scrubber</a>
+  </div>
+
+  <section class="card guide-card">
+    <ol class="gsteps">
+      <li><span class="num">1</span>
+        <div class="qr-row">
+          <p><strong>Open it.</strong> Go to <strong>beadbeed3000.github.io/paper-scrubber</strong> — or point your phone's camera at the square.
+          It runs on school laptops, Chromebooks, and phones, with nothing to install and no account to make.</p>
+          <svg width="123" height="123" role="img" aria-label="QR code linking to Paper Scrubber"><path transform="scale(3)" stroke="#17293c" d="M4 4.5h7m1 0h1m1 0h2m6 0h3m2 0h1m2 0h7m-33 1h1m5 0h1m3 0h3m1 0h2m1 0h2m2 0h2m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m4 0h2m1 0h2m2 0h7m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m1 0h4m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h6m2 0h1m1 0h7m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h4m2 0h2m1 0h1m2 0h3m1 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-23 1h2m2 0h1m1 0h1m3 0h5m-24 1h7m1 0h2m2 0h2m1 0h2m4 0h1m1 0h1m2 0h2m3 0h1m-33 1h5m2 0h1m1 0h1m1 0h4m1 0h4m1 0h1m1 0h1m2 0h2m1 0h4m-29 1h1m1 0h2m3 0h1m2 0h1m1 0h2m6 0h3m1 0h1m1 0h2m-31 1h1m2 0h2m1 0h2m2 0h1m3 0h2m4 0h2m2 0h2m1 0h3m-30 1h1m2 0h4m1 0h2m1 0h2m1 0h1m2 0h1m3 0h1m2 0h1m1 0h3m2 0h1m-32 1h1m3 0h1m2 0h9m1 0h4m1 0h1m1 0h3m1 0h4m-31 1h2m1 0h3m1 0h2m1 0h1m1 0h1m2 0h2m2 0h2m2 0h2m1 0h4m-31 1h1m1 0h3m2 0h2m2 0h1m1 0h1m1 0h1m2 0h1m1 0h2m2 0h2m1 0h3m-31 1h2m3 0h4m5 0h1m2 0h2m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m-33 1h4m4 0h5m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h2m1 0h2m1 0h1m-31 1h7m2 0h3m3 0h2m8 0h2m1 0h2m-30 1h1m1 0h1m2 0h1m1 0h2m4 0h2m4 0h2m1 0h1m2 0h4m-29 1h1m2 0h4m1 0h1m3 0h1m2 0h2m3 0h1m1 0h2m1 0h3m1 0h1m-32 1h1m4 0h1m1 0h1m2 0h1m2 0h1m1 0h1m1 0h7m2 0h1m3 0h1m1 0h1m-33 1h1m2 0h1m2 0h2m2 0h1m1 0h1m1 0h2m1 0h1m3 0h2m1 0h1m6 0h1m-32 1h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m1 0h1m-33 1h1m1 0h1m3 0h2m1 0h2m2 0h3m4 0h1m3 0h5m2 0h2m-25 1h2m1 0h1m1 0h3m3 0h1m1 0h2m1 0h1m3 0h1m1 0h3m-33 1h7m1 0h1m3 0h3m1 0h1m6 0h2m1 0h1m1 0h1m1 0h2m-32 1h1m5 0h1m1 0h2m2 0h2m1 0h2m1 0h1m2 0h1m1 0h2m3 0h4m-32 1h1m1 0h3m1 0h1m1 0h5m1 0h1m3 0h1m3 0h1m1 0h6m2 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h2m1 0h9m2 0h2m2 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h1m2 0h2m1 0h1m2 0h2m1 0h2m-28 1h1m5 0h1m1 0h4m1 0h1m1 0h3m2 0h4m4 0h3m-31 1h7m3 0h2m1 0h1m2 0h3m1 0h1m2 0h3m1 0h1m3 0h1"/></svg>
+        </div>
+      </li>
+      <li><span class="num">2</span>
+        <p><strong>Feed it papers.</strong> Paste one, or drop Word, PDF, or photo files anywhere on the page — a whole
+        class set at once is the fast way. On a phone, tap <strong>📷 Take a photo</strong> and shoot the page straight on.</p>
+      </li>
+      <li><span class="num">3</span>
+        <p><strong>Let it scrub.</strong> The first scrub downloads the scrubber once (give it a minute); after that it
+        works with the Wi-Fi off. Every personal detail becomes a tag, and the same kid gets the same tag in every paper of the set.</p>
+      </li>
+      <li><span class="num">4</span>
+        <p><strong>Be the last set of eyes.</strong> Skim the highlights. Book characters get flagged too — the scrubber
+        has no idea Atticus Finch isn't in your third period — so click any highlight to put that word back. No tool catches everything; you're the teacher for a reason.</p>
+      </li>
+      <li><span class="num">5</span>
+        <p><strong>Send it to the robot.</strong> Copy the scrubbed text into ChatGPT, Claude, or Gemini and ask for
+        feedback, a rubric check, or revision ideas. Word files can also come back as real Word files with formatting intact.</p>
+      </li>
+      <li><span class="num">6</span>
+        <p><strong>Put the names back.</strong> When the reply says "Nice hook, [NAME 1]!", paste it into the box at the
+        bottom of the review screen and the real names return — on your device, like everything else.</p>
+      </li>
+    </ol>
+
+    <div class="know">
+      <strong>Good to know:</strong>
+      <ul>
+        <li>Nothing leaves the machine. Don't take our word for it — after your first scrub, turn the Wi-Fi off and keep scrubbing.</li>
+        <li>Photos and scans work when the paper is typed. Handwriting comes back as alphabet soup, and the app will say so.</li>
+        <li>Teaching Spanish? Pick "Spanish, French &amp; more" before you scrub and the accents come out right.</li>
+        <li>Something it missed, or an idea to make it better? Email <strong>alex@theholler.org</strong>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="guide-foot"><strong>Kentucky Valley Educational Cooperative</strong> · free, no sign-in, no tracking ·
+  beadbeed3000.github.io/paper-scrubber</p>
+</main>
+
+</body>
+</html>

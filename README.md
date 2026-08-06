@@ -175,7 +175,9 @@ firewall blocks Hugging Face. Requirements and notes:
   handwriting comes back as nonsense, and the app says so. OCR can also misread
   print ("Jasm1ne"), which can hide a name from the detector; that's why OCR'd
   papers get an explicit double-check warning. English print only for now.
-- Other roadmap ideas: printable one-page teacher guide.
+- `guide.html` is the printable one-page teacher guide (linked from the footer)
+  — hand it out at PD, pin it in the lounge. It carries a QR code straight to
+  the tool and prints on a single Letter page.
 
 ## Google Docs add-on
 

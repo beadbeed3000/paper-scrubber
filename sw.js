@@ -1,10 +1,11 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v36';
+const CACHE = 'paper-scrubber-v37';
 const ASSETS = [
   './',
   './index.html',
   './privacy.html',
+  './guide.html',
   './styles.css',
   './app.js',
   './labels.js',
