@@ -2,7 +2,44 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated August 2026, live version `paper-scrubber-v37`.
+stands. Last updated August 2026, live version `paper-scrubber-v39`.
+
+## What changed in v38–v39 (audit fixes)
+
+A six-lens code audit found a real leak and several detection gaps. Fixed and
+verified against the running app:
+
+- **The Word container was never scrubbed.** `docProps` (`dc:creator`, `dc:title`,
+  `cp:lastModifiedBy`), `w:author`/`w:initials` on comments and tracked changes, and
+  `word/people.xml` all rode into the "scrubbed" download while the headline said
+  *Replaced N personal details*. `stripDocxIdentity()` now blanks them on every
+  Word build. This one was reproducible on the live site — a file authored by
+  "Jayden Combs" came back scrubbed in the body and still named him in Explorer.
+- **File names leaked too** — `Dalton Hall essay.docx` → `Dalton Hall essay-scrubbed.docx`.
+  Safe file names (tick-box, default on) save each paper under its tag instead,
+  with a `WHO-IS-WHO` key in the zip. See the README.
+- **Accented names were invisible to the detector.** The English model is *uncased*
+  and its tokenizer strips accents, so it returned "jose" for text reading "José";
+  `mapTokens`' `indexOf` found nothing and dropped the token, so the name never
+  became a finding. `foldForMatch()` folds both sides one UTF-16 unit at a time so
+  offsets still line up. José Peña / Renée Dubois / Björn Åkesson / Sofía Martínez
+  all went from *undetected* to caught.
+- **Entity scores were averaged**, letting weak subword pieces drag a confident
+  detection under the 0.4 threshold — now the max token score.
+- **Chunking counted characters against a 512-*token* limit.** Dropped to 900 chars
+  and `scanChunk` re-splits anything that still comes back at the token ceiling,
+  so the tail of a dense page is never silently skipped.
+- All-caps letterheads (`BELFRY MIDDLE SCHOOL`) now match; non-breaking spaces from
+  Google Docs exports no longer end an entity mid-name; a failed batch Save reports
+  itself instead of looking like success.
+- **Spanish/multilingual removed** (Alex's call, August 2026) — see the README for
+  what to restore if a foreign-language teacher asks.
+
+**Known and deliberately not fixed:** images inside a .docx are left intact
+(deleting `word/media/*` would gut the student's work). Also seen in testing: when
+the model labels a person as ADDRESS/CITY rather than NAME, that person gets a
+different tag in that paper than in one where it read NAME — still scrubbed, never
+leaked, but the key file reads oddly. Worth a look; identity is type-scoped today.
 
 ## Where things stand
 
@@ -13,13 +50,12 @@ app before each push).
 **Formats in:** paste · .docx (comes back as real Word, formatting intact) ·
 .txt/.md · PDF (text layer via pdf.js; scanned PDFs rendered and OCR'd) ·
 photos (.png/.jpg/.webp/.bmp, plus a 📷 Take-a-photo button on touch devices;
-phone photo libraries work via image/* MIME intake). OCR reads typed print in
-English, and Spanish when the multilingual mode is selected; handwriting is
-refused with a plain message, HEIC gets a "Most Compatible" tip, and every
-OCR'd paper carries a double-check warning.
+phone photo libraries work via image/* MIME intake). OCR reads typed English
+print; handwriting is refused with a plain message, HEIC gets a "Most
+Compatible" tip, and every OCR'd paper carries a double-check warning.
 
-**Detection layers:** two NER models (English DistilBERT 64 MB default,
-multilingual XLM-R 266 MB) + regex rules (email, phone, SSN, school names,
+**Detection layers:** one NER model (English DistilBERT, 64 MB)
++ regex rules (email, phone, SSN, school names in title case and all caps,
 and 7–16 digit runs → ID, which closed a real student-ID leak) + boundary
 extension (Unicode-aware, so "García Márquez" and "José Peña" extend fully;
 CITY/STATE extend too — "Dalton" the first name reads as a city to the model —
@@ -63,9 +99,14 @@ regex-only version wearing the name would be worse than none.
 3. **Real-hardware pass** — five minutes each on a school Chromebook and an
    iPhone: scrub the sample, take a photo of a typed page, try the photo
    library and the Install button. Everything so far was tested in emulation.
-4. **Watch the inbox** — the footer email is the feature pipeline now. French
-   OCR is a one-line language addition plus ~2 MB `fra.traineddata.gz` if a
-   French teacher asks.
+4. **Watch the inbox** — the footer email is the feature pipeline now. A
+   foreign-language teacher asking is what brings the multilingual engine and
+   the language toggle back (README says what to restore).
+5. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
+   during a batch run, the aria-live summary written while hidden so it's never
+   announced, focus rings too faint to see (1.2–1.5:1), all-or-nothing offline
+   precache that fails silently, and the `#gdoc=` bridge writing paper text into
+   browser history. Worth a pass; nothing here sends a student's name anywhere.
 
 **Parked on purpose:** the scrubber.theholler.org domain (Alex chose to stay
 on github.io; a pending domain verification sits harmlessly on the GitHub

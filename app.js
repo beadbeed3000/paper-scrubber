@@ -14,22 +14,26 @@ env.backends.onnx.wasm.wasmPaths = new URL('vendor/', document.baseURI).href;
 // on the low-end Chromebooks in classrooms
 env.backends.onnx.wasm.proxy = true;
 
-const MODELS = {
-  fast: {
-    id: 'onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX',
-    dtype: 'q8', chunkChars: 1300, sizeMB: 64, label: 'English',
-  },
-  max: {
-    id: 'onnx-community/multilang-pii-ner-ONNX',
-    dtype: 'q8', chunkChars: 1300, sizeMB: 266, label: 'multilingual',
-  },
+const MODEL = {
+  id: 'onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX',
+  dtype: 'q8', sizeMB: 64, label: 'English',
+  // Characters, not tokens — so it must stay well under the model's 512-token
+  // window even for dense text (digits and accents tokenize far worse than
+  // prose). scanChunk re-splits anything that still comes back truncated.
+  chunkChars: 900,
 };
+const MODEL_MAX_TOKENS = 512;
 
 const SPECIAL_TOKENS = new Set(['[CLS]', '[SEP]', '[PAD]', '[MASK]', '[UNK]', '<s>', '</s>', '<pad>', '<unk>', '<mask>']);
 const SCORE_THRESHOLD = 0.4;
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const MODE_KEY = 'paperScrubber.mode';
+const SAFENAMES_KEY = 'paperScrubber.safeNames';
+// Word (and Google Docs' export) stamp the author into the package itself.
+// Scrubbing the visible text and leaving these behind hands the teacher a file
+// she has been told is clean while the student's name rides along inside it.
+const META_PARTS = /^(docProps\/|word\/people\.xml$)/;
+const META_AUTHOR_ATTRS = /\s(?:w:author|w:initials|w:lastModifiedBy)="[^"]*"/g;
 
 const REGEX_RULES = [
   { type: 'EMAIL', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
@@ -42,10 +46,19 @@ const REGEX_RULES = [
   { type: 'ID',    re: /\b\d{7,16}\b/g },
   // school names — the models have no "school" label, so catch the common shapes
   { type: 'ORG',   re: /\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}(?:Elementary|Middle|High|Academy|University|College)(?: School)?\b|\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}School\b/g },
+  // …and the same shapes shouted in an all-caps letterhead, which the
+  // capitalized pattern above steps right over. Kept as its own all-caps rule
+  // rather than an /i flag, so ordinary prose ("back in middle school") stays put.
+  { type: 'ORG',   re: /\b(?:[A-ZÀ-Þ][A-ZÀ-Þ'’\-]+ ){1,4}(?:ELEMENTARY|MIDDLE|HIGH|ACADEMY|UNIVERSITY|COLLEGE)(?: SCHOOL)?\b|\b(?:[A-ZÀ-Þ][A-ZÀ-Þ'’\-]+ ){1,4}SCHOOL\b/g },
 ];
 
+// Google Docs and Word sprinkle non-breaking and thin spaces through exported
+// text. Treated as plain spaces they merge and extend normally; treated as
+// "some other character" they silently end an entity mid-name.
+const GAP = ' \\t\\u00A0\\u2007\\u202F\\u2009';
+
 // ---------------------------------------------------------------- state
-const pipes = {};
+let pipePromise = null;
 let papers = [];      // [{id, name, kind:'text'|'docx', file, docx, text, findings, status, error}]
 let current = -1;     // index of the paper open in the review view
 let busy = false;
@@ -68,6 +81,7 @@ const els = {
   unscrubIn: $('unscrubIn'), unscrubOut: $('unscrubOut'), btnCopyUnscrub: $('btnCopyUnscrub'),
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
   btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
+  safeNames: $('safeNames'), safeNamesBatch: $('safeNamesBatch'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -113,26 +127,25 @@ function statusSurface() {
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ---------------------------------------------------------------- model loading
-async function getPipe(modeKey, ui) {
-  if (pipes[modeKey]) return pipes[modeKey];
-  const cfg = MODELS[modeKey];
+async function getPipe(ui) {
+  if (pipePromise) return pipePromise;
   let sawDownload = false;
   const progress_callback = (e) => {
     if (e.status === 'progress' && typeof e.progress === 'number' && String(e.file || '').endsWith('.onnx')) {
       sawDownload = true;
       const mb = (n) => Math.round(n / 1048576);
-      ui.say(`Downloading the ${cfg.label} scrubber — ${mb(e.loaded)} of ${mb(e.total)} MB. This happens once; after this it's saved on this device.`);
+      ui.say(`Downloading the scrubber — ${mb(e.loaded)} of ${mb(e.total)} MB. This happens once; after this it's saved on this device.`);
       ui.bar(e.progress);
     }
   };
-  ui.say(`Getting the ${cfg.label} scrubber ready…`);
-  pipes[modeKey] = pipeline('token-classification', cfg.id, { dtype: cfg.dtype, progress_callback })
+  ui.say('Getting the scrubber ready…');
+  pipePromise = pipeline('token-classification', MODEL.id, { dtype: MODEL.dtype, progress_callback })
     .then((p) => {
       if (sawDownload) ui.say('Saved! Loading it into memory…');
       return p;
     })
-    .catch((err) => { delete pipes[modeKey]; throw err; });
-  return pipes[modeKey];
+    .catch((err) => { pipePromise = null; throw err; });
+  return pipePromise;
 }
 
 // ---------------------------------------------------------------- text chunking
@@ -161,9 +174,25 @@ function chunkText(text, maxLen) {
 
 // ---------------------------------------------------------------- token → char spans
 // transformers.js does not reliably give char offsets, so we re-locate each
-// token in the chunk with a forward-moving cursor (case-insensitive).
+// token in the chunk with a forward-moving cursor.
+//
+// Folding matters more than it looks: the English model is *uncased*, and its
+// tokenizer strips accents — it hands back "jose" for text that reads "José".
+// A plain indexOf then finds nothing, the token is dropped, and the name never
+// becomes a finding at all. Every accented student name was invisible.
+// Folded one UTF-16 unit at a time so positions still line up with the original.
+function foldForMatch(s) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const base = s[i].normalize('NFD')[0] || s[i];
+    const low = base.toLowerCase();
+    out += low.length === 1 ? low : s[i];   // keep 1:1 with the source string
+  }
+  return out;
+}
+
 function mapTokens(chunkStr, tokens) {
-  const lower = chunkStr.toLowerCase();
+  const hay = foldForMatch(chunkStr);
   let cursor = 0;
   return tokens.map((t) => {
     if (Number.isFinite(t.start) && Number.isFinite(t.end) && t.end > t.start) {
@@ -172,7 +201,7 @@ function mapTokens(chunkStr, tokens) {
     }
     const w = String(t.word ?? '').replace(/^##/, '').replace(/^[▁Ġ]+/, '').trim();
     if (!w || SPECIAL_TOKENS.has(w)) return null;
-    const idx = lower.indexOf(w.toLowerCase(), cursor);
+    const idx = hay.indexOf(foldForMatch(w), cursor);
     if (idx === -1) return null;
     cursor = idx + w.length;
     return { start: idx, end: idx + w.length };
@@ -213,7 +242,9 @@ function collectEntities(tokens, spans, chunkStr) {
 
 function expandToWord(text, ent) {
   const loose = ent.type === 'EMAIL' || ent.type === 'LINK' || ent.type === 'USERNAME';
-  const ok = (ch) => (loose ? /[^\s()[\]{}<>,;:"']/ : /[A-Za-z0-9'’\-]/).test(ch);
+  // \p{L}\p{N}, not A-Za-z0-9 — otherwise a repair on "José" stops at the "s"
+  // and the accented tail is left sitting in the paper
+  const ok = (ch) => (loose ? /[^\s()[\]{}<>,;:"']/ : /[\p{L}\p{N}'’\-]/u).test(ch);
   while (ent.start > 0 && ok(text[ent.start - 1])) ent.start--;
   while (ent.end < text.length && ok(text[ent.end])) ent.end++;
   // sentence punctuation isn't part of an email/link — give the period back
@@ -240,7 +271,7 @@ function mergeAdjacent(list, text) {
   const out = [];
   for (const f of list) {
     const last = out[out.length - 1];
-    if (last && last.type === f.type && /^[ \t.,'’\-]{0,3}$/.test(text.slice(last.end, f.start))) {
+    if (last && last.type === f.type && new RegExp(`^[${GAP}.,'’\\-]{0,3}$`).test(text.slice(last.end, f.start))) {
       last.end = f.end;
       last.score = Math.max(last.score, f.score);
     } else out.push(f);
@@ -271,7 +302,7 @@ function extendEntities(text, list) {
       // places never span sentences — "Whitesburg, Kentucky. Email me" must
       // not swallow "Email" (names keep extending: "Mrs." ends with a period)
       if ((f.type === 'CITY' || f.type === 'STATE') && /[.!?]$/.test(text.slice(f.start, f.end))) break;
-      const m = text.slice(f.end).match(/^ ([\p{L}'’.\-]+)/u);
+      const m = text.slice(f.end).match(new RegExp(`^[${GAP}]([\\p{L}'’.\\-]+)`, 'u'));
       if (!m) break;
       const word = m[1];
       const isCap = /^\p{Lu}[\p{Ll}'’\-]+\.?$/u.test(word);   // Unicode-aware: Márquez, Peña
@@ -300,7 +331,11 @@ function propagateNames(text, list) {
   }
   const extra = [];
   for (const w of words) {
-    const re = new RegExp(`\\b${escapeRe(w)}\\b`, 'g');
+    // NOT \b: JavaScript's word boundary counts only [A-Za-z0-9_], so "José"
+    // ends on a non-word character and \bJosé\b never matches — the echo pass
+    // silently skipped every accented name. Unicode lookarounds do the same
+    // job for every alphabet.
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(w)}(?![\\p{L}\\p{N}])`, 'gu');
     let m;
     while ((m = re.exec(text)) !== null) {
       const covered = list.some((f) => m.index < f.end && m.index + w.length > f.start);
@@ -311,22 +346,43 @@ function propagateNames(text, list) {
 }
 
 // ---------------------------------------------------------------- detection
-async function detectText(text, modeKey, ui, paperName = '') {
-  const cfg = MODELS[modeKey];
-  const pipe = await getPipe(modeKey, ui);
-  const chunks = chunkText(text, cfg.chunkChars);
+// Runs one chunk through the model and returns findings in chunk-local
+// coordinates. The model truncates silently at 512 tokens, so a chunk that
+// comes back at the ceiling is split and re-scanned rather than trusted —
+// otherwise the tail of a dense page is never looked at at all.
+async function scanChunk(pipe, piece, depth = 0) {
+  const out = await pipe(piece, { ignore_labels: [] });
+  if (out.length >= MODEL_MAX_TOKENS - 2 && piece.length > 120 && depth < 4) {
+    let cut = piece.lastIndexOf(' ', Math.floor(piece.length / 2));
+    if (cut < 20) cut = Math.floor(piece.length / 2);
+    const left = await scanChunk(pipe, piece.slice(0, cut), depth + 1);
+    const right = await scanChunk(pipe, piece.slice(cut), depth + 1);
+    return [...left, ...right.map((e) => ({ ...e, start: e.start + cut, end: e.end + cut }))];
+  }
+  const tokens = out.filter((t) => !SPECIAL_TOKENS.has(String(t.word ?? '').trim()));
+  const spans = mapTokens(piece, tokens);
+  const found = [];
+  for (const e of collectEntities(tokens, spans, piece)) {
+    // Highest-confidence token, not the average. A name the model is sure about
+    // gets dragged under the threshold by the low-scoring subword pieces around
+    // it — averaging "Már|quez" throws away the detection of "Már".
+    const score = Math.max(...e.scores);
+    if (score < SCORE_THRESHOLD) continue;
+    found.push({ type: e.type, start: e.start, end: e.end, score });
+  }
+  return found;
+}
+
+async function detectText(text, ui, paperName = '') {
+  const pipe = await getPipe(ui);
+  const chunks = chunkText(text, MODEL.chunkChars);
   const raw = [];
 
   for (let i = 0; i < chunks.length; i++) {
     const who = paperName ? `${paperName} — ` : '';
     ui.say(`Scanning ${who}part ${i + 1} of ${chunks.length}`);
-    const out = await pipe(chunks[i].text, { ignore_labels: [] });
-    const tokens = out.filter((t) => !SPECIAL_TOKENS.has(String(t.word ?? '').trim()));
-    const spans = mapTokens(chunks[i].text, tokens);
-    for (const e of collectEntities(tokens, spans, chunks[i].text)) {
-      const score = e.scores.reduce((a, b) => a + b, 0) / e.scores.length;
-      if (score < SCORE_THRESHOLD) continue;
-      raw.push({ type: e.type, start: e.start + chunks[i].start, end: e.end + chunks[i].start, score, source: 'model' });
+    for (const e of await scanChunk(pipe, chunks[i].text)) {
+      raw.push({ type: e.type, start: e.start + chunks[i].start, end: e.end + chunks[i].start, score: e.score, source: 'model' });
     }
     await new Promise((r) => setTimeout(r, 0)); // let the UI breathe
   }
@@ -447,7 +503,37 @@ async function buildScrubbedDocx(paper) {
       paper.docx.zip.file(part.path, part.decl && !ser.startsWith('<?xml') ? part.decl + '\n' + ser : ser);
     }
   }
+  await stripDocxIdentity(paper.docx.zip);
   return paper.docx.zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: DOCX_MIME });
+}
+
+// A .docx is a zip, and the student's name lives in more of it than the text:
+// Word stamps the author into docProps, onto every comment and tracked change,
+// and into people.xml. Scrubbing only <w:t> hands the teacher a file she has
+// been told is clean while her student's name rides along inside the package —
+// visible in Explorer, in Drive, and to anything that parses the container.
+// Values are blanked rather than the parts deleted, so the package stays valid.
+const META_TEXT_ELS = /<(dc:creator|dc:title|dc:subject|dc:description|cp:lastModifiedBy|cp:category|cp:keywords|Company|Manager)(\s[^>]*)?>[\s\S]*?<\/\1>/g;
+
+async function stripDocxIdentity(zip) {
+  for (const path of ['docProps/core.xml', 'docProps/app.xml']) {
+    const f = zip.file(path);
+    if (!f) continue;
+    const s = await f.async('string');
+    zip.file(path, s.replace(META_TEXT_ELS, (_m, tag, attrs) => `<${tag}${attrs || ''}></${tag}>`));
+  }
+  for (const path of Object.keys(zip.files)) {
+    if (!/^word\/.*\.xml$/.test(path)) continue;
+    const f = zip.file(path);
+    if (!f) continue;
+    const s = await f.async('string');
+    const cleaned = s.replace(META_AUTHOR_ATTRS, '');
+    if (cleaned !== s) zip.file(path, cleaned);
+  }
+  if (zip.file('word/people.xml')) {
+    zip.file('word/people.xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w15:people xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/>');
+  }
 }
 
 // ---------------------------------------------------------------- pdf engine
@@ -554,10 +640,7 @@ function loadOcrWorker(ui, langs) {
 }
 
 async function ocrRead(source, ui, who, pageInfo) {
-  // Spanish classes already pick the multilingual mode, so their scans get
-  // Spanish print reading too (accents and ñ come out right)
-  const langs = currentMode() === 'max' ? 'eng+spa' : 'eng';
-  const worker = await loadOcrWorker(ui, langs);
+  const worker = await loadOcrWorker(ui, 'eng');
   const label = `${who || 'the scan'}${pageInfo}`;
   ocrProgress = (frac) => {
     ui.say(`Reading print in ${label} — ${Math.round(frac * 100)}%`);
@@ -620,17 +703,12 @@ async function loadPaperContent(p, ui, who) {
   if (!p.text.trim()) throw new Error('the file appears to be empty');
 }
 
-function currentMode() {
-  return document.querySelector('input[name="mode"]:checked')?.value ?? 'fast';
-}
-
 async function scrubPapers(list) {
   busy = true;
   els.btnScrub.disabled = true;
   const ui = statusSurface();
-  const mode = currentMode();
   try {
-    await getPipe(mode, ui);
+    await getPipe(ui);
   } catch (err) {
     console.error(err);
     ui.say(`Couldn't load the scrubber: ${err.message}. If this is the first run, check the internet connection and try again (the one-time download needs it).`);
@@ -645,7 +723,7 @@ async function scrubPapers(list) {
     if (list.length > 1) renderBatch();
     try {
       if (!p.text) await loadPaperContent(p, statusSurface(), list.length > 1 ? p.name : '');
-      p.findings = await detectText(p.text, mode, statusSurface(), list.length > 1 ? p.name : '');
+      p.findings = await detectText(p.text, statusSurface(), list.length > 1 ? p.name : '');
       p.status = 'done';
     } catch (err) {
       console.error(err);
@@ -917,8 +995,13 @@ const paperUnscrub = wireUnscrub(els.unscrubIn, els.unscrubOut, els.btnCopyUnscr
 const batchUnscrub = wireUnscrub(els.unscrubBatchIn, els.unscrubBatchOut, els.btnCopyUnscrubBatch, unscrubMapAll);
 
 // ---------------------------------------------------------------- batch view
+function renderBatchIfVisible() {
+  if (!els.batchView.hidden) renderBatch();
+}
+
 function renderBatch() {
   const frag = document.createDocumentFragment();
+  const nameOf = new Map(plannedNames().map(({ p, name }) => [p, name]));
   papers.forEach((p, i) => {
     const row = document.createElement('div');
     row.className = 'batch-row';
@@ -937,7 +1020,8 @@ function renderBatch() {
       waiting: 'waiting its turn…',
       scanning: 'scrubbing now…',
       done: (hits ? `${hits} personal detail${hits === 1 ? '' : 's'} replaced` : 'nothing personal found')
-        + (p.ocr ? ' · read from a photo — double-check it' : ''),
+        + (p.ocr ? ' · read from a photo — double-check it' : '')
+        + (nameOf.has(p) ? ` · saves as ${nameOf.get(p)}` : ''),
       error: `couldn't read this file — ${p.error}`,
     }[p.status];
     main.append(name, sub);
@@ -964,9 +1048,80 @@ function renderBatch() {
   els.batchList.replaceChildren(frag);
 }
 
-function outName(p, ext) {
-  const base = (p.name || 'paper').replace(/\.[^.]+$/, '') || 'paper';
-  return `${base}-scrubbed.${ext}`;
+// A file name is PII too: "Dalton Hall essay.docx" names the student to the AI
+// just as loudly as the byline did. Safe names replace it with the same tag the
+// paper already uses inside, so the teacher keeps a way to tell papers apart —
+// and the key file below turns the tag back into a kid.
+function safeNamesOn() {
+  return els.safeNames ? els.safeNames.checked : true;
+}
+
+// Whose paper is this? The first name the scrubber found, which on a school
+// assignment is the byline at the top. If the heuristic picks the teacher's
+// name instead, the key file shows exactly what it chose, and the mapping is
+// still one-to-one — annoying to read, never wrong.
+function paperTag(p) {
+  const f = p.findings?.find((x) => x.enabled && x.type === 'NAME');
+  if (!f) return null;
+  return placeholderAssigner(p)(f).replace(/[[\]]/g, '').trim().replace(/\s+/g, '-');
+}
+
+function outName(p, ext, seq) {
+  if (!safeNamesOn()) {
+    const base = (p.name || 'paper').replace(/\.[^.]+$/, '') || 'paper';
+    return `${base}-scrubbed.${ext}`;
+  }
+  const n = String(seq ?? 1).padStart(2, '0');
+  return `${paperTag(p) || `paper-${n}`}-scrubbed.${ext}`;
+}
+
+const KEY_FILE_NAME = 'WHO-IS-WHO — keep this, do not send it.txt';
+
+// The tag→student mapping, written down. Two jobs: it tells the teacher whose
+// paper NAME-4 is, and it makes the un-scrub round trip survive a closed tab —
+// until now the mapping only existed in memory.
+// One naming pass, used by both the zip and the key file — otherwise a
+// collision rename in one place makes the key point at a file that isn't there.
+function plannedNames() {
+  const used = new Set();
+  const plan = [];
+  let seq = 0;
+  for (const p of papers) {
+    if (p.status !== 'done') continue;
+    seq++;
+    let name = outName(p, p.kind === 'docx' ? 'docx' : 'txt', seq);
+    let n = 2;
+    while (used.has(name)) name = name.replace(/(-scrubbed)/, `$1 (${n++})`);
+    used.add(name);
+    plan.push({ p, name });
+  }
+  return plan;
+}
+
+function buildKeyFile(plan = plannedNames()) {
+  const out = [
+    'PAPER SCRUBBER — YOUR KEY',
+    '',
+    'This file is the only thing linking the scrubbed papers back to your',
+    'students. Keep it. Do NOT paste it into ChatGPT, Claude, or any other AI —',
+    'that would undo the whole point of scrubbing them.',
+    '',
+    '='.repeat(66),
+    '',
+  ];
+  plan.forEach(({ p, name }) => {
+    out.push(name);
+    out.push(`    originally: ${p.name || '(text you pasted in)'}`);
+    const map = p.unscrubMap ?? unscrubMapFor(p);
+    if (map.size) {
+      out.push('');
+      for (const [tag, original] of map) out.push(`    ${tag.padEnd(16)} = ${original}`);
+    } else {
+      out.push('    (nothing personal was found in this one)');
+    }
+    out.push('');
+  });
+  return out.join('\r\n');   // \r\n so Windows Notepad shows the line breaks
 }
 
 function saveBlob(blob, filename) {
@@ -981,26 +1136,31 @@ async function downloadPaper(p, btn) {
   const old = btn?.textContent;
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    if (p.kind === 'docx') saveBlob(await buildScrubbedDocx(p), outName(p, 'docx'));
-    else saveBlob(new Blob([scrubbedPlainTextFor(p)], { type: 'text/plain;charset=utf-8' }), outName(p, 'txt'));
+    const seq = papers.indexOf(p) + 1;
+    if (p.kind === 'docx') saveBlob(await buildScrubbedDocx(p), outName(p, 'docx', seq));
+    else saveBlob(new Blob([scrubbedPlainTextFor(p)], { type: 'text/plain;charset=utf-8' }), outName(p, 'txt', seq));
     if (btn) btn.textContent = 'Saved ✅';
+  } catch (err) {
+    // a swallowed failure here looks exactly like success: no file, no message,
+    // and a teacher who thinks the paper is sitting in her Downloads folder
+    console.error(err);
+    if (btn) btn.textContent = '⚠️ failed';
+    statusSurface().say(`Couldn't save ${p.name || 'that paper'}: ${err.message}. Try the Check screen and copy the text instead.`);
   } finally {
-    if (btn) setTimeout(() => { btn.disabled = false; btn.textContent = old; }, 1800);
+    if (btn) setTimeout(() => { btn.disabled = false; btn.textContent = old; }, 2200);
   }
 }
 
 async function buildAllZip() {
   const zip = new JSZip();
-  const used = new Set();
-  for (const p of papers) {
-    if (p.status !== 'done') continue;
-    let name = outName(p, p.kind === 'docx' ? 'docx' : 'txt');
-    let n = 2;
-    while (used.has(name)) name = name.replace(/(-scrubbed)/, `$1 (${n++})`);
-    used.add(name);
+  const plan = plannedNames();
+  for (const { p, name } of plan) {
     if (p.kind === 'docx') zip.file(name, await buildScrubbedDocx(p));
     else zip.file(name, scrubbedPlainTextFor(p));
   }
+  // built last: scrubbedPlainTextFor/buildScrubbedDocx refresh each paper's
+  // unscrubMap, so the key reflects exactly the tags in the files beside it
+  zip.file(KEY_FILE_NAME, buildKeyFile(plan));
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
@@ -1191,14 +1351,23 @@ els.helpDialog.addEventListener('click', (e) => {
   if (e.target === els.helpDialog) els.helpDialog.close();
 });
 
-// mode persistence
-document.querySelectorAll('input[name="mode"]').forEach((r) =>
-  r.addEventListener('change', () => { try { localStorage.setItem(MODE_KEY, currentMode()); } catch { } }));
+// safe-file-name preference — remembered per device, both checkboxes stay in sync
+function setSafeNames(on) {
+  for (const b of [els.safeNames, els.safeNamesBatch]) if (b) b.checked = on;
+  try { localStorage.setItem(SAFENAMES_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+  renderBatchIfVisible();
+}
+for (const b of [els.safeNames, els.safeNamesBatch]) {
+  if (b) b.addEventListener('change', () => setSafeNames(b.checked));
+}
 
 // ---------------------------------------------------------------- init
 try {
-  if (localStorage.getItem(MODE_KEY) === 'max') $('modeMax').checked = true;
+  // default ON: a teacher who never finds the checkbox is still protected
+  const saved = localStorage.getItem(SAFENAMES_KEY);
+  for (const b of [els.safeNames, els.safeNamesBatch]) if (b) b.checked = saved !== '0';
   localStorage.removeItem('paperScrubber.roster');   // cleanup: roster feature removed
+  localStorage.removeItem('paperScrubber.mode');     // cleanup: language toggle removed
 } catch { /* private mode */ }
 updateScrubButton();
 

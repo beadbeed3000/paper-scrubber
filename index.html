@@ -75,24 +75,7 @@
         Scans and photos work when the paper is <em>typed</em> — handwriting can't be read.
         <strong>Selecting a whole class set at once is the fast way</strong> — click one file, then press Ctrl+A (⌘A on a Mac).</p>
 
-      <fieldset class="mode-toggle">
-        <legend>What language are the papers in?</legend>
-        <label class="mode-opt">
-          <input type="radio" name="mode" id="modeFast" value="fast" checked>
-          <span class="mode-box">
-            <strong>English</strong>
-            <small>Recommended · 64&nbsp;MB, downloaded once</small>
-          </span>
-        </label>
-        <label class="mode-opt">
-          <input type="radio" name="mode" id="modeMax" value="max">
-          <span class="mode-box">
-            <strong>Spanish, French &amp; more</strong>
-            <small>Foreign-language classes · 266&nbsp;MB, once</small>
-          </span>
-        </label>
-      </fieldset>
-      <p class="mode-note">The first scrub downloads the scrubber and keeps it on this computer. After that it runs with the Wi-Fi off — papers are never uploaded anywhere.</p>
+      <p class="mode-note">The first scrub downloads the scrubber once (64&nbsp;MB) and keeps it on this computer. After that it runs with the Wi-Fi off — papers are never uploaded anywhere.</p>
 
       <button id="btnScrub" class="btn primary big" type="button" disabled>Scrub this paper</button>
 
@@ -110,10 +93,16 @@
     <p id="batchStatus" class="hint"></p>
     <div id="batchProgressWrap" class="progress" hidden><div id="batchProgressBar"></div></div>
     <div id="batchList" class="batch-list"></div>
+    <label class="safe-names">
+      <input type="checkbox" id="safeNamesBatch" checked>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall essay.docx” tells the AI his name before it reads a word. Each paper is saved under its tag instead, and a <code>WHO-IS-WHO</code> key goes in the zip so you can tell them apart.</span>
+    </label>
+
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all scrubbed papers</button>
       <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.
-        <strong>The whole set shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every paper — so you can hand an AI several papers at once and it can keep track of who's who.</p>
+        <strong>The whole set shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every paper — so you can hand an AI several papers at once and it can keep track of who's who.
+        The <code>WHO-IS-WHO</code> file in the zip turns those tags back into your students — keep it, and don't send it to the AI.</p>
     </div>
 
     <details class="unscrub">
@@ -145,6 +134,10 @@
       <button id="btnCopy" class="btn primary" type="button">📋 Copy scrubbed text</button>
       <button id="btnDownloadTxt" class="btn secondary" type="button">Save as .txt</button>
     </div>
+    <label class="safe-names">
+      <input type="checkbox" id="safeNames" checked>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall essay.docx” tells the AI his name before it reads a word, so the paper is saved under its tag instead. Untick to keep the original name.</span>
+    </label>
     <p class="hint small">Give it a quick read before you share it. No tool catches everything — you're still the last set of eyes.</p>
 
     <details class="unscrub">
@@ -167,9 +160,8 @@
       <em>Educational Excellence in the Heart of the Mountains</em></p>
     <p class="feedback-line">Something it missed? An idea to make it better? Email
       <a href="mailto:alex@theholler.org?subject=Paper%20Scrubber%20feedback">alex@theholler.org</a> — teacher feedback shapes this tool.</p>
-    <p class="colophon">Runs entirely in your browser using open AI models —
-      <a href="https://huggingface.co/Isotonic/distilbert_finetuned_ai4privacy_v2" target="_blank" rel="noopener">ai4privacy&nbsp;DistilBERT</a> and
-      <a href="https://huggingface.co/Ar86Bat/multilang-pii-ner" target="_blank" rel="noopener">multilang-pii-ner</a>.
+    <p class="colophon">Runs entirely in your browser using an open AI model —
+      <a href="https://huggingface.co/Isotonic/distilbert_finetuned_ai4privacy_v2" target="_blank" rel="noopener">ai4privacy&nbsp;DistilBERT</a>.
       No accounts, no uploads, no tracking, no charge.
       The <a href="https://github.com/beadbeed3000/paper-scrubber" target="_blank" rel="noopener">code is public</a> — anyone can read exactly what it does.
       <a href="privacy.html">Privacy, in plain English</a>.</p>
@@ -203,7 +195,7 @@
       <ul>
         <li>Nothing leaves the machine. Don't take our word for it — after your first scrub, turn the Wi-Fi off and keep scrubbing.</li>
         <li>Photos and scans work when the paper is typed. Handwriting comes back as alphabet soup, and the app will say so.</li>
-        <li>Teaching Spanish? Pick "Spanish, French &amp; more" before you scrub and the accents come out right.</li>
+        <li>Downloading a paper? It saves under its tag (<code>NAME-4-scrubbed.docx</code>) so the file name doesn't announce the student. A <code>WHO-IS-WHO</code> key comes with a batch — keep it, don't send it.</li>
         <li>Something it missed, or an idea? Email <a href="mailto:alex@theholler.org?subject=Paper%20Scrubber%20feedback">alex@theholler.org</a>.
           There's also a <a href="privacy.html">plain-English privacy page</a> to forward to your principal.</li>
       </ul>

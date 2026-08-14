@@ -49,6 +49,25 @@ rezips it. Fonts, spacing, bold/italic, tables — everything else is untouched.
 Names split across formatting runs ("**Jas**mine Carter") are still caught,
 because detection runs on the assembled text, not run-by-run.
 
+**The container is scrubbed too, and this is not optional.** A .docx carries the
+student's name in places no amount of careful reading on the review screen would
+reveal: `docProps/core.xml` (`dc:creator`, `dc:title`, `cp:lastModifiedBy`),
+`docProps/app.xml` (`Company`, `Manager`), the `w:author` / `w:initials` attributes
+on every comment and tracked change, and `word/people.xml`. Before v39 all of that
+rode into the file a teacher uploaded to ChatGPT while the app told her it was
+clean. `stripDocxIdentity()` blanks those values (rather than deleting the parts,
+which would invalidate the package) on every Word download.
+
+**Safe file names** (tick-box, on by default, remembered per device): a file called
+`Dalton Hall essay.docx` names the student before the AI reads a word. With the box
+ticked each paper saves under its own tag — `NAME-4-scrubbed.docx` — and a batch zip
+carries `WHO-IS-WHO — keep this, do not send it.txt` mapping every tag back to a
+real student and original filename. That key file is also the first *durable* record
+of the tag mapping: until now it lived only in memory and died with the tab.
+The tag is taken from the first NAME finding in the paper (the byline, in practice);
+if the heuristic picks the teacher's name instead, the key file shows exactly what it
+chose and the mapping is still one-to-one. Unticking keeps the original filenames.
+
 **How PDFs work:** text is extracted in the browser with Mozilla's pdf.js
 (vendored, ~1.8 MB, loaded only when a PDF arrives, pre-cached for offline).
 Typed PDFs — Google Docs and Word exports, which is what students turn in —
@@ -65,9 +84,7 @@ pdf.js first, then read. OCR reads **typed print** well and **handwriting
 essentially not at all**, so every OCR'd paper is labeled "read from a photo —
 double-check it" in the batch list and carries a warning banner on the review
 screen: misread print can hide a name from the detector, and the teacher is
-the backstop. Reads English print — and **Spanish** too when the
-"Spanish, French & more" mode is selected (accents and ñ come out right;
-the language toggle the teacher already set tells OCR what to expect).
+the backstop. Reads English print.
 iPhone HEIC photos can't be decoded by most browsers — the app tells the
 teacher to use "Most Compatible" camera format or share as JPEG.
 
@@ -84,12 +101,17 @@ image. Nothing else needs to change.
 
 ## The two engines
 
-| Engine | Model | Size | License | Notes |
-|---|---|---|---|---|
-| Fast · English (default) | [distilbert_finetuned_ai4privacy_v2 (ONNX)](https://huggingface.co/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX) | 64 MB | CC BY-NC 4.0 | Best for most papers |
-| Max accuracy · multilingual | [multilang-pii-ner (ONNX)](https://huggingface.co/onnx-community/multilang-pii-ner-ONNX) | 266 MB | MIT | XLM-RoBERTa; trained on EN/DE/IT/FR, handled Spanish well in testing |
+| Engine | Model | Size | License |
+|---|---|---|---|
+| English (the only one) | [distilbert_finetuned_ai4privacy_v2 (ONNX)](https://huggingface.co/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX) | 64 MB | CC BY-NC 4.0 |
 
-Both are token-classification models trained on ai4privacy datasets. On top of the
+A multilingual second engine (`multilang-pii-ner`, 266 MB) and Spanish OCR shipped
+for a while and were **removed in August 2026** — Alex's call: the papers are
+English, and the language toggle was a decision teachers shouldn't have to make.
+Restoring it is a small change (a second `MODELS` entry, the `spa.traineddata.gz`
+file, and the toggle markup) if a foreign-language teacher ever asks.
+
+It's a token-classification model trained on ai4privacy data. On top of the
 model, `app.js` adds deterministic regex rules (email, US phone, SSN, school names),
 boundary extension (models often catch "Jasmine" but not "Carter", or "118" but not
 "Deer Creek Road"), and a "name echo" pass: once a name is caught anywhere,
@@ -133,7 +155,7 @@ installed the PWA should reinstall from the new address.
 **Alternative: fully self-host on a KVEC server** — the app is 100% static files;
 upload this folder and link to it. Sizes, so there are no surprises: the app
 folder is **~35 MB** (mostly the AI runtime in `vendor/`). Optionally also
-self-host the models (+64 MB English, +266 MB multilingual) to remove the app's
+self-host the model (+64 MB) to remove the app's
 only third-party request (huggingface.co) — that's the fix if a district
 firewall blocks Hugging Face. Requirements and notes:
 
@@ -187,6 +209,11 @@ is unchanged (the doc already lives in Google; nothing new sees it). The app
 side accepts `#gdoc=<base64url JSON {t: title, x: text}>`, strips the fragment
 from history immediately, and auto-scrubs. Deployment steps (and the honest
 Marketplace-verification caveats) are in that folder's README.
+
+- **Images inside a .docx are left alone.** A photo of the student embedded in the
+  paper survives into the download. Deleting `word/media/*` would silently gut the
+  student's work, so the tool doesn't; a paper built around a personal photo needs
+  the teacher's judgement.
 
 A class-roster feature (paste your class list, always scrub those names) was built
 and then **removed on purpose** — it added setup steps for teachers, and testing

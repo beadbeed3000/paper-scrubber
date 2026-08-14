@@ -124,23 +124,21 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
 .filetypes strong { color: var(--ink); }
 
 /* ---------- language toggle ---------- */
-.mode-toggle {
-  display: grid; grid-template-columns: 1fr 1fr; gap: .6rem;
-  border: none; padding: 0; margin: 0;
-}
-.mode-toggle legend {
-  font-weight: 700; font-size: .9rem; padding: 0 0 .45rem; color: var(--blue-deep);
-}
-.mode-opt input { position: absolute; opacity: 0; }
-.mode-box {
-  display: block; padding: .7rem .9rem; height: 100%; cursor: pointer;
-  border: 2px solid var(--rule); border-radius: 4px; background: #fff;
-}
-.mode-box strong { font-size: .96rem; }
-.mode-box small { display: block; color: var(--ink-soft); font-size: .79rem; margin-top: .1rem; }
-.mode-opt input:checked + .mode-box { border-color: var(--green); background: var(--green-wash); }
-.mode-opt input:focus-visible + .mode-box { outline: 3px solid #bcdca4; }
 .mode-note { font-size: .82rem; color: var(--ink-soft); margin: .6rem 0 1.15rem; }
+
+/* ---------- safe file names ---------- */
+.safe-names {
+  display: flex; gap: .6rem; align-items: flex-start;
+  margin: 1rem 0 .4rem; padding: .7rem .9rem;
+  background: var(--green-wash); border: 1px solid #c8e0b4; border-radius: 4px;
+  font-size: .85rem; line-height: 1.5; cursor: pointer;
+}
+.safe-names input { margin: .2rem 0 0; flex: none; width: 1.05rem; height: 1.05rem; accent-color: var(--green-deep); }
+.safe-names strong { color: var(--ink); }
+.safe-names code {
+  background: #fff; color: var(--blue-deep);
+  padding: .05em .3em; border-radius: 3px; font-size: .93em;
+}
 
 /* ---------- buttons ---------- */
 .btn {
