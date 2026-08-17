@@ -126,7 +126,28 @@ regex-only version wearing the name would be worse than none.
 3. **Real-hardware pass** — five minutes each on a school Chromebook and an
    iPhone: scrub the sample, take a photo of a typed page, try the photo
    library and the Install button. Everything so far was tested in emulation.
-4. **Watch the inbox** — the footer email is the feature pipeline now. A
+4. **IEP deep check (probed August 2026, not yet built)** — Alex's boss wants
+   contextual identifiers tagged (diagnoses, family members, churches,
+   employers, benefits — the "neighbor test" layer). Zero-shot GLiNER was
+   probed in-browser on fake IEP text (`onnx-community/gliner_multi_pii-v1`,
+   Apache-2.0, via the `gliner` npm package bundled with esbuild):
+   - **fp16 (553 MB) works**: ~90% of planted contextual identifiers caught
+     sentence-by-sentence at threshold 0.3 (autism 0.73, Adderall 1.00,
+     First Baptist Church 0.63, Hensley Auto Parts 0.99, free lunch 0.35,
+     grandma/aunt/uncle/sister all caught). ~1.2 s/sentence on a desktop.
+   - **int8/quantized (333 MB) is unusable** — ~15% recall, scores collapse
+     with input length. Same quantization disease as Piiranha. Do not ship it.
+   - **Wrapper gotchas**: labels must be SHORT noun phrases ("health
+     condition", not descriptions); multi-text batch calls silently return
+     empty — call one text at a time; the gliner npm package's Node path has a
+     broken ort binding, browser path works; single-pronoun "person" hits
+     ("He", "I") need filtering.
+   - Integration sketch: opt-in "IEP deep check" for staff laptops (553 MB
+     one-time, minutes per document), findings land as underlined
+     flagged-not-scrubbed, same review UX. Long-term: distill — generate
+     synthetic IEPs, label them with the fp16 model, fine-tune a 64 MB model
+     on the IEP categories. No real student data in training, ever.
+5. **Watch the inbox** — the footer email is the feature pipeline now. A
    foreign-language teacher asking is what brings the multilingual engine and
    the language toggle back (README says what to restore).
 5. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
