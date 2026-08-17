@@ -23,6 +23,12 @@ export const TYPES = {
   ROOM:     { ph: 'ROOM',     title: 'Bus & room numbers' },
   GRADE:    { ph: 'GRADE',    title: 'Grade levels (you decide)' },
   HEALTH:   { ph: 'HEALTH',   title: 'Health & diagnoses (you decide)' },
+  // deep-check categories (IEP deep check) — all flagged, never auto-scrubbed
+  FAMILY:   { ph: 'FAMILY',   title: 'Family & relationships (you decide)' },
+  CHURCH:   { ph: 'CHURCH',   title: 'Churches & religious groups (you decide)' },
+  WORK:     { ph: 'WORKPLACE',title: 'Businesses & employers (you decide)' },
+  ACTIVITY: { ph: 'ACTIVITY', title: 'Teams, clubs & activities (you decide)' },
+  BENEFIT:  { ph: 'BENEFIT',  title: 'Benefits & services (you decide)' },
 };
 
 export const LABEL_TO_TYPE = {

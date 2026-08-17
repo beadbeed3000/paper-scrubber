@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v40';
+const CACHE = 'paper-scrubber-v42';
 const ASSETS = [
   './',
   './index.html',
@@ -30,6 +30,10 @@ const ASSETS = [
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer_config.json',
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/special_tokens_map.json',
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/onnx/model_quantized.onnx',
+  // deep-check shell (small). The 553 MB of model parts are NOT precached —
+  // they land in this same cache at first deep-check use, via the fetch handler.
+  './deep-check-worker.mjs',
+  './vendor/gliner-bundle.mjs',
 ];
 
 self.addEventListener('install', (e) => {

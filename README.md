@@ -33,6 +33,16 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    can identify a student, so the call belongs to the human. Bus/room numbers
    (ROOM) scrub like any other number. The summary line counts both: "Replaced
    12 · 3 more underlined for your judgement."
+
+   **IEP deep check** (checkbox, off by default): a second, heavier AI — zero-shot
+   GLiNER fp16, 553 MB one time, running in its own worker so the page stays
+   responsive — hunts for what no fixed label set covers: diagnoses it's never
+   seen, family members, churches, employers, teams and clubs, government
+   benefits ("free lunch" gets flagged as a benefit). Everything it finds lands
+   underlined for the reviewer's judgement; names it catches that the main model
+   missed are scrubbed. Built for IEPs and eval reports on staff machines —
+   plan on a few extra minutes for a long document. Like everything else it
+   downloads once from this site's own address and then works offline.
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 6. If the AI's reply mentions or quotes what was scrubbed ("Nice hook,

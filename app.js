@@ -49,7 +49,37 @@ const META_AUTHOR_ATTRS = /\s(?:w:author|w:initials|w:lastModifiedBy)="[^"]*"/g;
 // can't help with an IEP it can't see — but in a small school those same
 // details can identify a student on their own. The tool points; the teacher
 // decides. Everything else still scrubs by default.
-const DEFAULT_KEPT = new Set(['HEALTH', 'GRADE']);
+const DEFAULT_KEPT = new Set(['HEALTH', 'GRADE', 'FAMILY', 'CHURCH', 'WORK', 'ACTIVITY', 'BENEFIT']);
+const DEEP_KEY = 'paperScrubber.deepCheck';
+
+// deep-check label → app category. "person" maps to NAME and is *scrubbed*
+// (a name the main model missed is a leak, not a judgement call) but only
+// after looksLikeRealName filters GLiNER's pronoun/role noise.
+const DEEP_LABEL_TO_TYPE = {
+  'person': 'NAME',
+  'health condition': 'HEALTH', 'disability': 'HEALTH', 'medication': 'HEALTH', 'assistive device': 'HEALTH',
+  'family relationship': 'FAMILY',
+  'religious group': 'CHURCH',
+  'company': 'WORK',
+  'sports team or club': 'ACTIVITY',
+  'school': 'ORG',
+  'government benefit': 'BENEFIT',
+};
+// class-standing words GLiNER tags as "family relationship"; junk as flags
+const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'sibling', 'siblings', 'family', 'parent', 'parents']);
+const DEEP_NAME_STOP = new Set(['he', 'she', 'i', 'we', 'they', 'you', 'it', 'him', 'her', 'them', 'his', 'hers', 'my', 'me', 'our', 'us', 'your', 'their', 'who', 'mr', 'mrs', 'ms', 'miss', 'dr', 'student', 'students', 'teacher', 'nurse', 'mom', 'dad', 'mother', 'father', 'parents', 'sister', 'brother', 'grandma', 'grandmother', 'grandpa', 'grandfather', 'aunt', 'uncle', 'cousin', 'caseworker', 'counselor', 'guardian']);
+function looksLikeRealName(s) {
+  const words = s.trim().split(/\s+/);
+  if (!words.length) return false;
+  let hasSubstance = false;
+  for (const w of words) {
+    const clean = w.replace(/[.,;:'’]+$/g, '');
+    if (DEEP_NAME_STOP.has(clean.toLowerCase())) return false;
+    if (!/^\p{Lu}/u.test(clean)) return false;   // every word capitalized, or it's prose
+    if (clean.length >= 3) hasSubstance = true;
+  }
+  return hasSubstance;
+}
 
 // Diagnoses, medications, and assistive devices that show up in K-12
 // paperwork. Deliberately NOT service words (speech therapy, IEP, 504) —
@@ -110,7 +140,7 @@ const els = {
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
   btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
   safeNames: $('safeNames'), safeNamesBatch: $('safeNamesBatch'),
-  roadReady: $('roadReady'),
+  roadReady: $('roadReady'), deepCheck: $('deepCheck'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -329,8 +359,9 @@ function extendEntities(text, list) {
     let extra = 0;
     while (extra < 3) {
       // places never span sentences — "Whitesburg, Kentucky. Email me" must
-      // not swallow "Email" (names keep extending: "Mrs." ends with a period)
-      if ((f.type === 'CITY' || f.type === 'STATE') && /[.!?]$/.test(text.slice(f.start, f.end))) break;
+      // not swallow "Email", and "Hensley Auto Parts. His" must not swallow
+      // "His" (names keep extending: "Mrs." ends with a period)
+      if ((f.type === 'CITY' || f.type === 'STATE' || f.type === 'ADDRESS') && /[.!?]$/.test(text.slice(f.start, f.end))) break;
       const m = text.slice(f.end).match(new RegExp(`^[${GAP}]([\\p{L}'’.\\-]+)`, 'u'));
       if (!m) break;
       const word = m[1];
@@ -372,6 +403,49 @@ function propagateNames(text, list) {
     }
   }
   return extra;
+}
+
+// ---------------------------------------------------------------- deep check
+// GLiNER fp16 in its own worker (deep-check-worker.mjs) — opt-in, heavy,
+// built for IEPs and eval reports on staff laptops. All requests stay on
+// this origin; the worker reassembles the model from its 7 repo slices.
+let deepWorker = null;
+let deepSeq = 0;
+let deepUi = null;
+const deepPending = new Map();
+
+function deepCheckOn() { return !!els.deepCheck?.checked; }
+
+function runDeepCheck(text, ui) {
+  if (!deepWorker) {
+    deepWorker = new Worker(new URL('deep-check-worker.mjs', document.baseURI), { type: 'module' });
+    deepWorker.onmessage = (e) => {
+      const m = e.data;
+      if (m.kind === 'progress') {
+        deepUi?.say(m.label);
+        if (typeof m.pct === 'number') deepUi?.bar(m.pct);
+        return;
+      }
+      const p = deepPending.get(m.id);
+      if (!p) return;
+      deepPending.delete(m.id);
+      if (m.kind === 'result') p.resolve(m.spans);
+      else p.reject(new Error(m.message));
+    };
+    deepWorker.onerror = (e) => {
+      const err = new Error(e.message || 'the deep-check worker crashed');
+      for (const p of deepPending.values()) p.reject(err);
+      deepPending.clear();
+      deepWorker.terminate();
+      deepWorker = null;   // next scrub can retry from scratch
+    };
+  }
+  deepUi = ui;
+  const id = ++deepSeq;
+  return new Promise((resolve, reject) => {
+    deepPending.set(id, { resolve, reject });
+    deepWorker.postMessage({ id, text });
+  });
 }
 
 // ---------------------------------------------------------------- detection
@@ -437,6 +511,31 @@ async function detectText(text, ui, paperName = '') {
     list = mergeAdjacent(extendEntities(text, list), text);
   }
   list = list.filter((f) => text.slice(f.start, f.end).trim().length >= 2);
+
+  // opt-in second pass for contextual identifiers. A deep-check failure must
+  // never kill the scrub — the regular pass has already done its job.
+  if (deepCheckOn()) {
+    try {
+      const deep = await runDeepCheck(text, ui);
+      for (const d of deep) {
+        const type = DEEP_LABEL_TO_TYPE[d.label];
+        if (!type) continue;
+        // hits that will SCRUB (names, orgs) must look like proper nouns —
+        // GLiNER also tags "school nurse" and "his grade" as school, and
+        // auto-replacing those mangles the sentence for no privacy gain
+        if ((type === 'NAME' || type === 'ORG') && !looksLikeRealName(d.text)) continue;
+        if (DEEP_FLAG_STOP.has(d.text.trim().toLowerCase())) continue;
+        if (list.some((f) => d.start < f.end && d.end > f.start)) continue;  // regular findings win
+        list.push({ type, start: d.start, end: d.end, score: d.score, source: 'deep' });
+        list.sort((a, b) => a.start - b.start);
+      }
+      list = mergeAdjacent(list, text);
+    } catch (err) {
+      console.error(err);
+      ui.say(`The deep check couldn't run (${err.message}) — regular scrubbing was still applied.`);
+    }
+  }
+
   return list.map((f, i) => ({ ...f, id: i, enabled: !DEFAULT_KEPT.has(f.type) }));
 }
 
@@ -1391,11 +1490,18 @@ for (const b of [els.safeNames, els.safeNamesBatch]) {
   if (b) b.addEventListener('change', () => setSafeNames(b.checked));
 }
 
+// deep check preference — off by default (it's a heavy, staff-laptop feature)
+els.deepCheck?.addEventListener('change', () => {
+  try { localStorage.setItem(DEEP_KEY, els.deepCheck.checked ? '1' : '0'); } catch { /* private mode */ }
+  updateRoadReady();   // enabling it changes what road-ready means
+});
+
 // ---------------------------------------------------------------- init
 try {
   // default ON: a teacher who never finds the checkbox is still protected
   const saved = localStorage.getItem(SAFENAMES_KEY);
   for (const b of [els.safeNames, els.safeNamesBatch]) if (b) b.checked = saved !== '0';
+  if (els.deepCheck) els.deepCheck.checked = localStorage.getItem(DEEP_KEY) === '1';
   localStorage.removeItem('paperScrubber.roster');   // cleanup: roster feature removed
   localStorage.removeItem('paperScrubber.mode');     // cleanup: language toggle removed
 } catch { /* private mode */ }
@@ -1450,8 +1556,16 @@ const ROAD_CRITICAL = [
 
 async function isRoadReady() {
   if (!('caches' in window) || !navigator.serviceWorker?.controller) return false;
+  const need = [...ROAD_CRITICAL];
+  if (deepCheckOn()) {
+    // deep check enabled = its 553 MB of parts must be on the device too
+    need.push('./deep-check-worker.mjs', './vendor/gliner-bundle.mjs',
+      './vendor/gliner-ort/ort-wasm-simd-threaded.mjs', './vendor/gliner-ort/ort-wasm-simd-threaded.wasm',
+      './models/onnx-community/gliner_multi_pii-v1/tokenizer.json');
+    for (let i = 0; i < 7; i++) need.push(`./models/onnx-community/gliner_multi_pii-v1/onnx/model_fp16.onnx.part${String(i).padStart(2, '0')}`);
+  }
   const hits = await Promise.all(
-    ROAD_CRITICAL.map((u) => caches.match(new URL(u, document.baseURI).href).then((r) => !!r).catch(() => false)),
+    need.map((u) => caches.match(new URL(u, document.baseURI).href).then((r) => !!r).catch(() => false)),
   );
   return hits.every(Boolean);
 }

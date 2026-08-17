@@ -257,6 +257,14 @@ mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 .t-room     { background: #cfe3f5; color: #14446e; }
 .t-grade    { background: #e4e9d3; color: #4a5220; }
 .t-health   { background: #f3d9c4; color: #7a3d10; }
+.t-family   { background: #ead9f0; color: #5e2a70; }
+.t-church   { background: #d9e4f0; color: #24466e; }
+.t-work     { background: #d8ecdf; color: #1e5c38; }
+.t-activity { background: #f0e6d2; color: #6e5312; }
+.t-benefit  { background: #e2dff0; color: #3d3670; }
+
+.deep-check { background: var(--blue-wash); border-color: #cfdff0; }
+.deep-check input { accent-color: var(--blue); }
 
 /* ---------- un-scrub ---------- */
 .unscrub { margin-top: 1.2rem; border-top: 1px dashed var(--rule); padding-top: .9rem; }

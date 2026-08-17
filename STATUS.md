@@ -126,11 +126,23 @@ regex-only version wearing the name would be worse than none.
 3. **Real-hardware pass** — five minutes each on a school Chromebook and an
    iPhone: scrub the sample, take a photo of a typed page, try the photo
    library and the Install button. Everything so far was tested in emulation.
-4. **IEP deep check (probed August 2026, not yet built)** — Alex's boss wants
-   contextual identifiers tagged (diagnoses, family members, churches,
-   employers, benefits — the "neighbor test" layer). Zero-shot GLiNER was
-   probed in-browser on fake IEP text (`onnx-community/gliner_multi_pii-v1`,
-   Apache-2.0, via the `gliner` npm package bundled with esbuild):
+4. **IEP deep check — BUILT, v42** (probed then shipped August 2026; Alex's
+   team runs 16 GB staff laptops). Opt-in checkbox on the input view, off by
+   default. Zero-shot GLiNER fp16 in a dedicated worker
+   (`deep-check-worker.mjs` + `vendor/gliner-bundle.mjs`, esbuild bundle of
+   the `gliner` npm package). The 553 MB model lives in the repo as seven
+   <100 MB slices (`models/onnx-community/gliner_multi_pii-v1/onnx/*.part*`
+   — GitHub's file cap) reassembled in the worker; tokenizer fetches aim at
+   our own `models/` via the bundle's exported `xenv`. Deep hits map:
+   person→NAME (scrubbed, `looksLikeRealName` filters pronoun/role noise),
+   school→ORG (scrubbed, same filter), health/disability/medication/assistive
+   device→HEALTH, family relationship→FAMILY, religious group→CHURCH,
+   company→WORK, sports team or club→ACTIVITY, government benefit→BENEFIT —
+   all the new categories are flagged-not-scrubbed (`DEFAULT_KEPT`).
+   Regular findings always win overlaps; `DEEP_FLAG_STOP` drops
+   junior/senior-style junk. A deep-check failure degrades to a normal scrub
+   with a message, never a dead page. Road-ready check includes the deep
+   assets only while the box is ticked. Probe numbers that justified all this:
    - **fp16 (553 MB) works**: ~90% of planted contextual identifiers caught
      sentence-by-sentence at threshold 0.3 (autism 0.73, Adderall 1.00,
      First Baptist Church 0.63, Hensley Auto Parts 0.99, free lunch 0.35,
