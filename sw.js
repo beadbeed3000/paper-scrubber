@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v39';
+const CACHE = 'paper-scrubber-v40';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,13 @@ const ASSETS = [
   './vendor/tesseract-worker.min.js',
   './vendor/tesseract-core-simd-lstm.wasm.js',
   './vendor/eng.traineddata.gz',
+  // the AI model ships with the app — one visit on Wi-Fi = road-ready,
+  // and no request ever goes to a third party
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/config.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer_config.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/special_tokens_map.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/onnx/model_quantized.onnx',
 ];
 
 self.addEventListener('install', (e) => {

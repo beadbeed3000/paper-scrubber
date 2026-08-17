@@ -19,6 +19,10 @@ export const TYPES = {
   USERNAME: { ph: 'USERNAME', title: 'Usernames' },
   PASSWORD: { ph: 'PASSWORD', title: 'Passwords' },
   LINK:     { ph: 'LINK',     title: 'Links & online addresses' },
+  // neighbor-test categories — GRADE and HEALTH start flagged, not scrubbed
+  ROOM:     { ph: 'ROOM',     title: 'Bus & room numbers' },
+  GRADE:    { ph: 'GRADE',    title: 'Grade levels (you decide)' },
+  HEALTH:   { ph: 'HEALTH',   title: 'Health & diagnoses (you decide)' },
 };
 
 export const LABEL_TO_TYPE = {

@@ -18,11 +18,21 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    anywhere on the page. Files start scrubbing automatically; drop a whole class
    set at once for **batch mode** (per-paper results + "Download all N scrubbed
    papers (one .zip)").
-3. First use downloads the AI once (64 MB English engine); after that it's
-   stored on the device and works offline.
+3. The AI ships with the app and is saved on the device automatically on the
+   first visit (~100 MB total, from this site's own address — no third party
+   is ever contacted). The front page shows “✅ Road-ready” when the device
+   can scrub with no internet at all — install it as an app (Chrome/Edge:
+   address-bar install icon; Mac Safari: File → Add to Dock) and it's a
+   laptop tool for IEP reviews on the road.
 4. Check: every name, address, birthdate, email, phone, etc. is highlighted and
    replaced with `[NAME 1]`, `[EMAIL]`, … Click any highlight to put the real word
    back (book characters, historical figures). Category chips toggle whole groups.
+   **Neighbor-test categories** — diagnoses/medications (HEALTH) and grade levels
+   (GRADE) — come back *underlined, not scrubbed*: an AI usually needs them to be
+   useful (an IEP without the diagnosis is pointless), but in a small school they
+   can identify a student, so the call belongs to the human. Bus/room numbers
+   (ROOM) scrub like any other number. The summary line counts both: "Replaced
+   12 · 3 more underlined for your judgement."
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 6. If the AI's reply mentions or quotes what was scrubbed ("Nice hook,

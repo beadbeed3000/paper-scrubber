@@ -2,7 +2,34 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated August 2026, live version `paper-scrubber-v39`.
+stands. Last updated August 2026, live version `paper-scrubber-v40`.
+
+## What changed in v40 (road-ready + neighbor test)
+
+Built for Alex's team running IEP reviews on the road (Mac + Windows laptops,
+no-signal buildings, district networks that block huggingface.co):
+
+- **The model ships with the app** (`models/`, 64 MB in the repo). Loaded by
+  pointing `env.remoteHost`/`env.remotePathTemplate` at our own `models/` folder —
+  NOT `env.localModelPath`, which in this transformers.js build (4.2.0) loses the
+  tokenizer (`this.tokenizer is not a function`; config + weights load, tokenizer
+  comes back undefined). The remote-path-aimed-at-ourselves route uses the code
+  path that has worked since day one. No request ever leaves our origin now.
+- **Road-ready line** on the front page: verifies every scrub-critical file
+  (app, runtime, model, PDF/OCR readers) is actually in the device cache and
+  says so; polls until the background precache finishes. The install story for
+  the team is: open link on Wi-Fi → install as app → wait for the green line.
+- **Neighbor-test categories**: HEALTH (diagnoses/meds/assistive devices — curated
+  wordlist, no service terms like "speech therapy" which appear in every IEP) and
+  GRADE start **kept-but-underlined** (`DEFAULT_KEPT`) — flagged for the teacher's
+  judgement, one click or one category chip to scrub. ROOM (bus/room numbers)
+  scrubs by default. Help dialog has a "neighbor test" section: the tool does
+  direct identifiers, the human judges identifying *combinations*.
+- Existing installs re-download the 64 MB model once from our origin (cache keys
+  changed from huggingface.co URLs); old HF entries linger harmlessly in
+  `transformers-cache`.
+- Storage note: the model may be cached twice (SW precache + transformers-cache),
+  ~130 MB total. Accepted for robustness.
 
 ## What changed in v38–v39 (audit fixes)
 

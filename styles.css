@@ -65,6 +65,8 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
   font-size: .84rem; color: var(--ink-soft);
 }
 .trust-note a { color: var(--blue); }
+.road-ready { padding-top: 0; margin-top: -0.9rem; font-weight: 600; }
+.road-ready.ok { color: var(--green-deep); }
 
 /* ---------- steps ---------- */
 .steps {
@@ -252,6 +254,9 @@ mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 .t-dob      { background: #f9bfc7; color: #85253a; }
 .t-date     { background: #fbd7ae; color: #8a4a12; }
 .t-age      { background: #fbeaa0; color: #755b0c; }
+.t-room     { background: #cfe3f5; color: #14446e; }
+.t-grade    { background: #e4e9d3; color: #4a5220; }
+.t-health   { background: #f3d9c4; color: #7a3d10; }
 
 /* ---------- un-scrub ---------- */
 .unscrub { margin-top: 1.2rem; border-top: 1px dashed var(--rule); padding-top: .9rem; }

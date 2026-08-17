@@ -7,7 +7,15 @@ import { pipeline, env } from './vendor/transformers.min.js';
 import { TYPES, LABEL_TO_TYPE } from './labels.js';
 import { SAMPLE } from './sample.js';
 
-env.allowLocalModels = false;          // fetch models from the HF hub (cached by the browser)
+// The model ships WITH the app (models/), so nothing is ever fetched from a
+// third party — and one visit on Wi-Fi leaves a laptop fully road-ready for
+// IEP reviews in buildings with no signal and districts that block huggingface.co.
+// Done by pointing the library's ordinary "remote" loader at our own address
+// (env.localModelPath in this build loses the tokenizer — the remote path is
+// the one that has worked since day one, so reuse it aimed at ourselves).
+env.allowLocalModels = false;
+env.remoteHost = new URL('models/', document.baseURI).href;
+env.remotePathTemplate = '{model}/';
 // absolute URL so it resolves the same from the page and from inside the library
 env.backends.onnx.wasm.wasmPaths = new URL('vendor/', document.baseURI).href;
 // run inference in a worker so the page never freezes mid-scan — matters most
@@ -35,6 +43,21 @@ const SAFENAMES_KEY = 'paperScrubber.safeNames';
 const META_PARTS = /^(docProps\/|word\/people\.xml$)/;
 const META_AUTHOR_ATTRS = /\s(?:w:author|w:initials|w:lastModifiedBy)="[^"]*"/g;
 
+// Findings in these categories start KEPT (dotted underline, one click to
+// scrub) rather than replaced. They're the "neighbor test" categories: a
+// diagnosis or a grade level is often the whole point of the document — an AI
+// can't help with an IEP it can't see — but in a small school those same
+// details can identify a student on their own. The tool points; the teacher
+// decides. Everything else still scrubs by default.
+const DEFAULT_KEPT = new Set(['HEALTH', 'GRADE']);
+
+// Diagnoses, medications, and assistive devices that show up in K-12
+// paperwork. Deliberately NOT service words (speech therapy, IEP, 504) —
+// those appear in every special-ed document and flagging them is pure noise.
+// Bare "anxiety"/"depression" are left out too: they're everyday essay words
+// (and the Great Depression is a unit in every KY history class).
+const HEALTH_TERMS = 'autism|autistic|Asperger(?:[\'’]s)?|ADHD|dyslexi[ac]|dysgraphia|dyscalculia|apraxia|aphasia|anxiety disorder|panic disorder|clinical depression|major depression|bipolar|epilep(?:sy|tic)|seizures?|diabet(?:es|ic)|asthma(?:tic)?|cerebral palsy|Down syndrome|muscular dystrophy|cystic fibrosis|sickle cell|traumatic brain injury|wheelchair|hearing aids?|cochlear implants?|insulin|EpiPen|inhaler|Adderall|Ritalin|Concerta|Vyvanse|Strattera|Focalin|Zoloft|Prozac|Lexapro|Abilify';
+
 const REGEX_RULES = [
   { type: 'EMAIL', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
   { type: 'PHONE', re: /(?:\+?1[\s.\-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.\-])\d{3}[\s.\-]\d{4}(?!\d)/g },
@@ -50,6 +73,11 @@ const REGEX_RULES = [
   // capitalized pattern above steps right over. Kept as its own all-caps rule
   // rather than an /i flag, so ordinary prose ("back in middle school") stays put.
   { type: 'ORG',   re: /\b(?:[A-ZÀ-Þ][A-ZÀ-Þ'’\-]+ ){1,4}(?:ELEMENTARY|MIDDLE|HIGH|ACADEMY|UNIVERSITY|COLLEGE)(?: SCHOOL)?\b|\b(?:[A-ZÀ-Þ][A-ZÀ-Þ'’\-]+ ){1,4}SCHOOL\b/g },
+  // neighbor-test categories (see DEFAULT_KEPT above — GRADE and HEALTH are
+  // flagged, not auto-scrubbed; bus/room numbers scrub like any other number)
+  { type: 'ROOM',   re: /\b(?:Bus|Room|Rm)\.?\s*#?\s*\d{1,4}\b/gi },
+  { type: 'GRADE',  re: /\b(?:[1-9]|1[0-2]|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth)(?:st|nd|rd|th)?[- ]grade(?:rs?)?\b|\bkindergart(?:en|ner)\b/gi },
+  { type: 'HEALTH', re: new RegExp(`\\b(?:${HEALTH_TERMS})\\b`, 'gi') },
 ];
 
 // Google Docs and Word sprinkle non-breaking and thin spaces through exported
@@ -82,6 +110,7 @@ const els = {
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
   btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
   safeNames: $('safeNames'), safeNamesBatch: $('safeNamesBatch'),
+  roadReady: $('roadReady'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -408,7 +437,7 @@ async function detectText(text, ui, paperName = '') {
     list = mergeAdjacent(extendEntities(text, list), text);
   }
   list = list.filter((f) => text.slice(f.start, f.end).trim().length >= 2);
-  return list.map((f, i) => ({ ...f, id: i, enabled: true }));
+  return list.map((f, i) => ({ ...f, id: i, enabled: !DEFAULT_KEPT.has(f.type) }));
 }
 
 // ---------------------------------------------------------------- docx engine
@@ -884,11 +913,12 @@ function renderResults() {
   renderLegend();
 
   const n = p.findings.filter((f) => f.enabled).length;
+  const kept = p.findings.length - n;
   els.summaryLine.textContent = p.findings.length === 0
     ? 'No personal information found 🎉'
     : n === 0
       ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'} — all kept as-is.`
-      : `Replaced ${n} personal detail${n === 1 ? '' : 's'}.`;
+      : `Replaced ${n} personal detail${n === 1 ? '' : 's'}${kept ? ` · ${kept} more underlined for your judgement` : ''}.`;
 
   paperUnscrub.render();   // keep the un-scrubbed preview in sync with toggles
 }
@@ -1401,8 +1431,52 @@ function handleGdocFragment() {
 window.addEventListener('hashchange', handleGdocFragment);
 handleGdocFragment();
 
+// ---------------------------------------------------------------- road-ready
+// "Installed" only counts if it works in a building with no signal. This
+// checks that every file a scrub needs — app, AI runtime, model, PDF & photo
+// readers — is actually sitting in this device's cache, and says so.
+const ROAD_CRITICAL = [
+  './', './app.js', './styles.css', './labels.js', './sample.js',
+  './vendor/transformers.min.js', './vendor/jszip.min.js',
+  './vendor/ort-wasm-simd-threaded.asyncify.mjs', './vendor/ort-wasm-simd-threaded.asyncify.wasm',
+  './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
+  './vendor/tesseract.esm.min.js', './vendor/tesseract-worker.min.js',
+  './vendor/tesseract-core-simd-lstm.wasm.js', './vendor/eng.traineddata.gz',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/config.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer_config.json',
+  './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/onnx/model_quantized.onnx',
+];
+
+async function isRoadReady() {
+  if (!('caches' in window) || !navigator.serviceWorker?.controller) return false;
+  const hits = await Promise.all(
+    ROAD_CRITICAL.map((u) => caches.match(new URL(u, document.baseURI).href).then((r) => !!r).catch(() => false)),
+  );
+  return hits.every(Boolean);
+}
+
+let roadPoll = null;
+async function updateRoadReady() {
+  const el = els.roadReady;
+  if (!el) return;
+  if (await isRoadReady()) {
+    el.hidden = false;
+    el.textContent = '✅ Road-ready: everything is saved on this device — scrubbing works with no internet at all.';
+    el.classList.add('ok');
+    if (roadPoll) { clearInterval(roadPoll); roadPoll = null; }
+  } else if (navigator.onLine) {
+    el.hidden = false;
+    el.textContent = '📶 Setting up for offline use in the background (~100 MB, one time). Stay online a few minutes — this line flips to road-ready by itself.';
+    el.classList.remove('ok');
+    if (!roadPoll) roadPoll = setInterval(updateRoadReady, 4000);
+  }
+}
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => { /* dev over plain http is fine */ });
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => updateRoadReady())
+    .catch(() => { /* dev over plain http is fine */ });
   // When a newer version of the app installs, pick it up right away instead of
   // making the teacher visit twice. The `had a controller` guard keeps the very
   // first install (which claims an uncontrolled page) from triggering a reload.
