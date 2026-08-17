@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v42';
+const CACHE = 'paper-scrubber-v43';
 const ASSETS = [
   './',
   './index.html',
@@ -34,6 +34,13 @@ const ASSETS = [
   // they land in this same cache at first deep-check use, via the fetch handler.
   './deep-check-worker.mjs',
   './vendor/gliner-bundle.mjs',
+  // the De-Identifier's front door (shares every other asset with the scrubber)
+  './deid/',
+  './deid/index.html',
+  './manifest-deid.webmanifest',
+  './icons/deid-favicon.svg',
+  './icons/deid-192.png',
+  './icons/deid-512.png',
 ];
 
 self.addEventListener('install', (e) => {

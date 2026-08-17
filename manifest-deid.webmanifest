@@ -1,0 +1,16 @@
+{
+  "id": "./deid/",
+  "name": "De-Identifier — a KVEC staff tool",
+  "short_name": "De-Identifier",
+  "description": "De-identify IEPs, eval reports, and student records before they go to an AI. Runs 100% on your device. A staff tool from the Kentucky Valley Educational Cooperative.",
+  "start_url": "./deid/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1e9",
+  "theme_color": "#1e5c38",
+  "icons": [
+    { "src": "icons/deid-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/deid-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/deid-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

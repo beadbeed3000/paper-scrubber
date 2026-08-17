@@ -34,6 +34,13 @@ main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
 
 /* ---------- masthead ---------- */
 .masthead { background: var(--blue); color: #fff; padding-top: 1.5rem; }
+/* the De-Identifier wears the ridge green so an installed pair of apps —
+   and a pair of open tabs — are never mistaken for each other */
+.masthead.deid { background: var(--green-deep); }
+.masthead.deid .ridge-back { fill: var(--blue); opacity: .45; }
+.masthead.deid .tagline, .masthead.deid .coop-text { color: #d9ecd0; }
+body[data-tool="deid"] .steps .num { background: var(--blue); }
+body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
 .masthead-inner {
   max-width: 860px; margin: 0 auto; padding: 0 1rem .25rem;
   display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem;

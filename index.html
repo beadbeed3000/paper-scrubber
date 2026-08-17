@@ -20,7 +20,7 @@
 <meta name="theme-color" content="#1b5ea8">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-tool="scrubber">
 
 <header class="masthead">
   <div class="masthead-inner">
@@ -77,11 +77,6 @@
         <strong>Selecting a whole class set at once is the fast way</strong> — click one file, then press Ctrl+A (⌘A on a Mac).</p>
 
       <p class="mode-note">The first scrub downloads the scrubber once (64&nbsp;MB) and keeps it on this computer. After that it runs with the Wi-Fi off — papers are never uploaded anywhere.</p>
-
-      <label class="safe-names deep-check">
-        <input type="checkbox" id="deepCheck">
-        <span><strong>IEP deep check</strong> — also hunt for diagnoses, medications, family members, churches, employers, and benefits, and <em>underline them for your judgement</em>. Built for IEPs and eval reports on staff laptops: a one-time 553&nbsp;MB download, and a long document takes a few extra minutes.</span>
-      </label>
 
       <button id="btnScrub" class="btn primary big" type="button" disabled>Scrub this paper</button>
 
@@ -164,6 +159,7 @@
   <div class="footer-inner">
     <p class="coop-line"><strong>Kentucky Valley Educational Cooperative</strong><br>
       <em>Educational Excellence in the Heart of the Mountains</em></p>
+    <p class="sister-tool">Reviewing IEPs or eval reports? That's a job for this tool's staff sibling — the <a href="deid/">De-Identifier</a>.</p>
     <p class="feedback-line">Something it missed? An idea to make it better? Email
       <a href="mailto:alex@theholler.org?subject=Paper%20Scrubber%20feedback">alex@theholler.org</a> — teacher feedback shapes this tool.</p>
     <p class="colophon">Runs entirely in your browser using an open AI model —
@@ -210,6 +206,7 @@
         <li>The bar for truly de-identified school records is: <em>could a neighbor who knows the family recognize this student?</em> Names, numbers, and schools are the tool's job. <strong>Combinations are yours</strong> — “a seventh grader at a small school who uses a wheelchair” can identify a child with every name scrubbed.</li>
         <li>That's why diagnoses, medications, and grade levels come back <em>underlined, not scrubbed</em> — an AI usually needs them to help (an IEP without the diagnosis is useless), but in a small school they can point at one kid. One click scrubs any of them; the category chips scrub all at once.</li>
         <li>Before sharing anything from an IEP or eval, scan for: the only student who… (sport, instrument, disability, family situation), sibling references, church or team names, a parent's workplace.</li>
+        <li><strong>Working with IEPs or eval reports?</strong> Use the <a href="deid/">De-Identifier</a> — the staff version of this tool, with a second AI dedicated to exactly those contextual details.</li>
       </ul>
     </div>
     <div class="know">

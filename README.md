@@ -1,4 +1,19 @@
-# Paper Scrubber
+# Paper Scrubber & the De-Identifier
+
+**Two tools, one engine, one repo.**
+
+- **Paper Scrubber** (`index.html`, blue) — the light teacher tool: scrub student
+  essays before pasting them into an AI. One 64 MB model.
+- **De-Identifier** (`deid/index.html`, green) — the staff tool for IEPs and eval
+  reports: everything the scrubber does, plus a second AI (GLiNER fp16, always on)
+  that reads for contextual identifiers — diagnoses, medications, family members,
+  churches, employers, teams, benefits — and underlines them for the reviewer's
+  neighbor-test judgement. ~650 MB total, one time, built for 16 GB staff laptops.
+
+They share app.js, styles, models, and the service worker. `deid/index.html`
+carries `<base href="../">` so every relative path resolves at the shared root,
+and `<body data-tool="deid">` is the only switch app.js reads (`TOOL`). Each has
+its own manifest and icons, so both install as separate apps side by side.
 
 A free, one-screen web app that lets teachers remove student names and personal
 information (PII) from papers **before** pasting them into ChatGPT, Claude, or any
@@ -34,15 +49,16 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    (ROOM) scrub like any other number. The summary line counts both: "Replaced
    12 · 3 more underlined for your judgement."
 
-   **IEP deep check** (checkbox, off by default): a second, heavier AI — zero-shot
-   GLiNER fp16, 553 MB one time, running in its own worker so the page stays
-   responsive — hunts for what no fixed label set covers: diagnoses it's never
-   seen, family members, churches, employers, teams and clubs, government
-   benefits ("free lunch" gets flagged as a benefit). Everything it finds lands
-   underlined for the reviewer's judgement; names it catches that the main model
-   missed are scrubbed. Built for IEPs and eval reports on staff machines —
-   plan on a few extra minutes for a long document. Like everything else it
-   downloads once from this site's own address and then works offline.
+   **The deep check lives in the De-Identifier** (`deid/`), where it is always
+   on: a second, heavier AI — zero-shot GLiNER fp16, 553 MB one time, running in
+   its own worker so the page stays responsive — hunts for what no fixed label
+   set covers: diagnoses it's never seen, family members, churches, employers,
+   teams and clubs, government benefits ("free lunch" gets flagged as a benefit).
+   Everything it finds lands underlined for the reviewer's judgement; names it
+   catches that the main model missed are scrubbed. Plan on a few extra minutes
+   for a long document. Like everything else it downloads once from this site's
+   own address and then works offline. Paper Scrubber deliberately has no trace
+   of it — teachers never see a 553 MB decision.
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 6. If the AI's reply mentions or quotes what was scrubbed ("Nice hook,

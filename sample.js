@@ -1,5 +1,16 @@
-// A completely fictional sample paper for demos. Every name, address,
-// number, and email below is made up (555 phone, example.com email).
+// Completely fictional samples for demos. Every name, address, number,
+// email, and detail below is made up (555 phones, example.com emails).
+
+// For the De-Identifier: a fake IEP-style excerpt, seeded with the
+// contextual identifiers the deep check exists to catch.
+export const SAMPLE_DEID = `Present Levels of Performance — J. Combs (DRAFT)
+
+Jayden Combs is a 7th grade student at Belfry Middle School. He was diagnosed with autism spectrum disorder and ADHD, and takes Adderall each morning, administered by the school nurse. Jayden lives with his grandmother following his parents' divorce and qualifies for free lunch.
+
+Jayden is the only student in his grade who uses a wheelchair. After school he attends youth group at First Baptist Church in Pikeville and helps out at his uncle's business, Hensley Auto Parts. His older sister is a junior at Belfry High School. He plays trumpet in the marching band and receives speech therapy twice weekly with Mrs. Slone (Room 204).
+
+For questions about this draft, contact his mother Tammy at (606) 555-0142 or tammy.combs@example.com. Student ID 20241183.
+`;
 
 export const SAMPLE = `Jasmine Carter
 Mrs. Slone — English 7, 2nd Period

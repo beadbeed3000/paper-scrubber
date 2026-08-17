@@ -5,7 +5,7 @@
 
 import { pipeline, env } from './vendor/transformers.min.js';
 import { TYPES, LABEL_TO_TYPE } from './labels.js';
-import { SAMPLE } from './sample.js';
+import { SAMPLE, SAMPLE_DEID } from './sample.js';
 
 // The model ships WITH the app (models/), so nothing is ever fetched from a
 // third party — and one visit on Wi-Fi leaves a laptop fully road-ready for
@@ -50,7 +50,12 @@ const META_AUTHOR_ATTRS = /\s(?:w:author|w:initials|w:lastModifiedBy)="[^"]*"/g;
 // details can identify a student on their own. The tool points; the teacher
 // decides. Everything else still scrubs by default.
 const DEFAULT_KEPT = new Set(['HEALTH', 'GRADE', 'FAMILY', 'CHURCH', 'WORK', 'ACTIVITY', 'BENEFIT']);
-const DEEP_KEY = 'paperScrubber.deepCheck';
+
+// One engine, two front doors: index.html is Paper Scrubber (the light teacher
+// tool), deid/index.html is the De-Identifier (the staff tool for IEPs and
+// eval reports, where the deep-check AI always runs). The deid page carries
+// <base href="../"> so every relative path here resolves identically on both.
+const TOOL = document.body.dataset.tool === 'deid' ? 'deid' : 'scrubber';
 
 // deep-check label → app category. "person" maps to NAME and is *scrubbed*
 // (a name the main model missed is a leak, not a judgement call) but only
@@ -140,7 +145,7 @@ const els = {
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
   btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
   safeNames: $('safeNames'), safeNamesBatch: $('safeNamesBatch'),
-  roadReady: $('roadReady'), deepCheck: $('deepCheck'),
+  roadReady: $('roadReady'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -414,7 +419,7 @@ let deepSeq = 0;
 let deepUi = null;
 const deepPending = new Map();
 
-function deepCheckOn() { return !!els.deepCheck?.checked; }
+function deepCheckOn() { return TOOL === 'deid'; }
 
 function runDeepCheck(text, ui) {
   if (!deepWorker) {
@@ -1322,7 +1327,7 @@ els.paperText.addEventListener('input', updateScrubButton);
 
 els.btnSample.addEventListener('click', () => {
   if (busy) return;
-  els.paperText.value = SAMPLE;
+  els.paperText.value = TOOL === 'deid' ? SAMPLE_DEID : SAMPLE;
   updateScrubButton();
   hideStatus();
   els.btnScrub.click();   // one click should show the whole magic trick
@@ -1490,20 +1495,14 @@ for (const b of [els.safeNames, els.safeNamesBatch]) {
   if (b) b.addEventListener('change', () => setSafeNames(b.checked));
 }
 
-// deep check preference — off by default (it's a heavy, staff-laptop feature)
-els.deepCheck?.addEventListener('change', () => {
-  try { localStorage.setItem(DEEP_KEY, els.deepCheck.checked ? '1' : '0'); } catch { /* private mode */ }
-  updateRoadReady();   // enabling it changes what road-ready means
-});
-
 // ---------------------------------------------------------------- init
 try {
   // default ON: a teacher who never finds the checkbox is still protected
   const saved = localStorage.getItem(SAFENAMES_KEY);
   for (const b of [els.safeNames, els.safeNamesBatch]) if (b) b.checked = saved !== '0';
-  if (els.deepCheck) els.deepCheck.checked = localStorage.getItem(DEEP_KEY) === '1';
-  localStorage.removeItem('paperScrubber.roster');   // cleanup: roster feature removed
-  localStorage.removeItem('paperScrubber.mode');     // cleanup: language toggle removed
+  localStorage.removeItem('paperScrubber.roster');    // cleanup: roster feature removed
+  localStorage.removeItem('paperScrubber.mode');      // cleanup: language toggle removed
+  localStorage.removeItem('paperScrubber.deepCheck'); // cleanup: deep check moved to the De-Identifier
 } catch { /* private mode */ }
 updateScrubButton();
 

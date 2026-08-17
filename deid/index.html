@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- one engine, two front doors: base points at the shared app root so every
+     relative path (app.js, styles, models, workers) resolves identically -->
+<base href="../">
+<title>De-Identifier — a KVEC staff tool</title>
+<meta name="description" content="De-identify IEPs, eval reports, and student records before they go to an AI. Two AIs run 100% on your device — nothing is uploaded. A staff tool from the Kentucky Valley Educational Cooperative.">
+<link rel="canonical" href="https://beadbeed3000.github.io/paper-scrubber/deid/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="De-Identifier — take the student out of the record">
+<meta property="og:description" content="KVEC staff tool for IEPs and eval reports: scrubs direct identifiers, flags contextual ones — diagnoses, family, churches, employers — for your judgement. Runs 100% on your device.">
+<meta property="og:url" content="https://beadbeed3000.github.io/paper-scrubber/deid/">
+<link rel="manifest" href="manifest-deid.webmanifest">
+<link rel="icon" href="icons/deid-favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1e5c38">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-tool="deid">
+
+<header class="masthead deid">
+  <div class="masthead-inner">
+    <div class="wordmark">
+      <h1>De-Identifier</h1>
+      <p class="tagline">Take the student out of the record — before the record goes to an AI. Built for IEPs, evals, and everything the review team reads.</p>
+    </div>
+    <div class="coop">
+      <img id="kvecLogo" src="icons/kvec-logo.png" alt="Kentucky Valley Educational Cooperative" onerror="this.style.display='none'">
+      <span class="coop-text">A <strong>KVEC</strong> staff tool</span>
+    </div>
+  </div>
+  <svg class="ridge" viewBox="0 0 1200 90" preserveAspectRatio="none" aria-hidden="true">
+    <path class="ridge-back" d="M0,90 L0,52 L120,26 L245,58 L340,30 L455,62 L560,34 L690,66 L800,38 L930,64 L1050,32 L1200,58 L1200,90 Z"/>
+    <path class="ridge-front" d="M0,90 L0,70 L145,44 L270,72 L395,48 L505,76 L640,50 L760,78 L880,52 L1010,76 L1130,50 L1200,72 L1200,90 Z"/>
+  </svg>
+</header>
+
+<ul class="trust-strip" aria-label="Privacy guarantees">
+  <li>Nothing leaves this device</li>
+  <li>Works offline after the first use</li>
+  <li>No sign-in, no cost, ever</li>
+</ul>
+<p class="trust-note">Two AIs run right here on this machine — records are never uploaded anywhere. After the first run, it all works with the Wi-Fi off.
+  <a href="privacy.html">How it protects student privacy</a></p>
+<p id="roadReady" class="trust-note road-ready" hidden></p>
+
+<main>
+
+  <!-- ============ INPUT VIEW ============ -->
+  <section id="inputView">
+    <ol class="steps" aria-label="How it works">
+      <li><span class="num">1</span><div><strong>Add the records</strong><span>An IEP, an eval report, a stack of either — Word, PDF, or scans.</span></div></li>
+      <li><span class="num">2</span><div><strong>Two AIs read each one</strong><span>Direct identifiers get scrubbed; contextual ones get underlined.</span></div></li>
+      <li><span class="num">3</span><div><strong>You make the calls</strong><span>Judge the underlines against the neighbor test, then save.</span></div></li>
+    </ol>
+
+    <div class="card">
+      <div id="dropCard" class="drop-zone">
+        <textarea id="paperText" placeholder="Paste a record here…&#10;&#10;— or —&#10;&#10;Drag Word or PDF files anywhere onto this page. Drop a whole review stack at once and each record is handled separately."></textarea>
+        <div class="drop-overlay" aria-hidden="true"><span>Let go — I'll de-identify every one 📄</span></div>
+      </div>
+
+      <div class="input-actions">
+        <button id="btnFile" class="btn secondary" type="button">Choose records…</button>
+        <button id="btnCamera" class="btn secondary" type="button" hidden>📷 Take a photo</button>
+        <button id="btnSample" class="btn ghost" type="button">Show me an example first</button>
+        <button id="btnInstall" class="btn ghost" type="button" hidden>📌 Install as an app</button>
+        <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.md,.text,.png,.jpg,.jpeg,.webp,.bmp,.heic,.heif,image/*" multiple hidden>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+      </div>
+      <p class="filetypes">Word <code>.docx</code> comes back as Word, formatting intact — including comments and tracked-changes authors, which get scrubbed from the file itself. <code>.pdf</code> and scans come back as text.
+        Scans work when the record is <em>typed</em> — handwriting can't be read.</p>
+
+      <p class="mode-note">First use downloads both AIs once (about 650&nbsp;MB — the contextual one is most of it) and keeps them on this laptop. A long document takes a few minutes; the page stays usable while it works.</p>
+
+      <button id="btnScrub" class="btn primary big" type="button" disabled>De-identify this record</button>
+
+      <div id="statusArea" class="status" hidden>
+        <p id="statusText"></p>
+        <div id="progressWrap" class="progress" hidden><div id="progressBar"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BATCH VIEW ============ -->
+  <section id="batchView" class="card" hidden>
+    <button id="btnBatchBack" class="btn link" type="button">← Start over</button>
+    <h2 id="batchTitle"></h2>
+    <p id="batchStatus" class="hint"></p>
+    <div id="batchProgressWrap" class="progress" hidden><div id="batchProgressBar"></div></div>
+    <div id="batchList" class="batch-list"></div>
+    <label class="safe-names">
+      <input type="checkbox" id="safeNamesBatch" checked>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall IEP.docx” names the student before the AI reads a word. Each record is saved under its tag instead, and a <code>WHO-IS-WHO</code> key goes in the zip so you can tell them apart.</span>
+    </label>
+
+    <div class="zip-box">
+      <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all de-identified records</button>
+      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder. Word files stay Word files; PDFs come back as text.
+        <strong>The whole stack shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every record — so an AI can be handed several at once and keep track of who's who.
+        The <code>WHO-IS-WHO</code> file in the zip turns those tags back into your students — keep it, and never send it to the AI.</p>
+    </div>
+
+    <details class="unscrub">
+      <summary>Got an AI reply about these records? Put the real names back — any record, one box</summary>
+      <p class="hint small">Because the tags are shared across the stack, a reply about any record — or several at once — un-scrambles here. Paste it below and the <code>[NAME 4]</code>-style tags flip back to the real words, on this device. No tags in the reply? Nothing to fix.</p>
+      <textarea id="unscrubBatchIn" placeholder="Paste the AI's reply here…"></textarea>
+      <div id="unscrubBatchOut" class="output small" hidden></div>
+      <button id="btnCopyUnscrubBatch" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
+    </details>
+  </section>
+
+  <!-- ============ REVIEW VIEW ============ -->
+  <section id="resultsView" class="card" hidden>
+    <div class="review-nav">
+      <button id="btnBack" class="btn link" type="button">← De-identify another record</button>
+      <span id="crumb" class="crumb"></span>
+      <button id="btnNext" class="btn link" type="button" hidden>Next record →</button>
+    </div>
+    <h2 id="summaryLine" aria-live="polite"></h2>
+    <p class="hint"><strong>The underlines are the job.</strong> Colored tags are already scrubbed — click one to put the real word back if it's wrong. Underlined words are the neighbor-test calls only you can make: a diagnosis, a church, a team, a family detail. Click to scrub; the category chips scrub a whole group at once.</p>
+    <p id="ocrNote" class="hint warn" hidden>📷 This record was read from a photo or scan. The reader can misread print and can't read handwriting — give names, numbers, and spellings an extra-careful look before you share it.</p>
+
+    <div id="legend" class="legend" role="group" aria-label="Detected categories"></div>
+
+    <div id="outputText" class="output"></div>
+
+    <div class="result-actions">
+      <button id="btnDownloadDocx" class="btn primary" type="button" hidden>⬇️ Download Word file</button>
+      <button id="btnCopy" class="btn primary" type="button">📋 Copy de-identified text</button>
+      <button id="btnDownloadTxt" class="btn secondary" type="button">Save as .txt</button>
+    </div>
+    <label class="safe-names">
+      <input type="checkbox" id="safeNames" checked>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall IEP.docx” names the student before the AI reads a word, so the record is saved under its tag instead. Untick to keep the original name.</span>
+    </label>
+    <p class="hint small">The neighbor test is the bar: could someone who knows the family recognize this student? The tool finds; you decide. You're the last set of eyes.</p>
+
+    <details class="unscrub">
+      <summary>Next step: paste the de-identified record into your AI — and if its reply uses the tags, bring it back here</summary>
+      <p class="hint small">The AI's reply will use the same <code>[NAME 1]</code>-style tags anywhere it mentions what you scrubbed. Paste the reply below and the tags flip back to the real words. <strong>No tags in the reply? Then there's nothing to fix — skip this.</strong> Exact tags only, and it all happens on this device, as always.</p>
+      <textarea id="unscrubIn" placeholder="Paste the AI's reply here…"></textarea>
+      <div id="unscrubOut" class="output small" hidden></div>
+      <button id="btnCopyUnscrub" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
+    </details>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <svg class="ridge footer-ridge" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+    <path class="ridge-front" d="M0,60 L0,38 L150,14 L280,42 L400,18 L520,46 L650,20 L780,48 L900,22 L1030,46 L1150,20 L1200,40 L1200,60 Z"/>
+  </svg>
+  <div class="footer-inner">
+    <p class="coop-line"><strong>Kentucky Valley Educational Cooperative</strong><br>
+      <em>Educational Excellence in the Heart of the Mountains</em></p>
+    <p class="sister-tool">Scrubbing student essays for AI feedback? That's the lighter sibling — <a href="./">Paper Scrubber</a>.</p>
+    <p class="feedback-line">Something it missed? An idea from the review team? Email
+      <a href="mailto:alex@theholler.org?subject=De-Identifier%20feedback">alex@theholler.org</a>.</p>
+    <p class="colophon">Runs entirely in your browser using open AI models —
+      <a href="https://huggingface.co/Isotonic/distilbert_finetuned_ai4privacy_v2" target="_blank" rel="noopener">ai4privacy&nbsp;DistilBERT</a> and
+      <a href="https://huggingface.co/urchade/gliner_multi_pii-v1" target="_blank" rel="noopener">GLiNER&nbsp;multi-PII</a>.
+      No accounts, no uploads, no tracking, no charge.
+      The <a href="https://github.com/beadbeed3000/paper-scrubber" target="_blank" rel="noopener">code is public</a> — anyone can read exactly what it does.
+      <a href="privacy.html">Privacy, in plain English</a>.</p>
+  </div>
+</footer>
+
+<button id="btnHelp" class="help-fab" type="button" aria-label="Help — how the De-Identifier works">?</button>
+
+<dialog id="helpDialog" aria-labelledby="helpTitle">
+  <div class="help-body">
+    <div class="help-head">
+      <h2 id="helpTitle">How it works</h2>
+      <button id="btnHelpClose" class="help-close" type="button" aria-label="Close help">×</button>
+    </div>
+    <ol class="hsteps">
+      <li><strong>Feed it records.</strong> Paste one, or drop Word and PDF files anywhere on the page —
+        a whole review stack at once is fine, each record is handled separately.</li>
+      <li><strong>Two AIs read it.</strong> The first scrubs direct identifiers — names, addresses, phones,
+        birthdays, schools, ID numbers, plus the Word file's own hidden author fields. The second reads for
+        <em>context</em>: diagnoses, medications, family members, churches, employers, teams, benefits.
+        First use downloads both, once; after that it works with the Wi-Fi off.</li>
+      <li><strong>Judge the underlines.</strong> Contextual details come back <em>underlined, not scrubbed</em> —
+        an AI usually needs the diagnosis to be useful, but in a small school “the seventh grader with a seizure
+        disorder” can identify a child by itself. Click an underline to scrub it; a category chip scrubs the group.</li>
+      <li><strong>Send it to the AI.</strong> Copy the de-identified text into ChatGPT, Claude, or Gemini.
+        Word files can also come back as real Word files, formatting intact.</li>
+      <li><strong>Put the names back.</strong> Paste the AI's reply into the box at the bottom of the review
+        screen and the tags flip back to real names — on your device, like everything else.</li>
+    </ol>
+    <div class="know">
+      <strong>The neighbor test — the standard this tool serves</strong>
+      <ul>
+        <li>De-identified means: <em>a neighbor who knows the family couldn't recognize the student.</em> Software handles names and numbers reliably; <strong>combinations are the reviewer's call</strong> — sport + grade + diagnosis can be a fingerprint in a 400-student school.</li>
+        <li>Before sharing, scan for: the only student who… (sport, instrument, disability, family situation), sibling references, church or team names, a parent's workplace.</li>
+        <li>No software can promise the neighbor test on its own. This tool's promise is narrower and honest: everything a machine <em>can</em> find is found, and every judgement call is made visible instead of silent.</li>
+      </ul>
+    </div>
+    <div class="know">
+      <strong>Take it on the road (IEP reviews in no-signal buildings)</strong>
+      <ul>
+        <li><strong>Install it like an app, once, on Wi-Fi:</strong> Chrome or Edge → install icon at the right end of the address bar (or this page's <em>Install as an app</em> button). Mac Safari: File → <em>Add to Dock</em>.</li>
+        <li><strong>Run one de-identify while still on Wi-Fi</strong> so both AIs finish downloading, and wait for the green <em>“✅ Road-ready”</em> line on the front page. After that, airplane mode changes nothing.</li>
+        <li>Updates arrive by themselves next time the laptop is online.</li>
+      </ul>
+    </div>
+    <div class="know">
+      <strong>Good to know</strong>
+      <ul>
+        <li>Nothing leaves the machine — records, names, findings, nothing. The <a href="privacy.html">privacy page</a> says it in plain English, suitable for forwarding.</li>
+        <li>Word downloads are scrubbed inside and out: document text, headers/footers, comment authors, tracked-change authors, and the file's own Author property.</li>
+        <li>Records save under their tag (<code>NAME-4-scrubbed.docx</code>) with a <code>WHO-IS-WHO</code> key in batch zips — keep the key, never send it.</li>
+        <li>Grading essays instead? Use <a href="./">Paper Scrubber</a> — same engine, lighter, built for teachers.</li>
+      </ul>
+    </div>
+  </div>
+</dialog>
+
+<div id="globalDrop" aria-hidden="true"><span>Let go — I'll de-identify every one 📄</span></div>
+
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

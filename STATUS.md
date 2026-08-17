@@ -126,9 +126,13 @@ regex-only version wearing the name would be worse than none.
 3. **Real-hardware pass** — five minutes each on a school Chromebook and an
    iPhone: scrub the sample, take a photo of a typed page, try the photo
    library and the Install button. Everything so far was tested in emulation.
-4. **IEP deep check — BUILT, v42** (probed then shipped August 2026; Alex's
-   team runs 16 GB staff laptops). Opt-in checkbox on the input view, off by
-   default. Zero-shot GLiNER fp16 in a dedicated worker
+4. **IEP deep check — BUILT v42, SPLIT INTO ITS OWN TOOL v43** (Alex's call:
+   teachers and the review team get separate tools). Paper Scrubber
+   (`index.html`, blue) has no deep check at all; the **De-Identifier**
+   (`deid/index.html`, green masthead, own manifest/icons, installs as its own
+   app) runs it always-on. One shared app.js: `deid/index.html` has
+   `<base href="../">` + `<body data-tool="deid">`, and `deepCheckOn()` is just
+   `TOOL === 'deid'`. Zero-shot GLiNER fp16 in a dedicated worker
    (`deep-check-worker.mjs` + `vendor/gliner-bundle.mjs`, esbuild bundle of
    the `gliner` npm package). The 553 MB model lives in the repo as seven
    <100 MB slices (`models/onnx-community/gliner_multi_pii-v1/onnx/*.part*`
