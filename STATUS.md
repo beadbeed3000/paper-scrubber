@@ -62,6 +62,17 @@ verified against the running app:
 - **Spanish/multilingual removed** (Alex's call, August 2026) — see the README for
   what to restore if a foreign-language teacher asks.
 
+**Validated against a realistic IEP (Aug 2026):** a 29k-char fictional KDE-model
+IEP (PD training doc) went through the De-Identifier end to end. First pass
+leaked three things — labeled 6-digit student number, zip behind the state
+abbreviation, single-digit hyphen dates — and over-scrubbed "Quantile"
+document-wide via possessive extension + echo. All four fixed (see the
+regex rules and the possessive stop in extendEntities); final pass: 161
+findings, zero leaks in text and in the rebuilt .docx body, curriculum terms
+(Quantile/EXPLORE/Cuisenaire) readable. Known residual, on purpose: a bare
+first name in an odd syntactic spot ("documented Karen-style") can slip past
+the model — the shape of miss that still exists and why the review screen does.
+
 **Known and deliberately not fixed:** images inside a .docx are left intact
 (deleting `word/media/*` would gut the student's work). Also seen in testing: when
 the model labels a person as ADDRESS/CITY rather than NAME, that person gets a
