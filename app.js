@@ -105,6 +105,17 @@ const REGEX_RULES = [
   // essays rarely contain legitimate 7+ digit runs (big numbers get commas).
   // Teachers can toggle the whole ID category off if a paper is math-heavy.
   { type: 'ID',    re: /\b\d{7,16}\b/g },
+  // three leaks found by running a real (fictional) IEP through the tool —
+  // each sat beside correctly scrubbed fields, so make them deterministic:
+  // "Student Number: 101010" — labeled IDs of ANY length (the bare-run rule
+  // above starts at 7 digits; real student numbers are often 5–6)
+  { type: 'ID',    re: /(?<=\b(?:student|case|record|file|ssid)\s*(?:number|no\.?|num|id)?\s*[:#]?\s+)\d{3,}\b/gi },
+  // "Riverview, KY 40000" — a zip riding behind the state abbreviation
+  { type: 'ZIP',   re: /(?<=\b[A-Z]{2}\s{1,2})\d{5}(?:-\d{4})?\b/g },
+  // "4-1-27", "10/1/26" — the model catches numeric dates by mood; three-part
+  // dates never mean anything else, so stop gambling ("1/2" and "3 of 4" are
+  // two-part and stay put)
+  { type: 'DATE',  re: /\b\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4}\b/g },
   // school names — the models have no "school" label, so catch the common shapes
   { type: 'ORG',   re: /\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}(?:Elementary|Middle|High|Academy|University|College)(?: School)?\b|\b(?:[A-Z][A-Za-z'’\-]+ ){1,4}School\b/g },
   // …and the same shapes shouted in an all-caps letterhead, which the
@@ -370,6 +381,9 @@ function extendEntities(text, list) {
       // not swallow "Email", and "Hensley Auto Parts. His" must not swallow
       // "His" (names keep extending: "Mrs." ends with a period)
       if ((f.type === 'CITY' || f.type === 'STATE' || f.type === 'ADDRESS') && /[.!?]$/.test(text.slice(f.start, f.end))) break;
+      // a possessive ENDS the name — "Robert's Quantile score" must not eat
+      // "Quantile" (which the echo pass would then stamp out document-wide)
+      if (/['’]s$/.test(text.slice(f.start, f.end))) break;
       const m = text.slice(f.end).match(new RegExp(`^[${GAP}]([\\p{L}'’.\\-]+)`, 'u'));
       if (!m) break;
       const word = m[1];
