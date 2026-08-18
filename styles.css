@@ -362,6 +362,46 @@ body.page-dragging #globalDrop { display: flex; }
 .colophon { margin: 0; font-size: .78rem; line-height: 1.6; }
 .site-footer a { color: #b6d5a2; }
 
+/* ---------- desktop edition (the Mac program) ----------
+   Same page, different skin: a dark, quiet, pro look so the program reads as
+   its own tool, not a website in a frame. Token overrides do most of it. */
+body.desktop {
+  --paper: #1d2620;
+  --bg: #151b17;
+  --ink: #e7ece8;
+  --ink-soft: #9fb0a4;
+  --rule: #34413a;
+  --blue-wash: #1a2733;
+  --green-wash: #1d2f24;
+}
+body.desktop .masthead.deid { background: #0f1512; border-bottom: 1px solid #23302a; }
+body.desktop .ridge { display: none; }
+body.desktop .masthead { padding-bottom: 1.1rem; }
+body.desktop .card { box-shadow: none; }
+body.desktop #paperText,
+body.desktop .output,
+body.desktop .unscrub textarea {
+  background: #10150f;
+  color: var(--ink);
+  border-color: var(--rule);
+}
+body.desktop #paperText::placeholder { color: #6d7f73; }
+body.desktop .mode-box,
+body.desktop .legend label,
+body.desktop .batch-row,
+body.desktop .btn.secondary { background: #232e27; color: var(--ink); }
+body.desktop .btn.secondary { border-color: var(--green); color: #cfe6c4; }
+body.desktop .btn.ghost { color: var(--ink-soft); border-color: var(--rule); }
+body.desktop .filetypes code { background: #232e27; color: #a8c6e8; }
+body.desktop .steps li { background: #1a231e; border-color: #2a362f; }
+body.desktop .steps strong { color: #bcd9ef; }
+body.desktop .site-footer { background: #0f1512; }
+body.desktop .footer-ridge { display: none; }
+body.desktop .trust-strip { color: #8fc573; }
+body.desktop .safe-names { background: var(--green-wash); border-color: #2c4433; }
+body.desktop .zip-box { background: var(--green-wash); border-color: #2c4433; }
+body.desktop mark.kept { border-bottom-color: #7d938a; }
+
 /* ---------- narrow screens ---------- */
 @media (max-width: 700px) {
   .steps { grid-template-columns: 1fr; }

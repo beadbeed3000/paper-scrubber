@@ -1,0 +1,30 @@
+{
+  "name": "kvec-deidentifier",
+  "productName": "De-Identifier",
+  "version": "1.0.0",
+  "description": "De-identify IEPs, eval reports, and student records before they go to an AI. Everything runs on this computer — nothing is uploaded. A staff tool from the Kentucky Valley Educational Cooperative.",
+  "author": "The Holler / KVEC <alex@theholler.org>",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "dist": "electron-builder --mac dmg zip --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "org.theholler.deidentifier",
+    "productName": "De-Identifier",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.cjs"],
+    "extraResources": [{ "from": "webapp", "to": "webapp" }],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.education",
+      "icon": "build/icon.png"
+    }
+  }
+}

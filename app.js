@@ -56,6 +56,9 @@ const DEFAULT_KEPT = new Set(['HEALTH', 'GRADE', 'FAMILY', 'CHURCH', 'WORK', 'AC
 // eval reports, where the deep-check AI always runs). The deid page carries
 // <base href="../"> so every relative path here resolves identically on both.
 const TOOL = document.body.dataset.tool === 'deid' ? 'deid' : 'scrubber';
+// Third door: the Mac program. Same page served from inside the app bundle,
+// with a preload bridge (window.deidDesktop) for the scans-folder watcher.
+const DESKTOP = TOOL === 'deid' && !!window.deidDesktop;
 
 // deep-check label → app category. "person" maps to NAME and is *scrubbed*
 // (a name the main model missed is a leak, not a judgement call) but only
@@ -1573,6 +1576,13 @@ let roadPoll = null;
 async function updateRoadReady() {
   const el = els.roadReady;
   if (!el) return;
+  if (DESKTOP) {
+    // nothing to download, nothing to wait for — the models ship in the bundle
+    el.hidden = false;
+    el.textContent = '✅ Desktop edition — both AIs ship inside this program. No downloads, no internet, ever.';
+    el.classList.add('ok');
+    return;
+  }
   if (await isRoadReady()) {
     el.hidden = false;
     el.textContent = '✅ Road-ready: everything is saved on this device — scrubbing works with no internet at all.';
@@ -1586,7 +1596,33 @@ async function updateRoadReady() {
   }
 }
 
-if ('serviceWorker' in navigator) {
+// ---------------------------------------------------------------- desktop
+if (DESKTOP) {
+  document.body.classList.add('desktop');
+  updateRoadReady();
+
+  // files arriving from the scans-folder watcher or Finder's "Open With"
+  window.deidDesktop.onFile(({ name, data }) => {
+    loadFiles([new File([new Uint8Array(data)], name)]);
+  });
+
+  // "Watch a scans folder" — the desktop headline: point it at wherever the
+  // office scanner drops files, and every new scan de-identifies itself
+  const watchBtn = document.createElement('button');
+  watchBtn.type = 'button';
+  watchBtn.className = 'btn secondary';
+  watchBtn.textContent = '📠 Watch a scans folder…';
+  watchBtn.addEventListener('click', async () => {
+    const dir = await window.deidDesktop.chooseInbox();
+    if (dir) setStatus(`Watching ${dir} — every new scan that lands there will be de-identified automatically. Leave this window open.`);
+  });
+  els.btnFile.after(watchBtn);
+
+  // web-only furniture has no meaning inside a program
+  els.btnInstall?.remove();
+}
+
+if (!DESKTOP && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
     .then(() => updateRoadReady())
     .catch(() => { /* dev over plain http is fine */ });

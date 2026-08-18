@@ -1,0 +1,65 @@
+name: Build the De-Identifier for Mac
+
+# Builds the desktop app on a real macOS machine and publishes the .dmg to a
+# GitHub Release. Unsigned (no Apple Developer account yet), so first launch on
+# a Mac is right-click -> Open, or System Settings -> Privacy & Security ->
+# Open Anyway. Add signing + notarization here if KVEC ever gets a cert.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-mac.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Assemble the web bundle (page + engine + BOTH models)
+        run: |
+          mkdir -p desktop/webapp desktop/build
+          rsync -a \
+            --exclude 'desktop' --exclude '.git' --exclude '.github' \
+            --exclude 'google-docs-addon' --exclude 'dist' \
+            ./ desktop/webapp/
+          cp icons/deid-512.png desktop/build/icon.png
+          du -sh desktop/webapp
+
+      - name: Install Electron
+        working-directory: desktop
+        run: npm install
+
+      - name: Smoke test on macOS — the app must boot and load the tool
+        working-directory: desktop
+        run: npx electron . --smoke
+
+      - name: Release gate — a real de-identify run inside the app, offline
+        working-directory: desktop
+        run: npx electron . --scrub-test
+
+      - name: Build .dmg and .zip (unsigned)
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg zip --publish never
+
+      - name: Publish to a GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="desktop-v1.0.${{ github.run_number }}"
+          gh release create "$TAG" desktop/dist/*.dmg desktop/dist/*-mac.zip \
+            --title "De-Identifier for Mac ($TAG)" \
+            --latest \
+            --notes "The De-Identifier as a Mac program: both AIs ship inside — no downloads, no internet, ever. Drag De-Identifier.app to Applications. First launch: right-click the app, choose Open, then Open again (it isn't Apple-notarized yet). Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
