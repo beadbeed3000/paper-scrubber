@@ -163,7 +163,32 @@ regex-only version wearing the name would be worse than none.
      flagged-not-scrubbed, same review UX. Long-term: distill — generate
      synthetic IEPs, label them with the fp16 model, fine-tune a 64 MB model
      on the IEP categories. No real student data in training, ever.
-5. **Watch the inbox** — the footer email is the feature pipeline now. A
+5. **Mac desktop edition (v1.1, Aug 2026)** — `desktop/` holds an Electron app;
+   `.github/workflows/build-mac.yml` builds it on a real macOS runner and
+   publishes the .dmg to GitHub Releases (link: /releases/latest, also in the
+   deid web footer). Key facts:
+   - **Zero questions, by design.** Alex's field report: the review team avoided
+     the scrubber because judgement-call underlines felt like FERPA exposure.
+     In the desktop edition (`DESKTOP` in app.js), every detected category is
+     scrubbed automatically, safe filenames are forced on and hidden, and the
+     copy says "there is nothing you have to do here." Web versions keep flags
+     on purpose — different audiences.
+   - Both models ship in the bundle (~700 MB dmg); the app serves its own files
+     from a loopback-only server so behavior matches the tested web stack.
+     No network, ever. SW is skipped in desktop.
+   - Scans workflow: "Watch a scans folder…" (fs.watch + 1.5 s settle delay,
+     ignores pre-existing files and `-scrubbed` output) + Finder Open With.
+   - CI gates: `--smoke` (boots, tool loads, bridge present) and
+     `--scrub-test` (a real de-identify inside the packaged app: ≥5 findings,
+     0 flagged, 0 leaks incl. ADHD/free lunch/youth group/First Baptist).
+     Both also run locally on Windows via `npx electron . --smoke|--scrub-test`
+     after assembling `desktop/webapp/` (see the workflow's rsync step).
+   - **Unsigned** — first launch on a Mac is right-click → Open (no Apple
+     Developer cert yet; the workflow has a comment where signing goes).
+   - Never claim the tool "guarantees FERPA compliance" — the honest claim is
+     that identifiers never reach the third-party AI, and that's the wording
+     everywhere.
+6. **Watch the inbox** — the footer email is the feature pipeline now. A
    foreign-language teacher asking is what brings the multilingual engine and
    the language toggle back (README says what to restore).
 5. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
