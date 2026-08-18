@@ -23,6 +23,10 @@ const LABELS = [
   'person', 'health condition', 'disability', 'medication', 'assistive device',
   'family relationship', 'religious group', 'company', 'sports team or club',
   'school', 'government benefit',
+  // "the 8th grader who's really into bodybuilding and cars" identifies a kid
+  // in a small school — interests are quasi-identifiers. Probed on a real
+  // (fictional) IEP: hunting 0.67, body building 0.82, automobile service 0.85.
+  'hobby or personal interest', 'sport', 'career interest',
 ];
 const THRESHOLD = 0.3;
 

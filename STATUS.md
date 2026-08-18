@@ -243,3 +243,13 @@ and the PWA already covers "it's an app."
 - OCR keeps its honesty warnings; don't promise handwriting.
 - The Docs add-on stays a bridge until browsers give Apps Script something
   better than regex.
+
+## Open observation (Aug 2026, web only)
+
+During the Roberts IEP validation, one snapshot of the web De-Identifier showed
+all 40 HEALTH findings flipped from flagged to enabled between two read-only
+queries (48 underlined → 8). Not reproducible afterward — repeated
+scrub/build/read cycles held state stable — and the desktop edition is immune
+by design (it enables everything at detection). Pattern matches a single
+synthetic click on the Health legend chip; cause unfound. If a teacher ever
+reports "my underlines turned into tags on their own," start here.

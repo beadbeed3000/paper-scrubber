@@ -70,11 +70,16 @@ const DEEP_LABEL_TO_TYPE = {
   'religious group': 'CHURCH',
   'company': 'WORK',
   'sports team or club': 'ACTIVITY',
+  'hobby or personal interest': 'ACTIVITY',
+  'sport': 'ACTIVITY',
+  'career interest': 'ACTIVITY',
   'school': 'ORG',
   'government benefit': 'BENEFIT',
 };
-// class-standing words GLiNER tags as "family relationship"; junk as flags
-const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'sibling', 'siblings', 'family', 'parent', 'parents']);
+// class-standing words GLiNER tags as "family relationship"; junk as flags —
+// plus IEP-world jargon that reads like organizations or interests but
+// identifies nobody (EXPLORE and ILP are assessments, ARC is the committee)
+const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'sibling', 'siblings', 'family', 'parent', 'parents', 'explore', 'arc', 'ilp', 'reading materials', 'reading']);
 const DEEP_NAME_STOP = new Set(['he', 'she', 'i', 'we', 'they', 'you', 'it', 'him', 'her', 'them', 'his', 'hers', 'my', 'me', 'our', 'us', 'your', 'their', 'who', 'mr', 'mrs', 'ms', 'miss', 'dr', 'student', 'students', 'teacher', 'nurse', 'mom', 'dad', 'mother', 'father', 'parents', 'sister', 'brother', 'grandma', 'grandmother', 'grandpa', 'grandfather', 'aunt', 'uncle', 'cousin', 'caseworker', 'counselor', 'guardian']);
 function looksLikeRealName(s) {
   const words = s.trim().split(/\s+/);
