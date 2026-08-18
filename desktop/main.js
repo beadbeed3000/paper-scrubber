@@ -151,11 +151,13 @@ async function createWindow() {
           findings: f.length,
           deep: f.filter((x) => x.source === 'deep').length,
           flagged: f.filter((x) => !x.enabled).length,
-          leaks: ['Jayden', 'Combs', 'Belfry', 'Tammy', '555-0142'].filter((w) => out.includes(w)),
+          // in the desktop edition NOTHING identifying may survive — including
+          // the categories the web versions leave underlined for judgement
+          leaks: ['Jayden', 'Combs', 'Belfry', 'Tammy', '555-0142', 'ADHD', 'free lunch', 'youth group', 'First Baptist'].filter((w) => out.includes(w)),
           secs: Math.round((Date.now() - t0) / 1000),
         };
       })()`, true);
-      const ok = r.findings >= 5 && r.flagged >= 2 && r.leaks.length === 0;
+      const ok = r.findings >= 5 && r.flagged === 0 && r.leaks.length === 0;
       console.log('SCRUB_TEST ' + JSON.stringify({ ok, ...r }));
       app.exit(ok ? 0 : 1);
     } catch (e) {

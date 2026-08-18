@@ -401,6 +401,8 @@ body.desktop .trust-strip { color: #8fc573; }
 body.desktop .safe-names { background: var(--green-wash); border-color: #2c4433; }
 body.desktop .zip-box { background: var(--green-wash); border-color: #2c4433; }
 body.desktop mark.kept { border-bottom-color: #7d938a; }
+/* no choices in the desktop edition: file names are always safe */
+body.desktop .safe-names { display: none; }
 
 /* ---------- narrow screens ---------- */
 @media (max-width: 700px) {

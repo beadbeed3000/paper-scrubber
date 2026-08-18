@@ -544,7 +544,11 @@ async function detectText(text, ui, paperName = '') {
     }
   }
 
-  return list.map((f, i) => ({ ...f, id: i, enabled: !DEFAULT_KEPT.has(f.type) }));
+  // The desktop edition serves reviewers who chose this tool BECAUSE they are
+  // afraid of FERPA and do not want judgement calls: everything detected is
+  // replaced, automatically, no questions. (Web versions keep the flag-for-
+  // judgement behavior — teachers need the diagnosis left readable.)
+  return list.map((f, i) => ({ ...f, id: i, enabled: DESKTOP ? true : !DEFAULT_KEPT.has(f.type) }));
 }
 
 // ---------------------------------------------------------------- docx engine
@@ -1190,6 +1194,7 @@ function renderBatch() {
 // paper already uses inside, so the teacher keeps a way to tell papers apart —
 // and the key file below turns the tag back into a kid.
 function safeNamesOn() {
+  if (DESKTOP) return true;   // no choices in the desktop edition — always safe
   return els.safeNames ? els.safeNames.checked : true;
 }
 
@@ -1579,7 +1584,7 @@ async function updateRoadReady() {
   if (DESKTOP) {
     // nothing to download, nothing to wait for — the models ship in the bundle
     el.hidden = false;
-    el.textContent = '✅ Desktop edition — both AIs ship inside this program. No downloads, no internet, ever.';
+    el.textContent = '✅ Everything runs inside this program, and everything identifying is removed automatically — names and details never reach the AI you paste into.';
     el.classList.add('ok');
     return;
   }
@@ -1600,6 +1605,13 @@ async function updateRoadReady() {
 if (DESKTOP) {
   document.body.classList.add('desktop');
   updateRoadReady();
+
+  // this edition asks nothing and decides everything — the copy must match
+  const steps = document.querySelectorAll('.steps li div');
+  if (steps[1]) steps[1].innerHTML = '<strong>Everything identifying is removed</strong><span>Names, contacts, schools, family, health, activities — replaced automatically by two AIs.</span>';
+  if (steps[2]) steps[2].innerHTML = '<strong>Save &amp; send</strong><span>The output carries tags, never identities. Paste the AI’s reply back here to restore the names.</span>';
+  const reviewHint = document.querySelector('#resultsView .hint');
+  if (reviewHint) reviewHint.innerHTML = 'Everything identifying was replaced automatically — there is nothing you have to do here. If it replaced something that isn’t about a person (a book title, a curriculum name), <strong>click it</strong> to restore just that word.';
 
   // files arriving from the scans-folder watcher or Finder's "Open With"
   window.deidDesktop.onFile(({ name, data }) => {
