@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v46';
+const CACHE = 'paper-scrubber-v47';
 const ASSETS = [
   './',
   './index.html',
@@ -37,6 +37,7 @@ const ASSETS = [
   // the De-Identifier's front door (shares every other asset with the scrubber)
   './deid/',
   './deid/index.html',
+  './deid/handout.html',
   './manifest-deid.webmanifest',
   './icons/deid-favicon.svg',
   './icons/deid-192.png',

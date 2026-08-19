@@ -1,7 +1,7 @@
 {
   "name": "kvec-deidentifier",
   "productName": "De-Identifier",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "De-identify IEPs, eval reports, and student records before they go to an AI. Everything runs on this computer — nothing is uploaded. A staff tool from the Kentucky Valley Educational Cooperative.",
   "author": "The Holler / KVEC <alex@theholler.org>",
   "license": "MIT",
@@ -39,6 +39,17 @@
       ],
       "category": "public.app-category.education",
       "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "De-Identifier-Setup-${version}.exe"
     }
   }
 }

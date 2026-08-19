@@ -1,9 +1,10 @@
-name: Build the De-Identifier for Mac
+name: Build the De-Identifier desktop apps
 
-# Builds the desktop app on a real macOS machine and publishes the .dmg to a
-# GitHub Release. Unsigned (no Apple Developer account yet), so first launch on
-# a Mac is right-click -> Open, or System Settings -> Privacy & Security ->
-# Open Anyway. Add signing + notarization here if KVEC ever gets a cert.
+# Builds the desktop app for macOS AND Windows on real machines of each kind,
+# gates every build on a boot test plus an actual de-identify run inside the
+# packaged stack, then publishes both installers to one GitHub Release.
+# Unsigned on both platforms (no Apple cert, no Windows cert): Mac first launch
+# is right-click -> Open; Windows shows SmartScreen -> More info -> Run anyway.
 
 on:
   workflow_dispatch:
@@ -17,8 +18,16 @@ permissions:
   contents: write
 
 jobs:
-  mac:
-    runs-on: macos-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --mac dmg zip
+          - os: windows-latest
+            args: --win nsis
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,20 +36,23 @@ jobs:
           node-version: 20
 
       - name: Assemble the web bundle (page + engine + BOTH models)
+        shell: bash
         run: |
           mkdir -p desktop/webapp desktop/build
-          rsync -a \
-            --exclude 'desktop' --exclude '.git' --exclude '.github' \
-            --exclude 'google-docs-addon' --exclude 'dist' \
-            ./ desktop/webapp/
+          for d in deid icons models vendor; do cp -r "$d" desktop/webapp/; done
+          for f in app.js styles.css labels.js sample.js deep-check-worker.mjs \
+                   privacy.html index.html sw.js manifest.webmanifest manifest-deid.webmanifest; do
+            cp "$f" desktop/webapp/
+          done
           cp icons/deid-512.png desktop/build/icon.png
+          cp icons/deid.ico desktop/build/icon.ico
           du -sh desktop/webapp
 
       - name: Install Electron
         working-directory: desktop
         run: npm install
 
-      - name: Smoke test on macOS — the app must boot and load the tool
+      - name: Smoke test — the app must boot and load the tool
         working-directory: desktop
         run: npx electron . --smoke
 
@@ -48,18 +60,38 @@ jobs:
         working-directory: desktop
         run: npx electron . --scrub-test
 
-      - name: Build .dmg and .zip (unsigned)
+      - name: Build installers (unsigned)
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --mac dmg zip --publish never
+        run: npx electron-builder ${{ matrix.args }} --publish never
 
-      - name: Publish to a GitHub Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          retention-days: 3
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*-mac.zip
+            desktop/dist/De-Identifier-Setup-*.exe
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+
+      - name: Publish one release with both platforms
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="desktop-v1.0.${{ github.run_number }}"
-          gh release create "$TAG" desktop/dist/*.dmg desktop/dist/*-mac.zip \
-            --title "De-Identifier for Mac ($TAG)" \
+          TAG="desktop-b${{ github.run_number }}"
+          ls -la dist/
+          gh release create "$TAG" dist/* \
+            -R "${{ github.repository }}" \
+            --title "De-Identifier for Mac & Windows (build ${{ github.run_number }})" \
             --latest \
-            --notes "The De-Identifier as a Mac program: both AIs ship inside — no downloads, no internet, ever. Drag De-Identifier.app to Applications. First launch: right-click the app, choose Open, then Open again (it isn't Apple-notarized yet). Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
+            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac**: open the .dmg, drag De-Identifier to Applications; first launch is right-click → Open → Open (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."

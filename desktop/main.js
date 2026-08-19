@@ -118,6 +118,7 @@ async function createWindow() {
   await win.loadURL(`http://127.0.0.1:${port}/deid/`);
 
   for (const f of pendingOpens.splice(0)) sendFile(f);
+  for (const f of argvFiles(process.argv)) sendFile(f);
 
   if (SMOKE) {
     try {
@@ -173,6 +174,26 @@ app.on('open-file', (e, p) => {
   if (win) sendFile(p);
   else pendingOpens.push(p);
 });
+
+// Windows hands files over as command-line arguments instead ("Open with…",
+// double-click after association, drag onto the .exe)
+function argvFiles(argv) {
+  return argv.slice(1).filter((a) => INBOX_OK.test(a) && !a.startsWith('-') && fs.existsSync(a));
+}
+
+// one running copy: a second "Open with" focuses the window and hands the file over
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_e, argv) => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+      for (const f of argvFiles(argv)) sendFile(f);
+    }
+  });
+}
 
 app.whenReady().then(() => {
   const template = [
