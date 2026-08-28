@@ -2,7 +2,61 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated August 2026, live version `paper-scrubber-v40`.
+stands. Last updated 28 August 2026, live version `paper-scrubber-v51`.
+
+## What changed in v51 (the parts of a Word file you cannot see)
+
+Four ways a "de-identified" .docx still named the student, all reproduced on
+the live site with an IEP-shaped file and all fixed:
+
+- **A tracked-change deletion kept the name in full.** `parseDocx` collected
+  only `<w:t>`, so `<w:delText>Jayden Combs</w:delText>` was never scanned,
+  never a finding, never replaced — and Word shows it in All Markup. IEP
+  drafts carry tracked changes constantly, so this was the worst of the four.
+- **`docProps/app.xml`** kept the title in `TitlesOfParts`, which survives
+  blanking `dc:title` in core.xml. Both that and `HeadingPairs` now go.
+- **`docProps/custom.xml`** rode through untouched — where a district document
+  library pushes columns like Student and Case Manager. The part is dropped
+  along with its Content_Types Override and package relationship.
+- **Hyperlink targets survived.** The text read `[EMAIL]` while
+  `word/_rels/document.xml.rels` still held the real `mailto:`.
+
+Closed at the same time: **customXml data parts** (a data-bound content
+control refills the visible text from these on open — the one that could put
+a name *back* into a cleaned document; the part stays for validity, the data
+is blanked) and **picture alt text**, which routinely names the child.
+
+**Do not "fix" the run joining.** Separating a tracked deletion from its
+replacement reads better, and was tried: Word tracks edits a character at a
+time, so the separator split a phone number around a retyped digit and the
+number stopped being detected at all. Joining costs an occasional swallowed
+word next to a deletion — over-scrubbing, the direction this tool errs in on
+purpose. Measured, not guessed.
+
+Link targets are matched only against identifier findings (EMAIL/PHONE/ID/
+USERNAME/SSN/LINK, ≥6 chars) and only HYPERLINK's first argument is rewritten,
+so a citation to `hazard.k12.ky.us` and a `STYLEREF` field both survive a
+document that scrubs the word "Hazard".
+
+**Known and still open after this pass** (a 20-agent adversarial review of the
+fix; these survived verification):
+- A field instruction split across several `<w:instrText>` runs, and
+  `w:fldSimple w:instr=`, keep their real target. The common `w:hyperlink` +
+  .rels form is covered; these legacy field forms are not.
+- Every `CACHE` bump deletes the De-Identifier's 553 MB of GLiNER parts —
+  they land in the versioned `paper-scrubber-*` cache and the activate handler
+  purges it. Watched this happen on the v47→v51 deploy. Give them their own
+  unversioned cache and exclude it from the purge, the way `transformers-cache`
+  already is.
+- A failed deep check is invisible: its only notice goes to the status line,
+  which `hideStatus()` wipes before the review opens. The desktop edition then
+  still says "there is nothing you have to do here" over a light-scrub-only
+  result. Record it on the paper and show it in the review.
+- The De-Identifier's setup line says "~100 MB". Measured: 96 MB for Paper
+  Scrubber, 677 MB for the De-Identifier.
+- Deep-check recall is phrasing-sensitive — "free lunch" and "grandmother"
+  were caught in the CI sentence and missed in a differently-worded one. The
+  `--scrub-test` gate is a regression canary, not a coverage guarantee.
 
 ## What changed in v40 (road-ready + neighbor test)
 
