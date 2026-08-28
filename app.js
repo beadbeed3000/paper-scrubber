@@ -608,7 +608,15 @@ async function parseDocx(arrayBuffer) {
     let el;
     while ((el = walker.nextNode())) {
       if (el.namespaceURI !== W_NS) continue;
-      if (el.localName === 't') {
+      // delText is a tracked deletion — the wording someone struck out. Word
+      // still shows it in All Markup and it is still in the file, so it has to
+      // be scanned and replaced like any other text. IEP drafts are full of it.
+      // Runs are joined with nothing, exactly as they always were: Word tracks
+      // edits a character at a time, so a separator here would split a phone
+      // number around a retyped digit and lose it. The cost is that a word
+      // touching a deletion can be swallowed into the tag next to it, which is
+      // over-scrubbing — the direction this tool errs in on purpose.
+      if (el.localName === 't' || el.localName === 'delText') {
         const p = ancestorP(el);
         if (lastP !== undefined && p !== lastP && text.length) text += '\n';
         lastP = p;
@@ -662,7 +670,11 @@ async function buildScrubbedDocx(paper) {
       paper.docx.zip.file(part.path, part.decl && !ser.startsWith('<?xml') ? part.decl + '\n' + ser : ser);
     }
   }
-  await stripDocxIdentity(paper.docx.zip);
+  const needles = [...new Set(paper.findings
+    .filter((f) => f.enabled && LINK_NEEDLE_TYPES.has(f.type))
+    .map((f) => paper.text.slice(f.start, f.end).trim().toLowerCase())
+    .filter((s) => s.length >= 6))];
+  await stripDocxIdentity(paper.docx.zip, needles);
   return paper.docx.zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: DOCX_MIME });
 }
 
@@ -673,20 +685,103 @@ async function buildScrubbedDocx(paper) {
 // visible in Explorer, in Drive, and to anything that parses the container.
 // Values are blanked rather than the parts deleted, so the package stays valid.
 const META_TEXT_ELS = /<(dc:creator|dc:title|dc:subject|dc:description|cp:lastModifiedBy|cp:category|cp:keywords|Company|Manager)(\s[^>]*)?>[\s\S]*?<\/\1>/g;
+// app.xml mirrors the document title — and every heading — into these lists,
+// so blanking dc:title in core.xml alone still ships "Jayden Combs IEP".
+const APP_TITLE_LISTS = /<(TitlesOfParts|HeadingPairs)(\s[^>]*)?>[\s\S]*?<\/\1>/g;
+// A hyperlink keeps its real target after the visible address is replaced:
+// Word auto-links a typed email, so the text reads [EMAIL 1] while the link
+// still resolves to the student. Reserved TLD, so a stray click goes nowhere.
+const REDACTED_LINK = 'https://redacted.invalid/';
+const REL_EL = /<Relationship\b[\s\S]*?(?:\/>|<\/Relationship>)/g;
+const INSTR_EL = /(<w:(?:instrText|delInstrText)(?:\s[^>]*)?>)([\s\S]*?)(<\/w:(?:instrText|delInstrText)>)/g;
 
-async function stripDocxIdentity(zip) {
+// Only identifiers that actually turn up inside a URL are matched against
+// link targets. A name or place needle would take a legitimate citation with
+// it — "hazard" appears in plenty of Kentucky links that are not about a
+// student — and losing a source in an essay is its own kind of wrong.
+const LINK_NEEDLE_TYPES = new Set(['EMAIL', 'PHONE', 'USERNAME', 'ID', 'SSN', 'LINK']);
+
+// A target is scrubbed when it is personal contact by nature, or when it
+// carries something this document already decided to replace. Plain citations
+// (a Gutenberg link in an essay) are left alone — over-scrubbing has a cost too.
+function riskyLinkTarget(target, needles) {
+  if (/^\s*(mailto:|tel:|callto:|skype:)/i.test(target)) return true;
+  const t = target.toLowerCase();
+  return needles.some((n) => t.includes(n));
+}
+
+// Custom document properties are where a district's document library pushes
+// columns like Student or Case Manager. They are pure metadata to a
+// de-identified copy, so the part goes — along with the two references that
+// would otherwise leave Word calling the file corrupt.
+async function dropCustomProps(zip) {
+  if (!zip.file('docProps/custom.xml')) return;
+  zip.remove('docProps/custom.xml');
+  const ct = zip.file('[Content_Types].xml');
+  if (ct) {
+    const s = await ct.async('string');
+    zip.file('[Content_Types].xml', s.replace(/<Override\b[^>]*PartName="\/docProps\/custom\.xml"[^>]*\/>/g, ''));
+  }
+  const rels = zip.file('_rels/.rels');
+  if (rels) {
+    const s = await rels.async('string');
+    zip.file('_rels/.rels', s.replace(/<Relationship\b[^>]*Target="[^"]*docProps\/custom\.xml"[^>]*\/>/g, ''));
+  }
+}
+
+async function stripDocxIdentity(zip, linkNeedles = []) {
   for (const path of ['docProps/core.xml', 'docProps/app.xml']) {
     const f = zip.file(path);
     if (!f) continue;
-    const s = await f.async('string');
-    zip.file(path, s.replace(META_TEXT_ELS, (_m, tag, attrs) => `<${tag}${attrs || ''}></${tag}>`));
+    let s = await f.async('string');
+    s = s.replace(META_TEXT_ELS, (_m, tag, attrs) => `<${tag}${attrs || ''}></${tag}>`);
+    if (path.endsWith('app.xml')) s = s.replace(APP_TITLE_LISTS, '');
+    zip.file(path, s);
+  }
+  await dropCustomProps(zip);
+  // A content control can be data-bound to a customXml part, and Word refills
+  // the visible text from it when the file opens — which would put the real
+  // name back into a document this tool just cleaned. The part stays, so every
+  // relationship and content type is still valid; the data inside it goes.
+  for (const path of Object.keys(zip.files)) {
+    if (/^customXml\/item\d*\.xml$/.test(path)) {
+      zip.file(path, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><root/>');
+    }
   }
   for (const path of Object.keys(zip.files)) {
-    if (!/^word\/.*\.xml$/.test(path)) continue;
+    const isXml = /^word\/.*\.xml$/.test(path);
+    const isRels = /^word\/_rels\/.*\.rels$/.test(path);
+    if (!isXml && !isRels) continue;
     const f = zip.file(path);
     if (!f) continue;
     const s = await f.async('string');
-    const cleaned = s.replace(META_AUTHOR_ATTRS, '');
+    let cleaned = s;
+    if (isXml) {
+      cleaned = cleaned.replace(META_AUTHOR_ATTRS, '');
+      // field codes carry the same targets as the .rels: HYPERLINK "mailto:…".
+      // Only HYPERLINK, and only its first argument — the rest of a field
+      // instruction is style names and switches that must survive untouched.
+      cleaned = cleaned.replace(INSTR_EL, (m, open, body, close) => {
+        if (!/\bHYPERLINK\b/i.test(body)) return m;
+        let seen = false;
+        const fixed = body.replace(/"([^"]*)"/g, (q, url) => {
+          if (seen) return q;
+          seen = true;
+          return riskyLinkTarget(url, linkNeedles) ? `"${REDACTED_LINK}"` : q;
+        });
+        return fixed === body ? m : open + fixed + close;
+      });
+      // a picture's alt text is written by whoever inserted it, and routinely
+      // names the child in the photo
+      cleaned = cleaned.replace(/<(?:wp:docPr|pic:cNvPr)\b[^>]*?\/?>/g, (tag) =>
+        tag.replace(/\s(?:descr|title)="[^"]*"/g, '').replace(/\sname="[^"]*"/, ' name="Picture"'));
+    } else {
+      cleaned = cleaned.replace(REL_EL, (rel) => {
+        if (!/Type="[^"]*\/hyperlink"/.test(rel)) return rel;
+        return rel.replace(/Target="([^"]*)"/, (m, target) =>
+          (riskyLinkTarget(target, linkNeedles) ? `Target="${REDACTED_LINK}"` : m));
+      });
+    }
     if (cleaned !== s) zip.file(path, cleaned);
   }
   if (zip.file('word/people.xml')) {
