@@ -2,7 +2,25 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 28 August 2026, live version `paper-scrubber-v51`.
+stands. Last updated 31 August 2026, live version `paper-scrubber-v52`.
+
+## What changed in v52 (the computer-noob pass)
+
+A 24-proposal novice-usability review (all adversarially verified) got
+implemented in one sweep. Front-page prose went from ~190 words to 76 and the
+whole flow fits a 1366x768 screen. The offline status lives in the trust
+strip's middle chip now (roadReady element is gone; the wrong "~100 MB" line
+went with it). "Try an example first" is the first button; the Scrub button
+soft-disables and explains an empty-box click; unreadable files show as
+warning rows with tailored rescues (.gdoc says open-the-Doc-and-paste);
+legend checkboxes show honest indeterminate states; the summary says "you
+decide"; marks light up on hover; a stalled model download says so instead of
+freezing. Long paragraphs moved into the help dialog.
+
+Also fixed on the way: this Mac's ssh config lost the beadbeed3000 identity to
+the newer TavernGame agent key (`Hi beadbeed!` push rejection) — the plain
+`Host github.com` block now carries `IdentitiesOnly yes`, matching the intent
+comment already in the file.
 
 ## What changed in v51 (the parts of a Word file you cannot see)
 
