@@ -164,7 +164,7 @@ const els = {
   unscrubBatchIn: $('unscrubBatchIn'), unscrubBatchOut: $('unscrubBatchOut'), btnCopyUnscrubBatch: $('btnCopyUnscrubBatch'),
   btnHelp: $('btnHelp'), helpDialog: $('helpDialog'), btnHelpClose: $('btnHelpClose'),
   safeNames: $('safeNames'), safeNamesBatch: $('safeNamesBatch'),
-  roadReady: $('roadReady'),
+  trustOffline: $('trustOffline'), multiTip: $('multiTip'), legendHint: $('legendHint'),
 };
 
 // ---------------------------------------------------------------- views & status
@@ -213,21 +213,32 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 async function getPipe(ui) {
   if (pipePromise) return pipePromise;
   let sawDownload = false;
+  const mb = (n) => Math.round(n / 1048576);
+  // On slow school Wi-Fi this download runs for minutes; a frozen bar with no
+  // words looks broken, and a dropped connection hangs it silently. Say that
+  // slow is fine, and notice when nothing has arrived for half a minute.
+  let lastLoaded = 0, lastTotal = 0, lastProgress = Date.now(), saidStuck = false;
+  const watchdog = setInterval(() => {
+    if (!sawDownload || saidStuck || Date.now() - lastProgress < 30000) return;
+    saidStuck = true;
+    ui.say(`Stuck at ${mb(lastLoaded)} of ${mb(lastTotal)} MB — the Wi-Fi may have dropped. Give it a minute; if the number doesn't move, refresh this page and try again.`);
+  }, 5000);
   const progress_callback = (e) => {
     if (e.status === 'progress' && typeof e.progress === 'number' && String(e.file || '').endsWith('.onnx')) {
       sawDownload = true;
-      const mb = (n) => Math.round(n / 1048576);
-      ui.say(`Downloading the scrubber — ${mb(e.loaded)} of ${mb(e.total)} MB. This happens once; after this it's saved on this device.`);
+      lastLoaded = e.loaded; lastTotal = e.total; lastProgress = Date.now(); saidStuck = false;
+      ui.say(`Downloading the scrubber — ${mb(e.loaded)} of ${mb(e.total)} MB. One time only — slow Wi-Fi is fine, just leave this tab open.`);
       ui.bar(e.progress);
     }
   };
   ui.say('Getting the scrubber ready…');
   pipePromise = pipeline('token-classification', MODEL.id, { dtype: MODEL.dtype, progress_callback })
     .then((p) => {
+      clearInterval(watchdog);
       if (sawDownload) ui.say('Saved! Loading it into memory…');
       return p;
     })
-    .catch((err) => { pipePromise = null; throw err; });
+    .catch((err) => { clearInterval(watchdog); pipePromise = null; throw err; });
   return pipePromise;
 }
 
@@ -959,7 +970,7 @@ async function loadPaperContent(p, ui, who) {
 
 async function scrubPapers(list) {
   busy = true;
-  els.btnScrub.disabled = true;
+  updateScrubButton();
   const ui = statusSurface();
   try {
     await getPipe(ui);
@@ -973,6 +984,7 @@ async function scrubPapers(list) {
   }
   let done = 0;
   for (const p of list) {
+    if (p.status === 'error') { done++; continue; }   // unreadable file, shown as its own row
     p.status = 'scanning';
     if (list.length > 1) renderBatch();
     try {
@@ -1000,19 +1012,26 @@ async function loadFiles(fileList) {
   const all = [...fileList];
   const ok = all.filter((f) => /\.(docx|pdf|txt|md|text|png|jpe?g|webp|bmp|heic|heif)$/i.test(f.name) || (f.type || '').startsWith('image/'));
   const skipped = all.filter((f) => !ok.includes(f));
+  // say what to DO about the file she has, not what the tool accepts
+  const rejectHelp = (name) => /\.g(doc|sheet|slides)$/i.test(name)
+    ? "that's a shortcut to a Google Doc — the words live in Google, not in the file. Open the Doc, press Ctrl+A then Ctrl+C, and paste here"
+    : /\.pages$/i.test(name)
+      ? "that's an Apple Pages file — in Pages use File → Export To → Word, or ask for a Word or PDF copy"
+      : /\.doc$/i.test(name)
+        ? 'old-style Word file — open it in Word, use “Save As → .docx”, then add it again'
+        : 'only Word (.docx), PDF, photos, and .txt work';
   if (!ok.length) {
     showView('input');
-    const hasOldDoc = skipped.some((f) => /\.doc$/i.test(f.name));
-    setStatus(hasOldDoc
-      ? 'That\'s an old-style .doc file. Open it in Word, use “Save As → .docx”, then try again.'
-      : 'Please use Word (.docx), PDF, photo, or plain text (.txt) files.', { error: true });
+    const why = rejectHelp(skipped[0].name);
+    setStatus(why.charAt(0).toUpperCase() + why.slice(1) + '.', { error: true });
     return;
   }
-  papers = ok.sort((a, b) => a.name.localeCompare(b.name)).map(newPaper);
+  // unreadable files ride along as visible ⚠️ rows instead of a note nobody sees
+  papers = [
+    ...ok.map(newPaper),
+    ...skipped.map((f) => ({ ...newPaper(f), status: 'error', error: rejectHelp(f.name) })),
+  ].sort((a, b) => a.name.localeCompare(b.name));
   current = -1;
-  const skipNote = skipped.length
-    ? ` Skipped ${skipped.length} file${skipped.length === 1 ? '' : 's'} (only .docx, .pdf, photos, and .txt work): ${skipped.map((f) => f.name).join(', ')}.`
-    : '';
 
   if (papers.length === 1) {
     showView('input');
@@ -1040,13 +1059,10 @@ async function loadFiles(fileList) {
       : `${good} of ${papers.length} papers scrubbed`;
     statusSurface().say((good
       ? `Every paper was scrubbed separately.${bad ? ` ${bad} couldn't be read — see below.` : ''} Check any one you want with the Check button, then get them all with the green button at the bottom.`
-      : 'None of these files could be read. They need to be Word (.docx), PDF, photos, or plain text (.txt).') + skipNote);
+      : 'None of these files could be read. They need to be Word (.docx), PDF, photos, or plain text (.txt).'));
     statusSurface().barOff();
     els.btnZip.disabled = good === 0;
     els.btnZip.textContent = `⬇️ Download all ${good} scrubbed paper${good === 1 ? '' : 's'} (one .zip)`;
-  }
-  if (papers.length === 1 && skipNote) {
-    statusSurface().say(skipNote.trim());
   }
 }
 
@@ -1101,6 +1117,8 @@ function openReview(i) {
   els.btnNext.hidden = !(multi && next !== -1);
   els.btnDownloadDocx.hidden = p.kind !== 'docx';
   els.ocrNote.hidden = !p.ocr;
+  // she just scrubbed ONE picked file — the moment to teach that thirty at once works
+  if (els.multiTip) els.multiTip.hidden = !(papers.length === 1 && !!p.file && !DESKTOP);
   paperUnscrub.reset();   // fresh box per paper
   renderResults();
   showView('review');
@@ -1142,8 +1160,8 @@ function renderResults() {
   els.summaryLine.textContent = p.findings.length === 0
     ? 'No personal information found 🎉'
     : n === 0
-      ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'} — all kept as-is.`
-      : `Replaced ${n} personal detail${n === 1 ? '' : 's'}${kept ? ` · ${kept} more underlined for your judgement` : ''}.`;
+      ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'}, all underlined — you decide.`
+      : `Replaced ${n} personal detail${n === 1 ? '' : 's'}${kept ? ` · ${kept} more underlined — you decide` : ''}.`;
 
   paperUnscrub.render();   // keep the un-scrubbed preview in sync with toggles
 }
@@ -1165,6 +1183,8 @@ function renderLegend() {
     const box = document.createElement('input');
     box.type = 'checkbox';
     box.checked = c.on === c.total;
+    box.indeterminate = c.on > 0 && c.on < c.total;   // "some scrubbed" must not look like "none"
+    label.title = c.on === c.total ? 'Put every one of these back' : 'Scrub every one of these';
     box.addEventListener('change', () => {
       const turnOn = !(c.on === c.total);
       p.findings.forEach((f) => { if (f.type === type) f.enabled = turnOn; });
@@ -1178,6 +1198,7 @@ function renderLegend() {
     frag.appendChild(label);
   }
   els.legend.replaceChildren(frag);
+  if (els.legendHint) els.legendHint.hidden = els.legend.childElementCount === 0;
 }
 
 // ---------------------------------------------------------------- un-scrub
@@ -1442,13 +1463,21 @@ els.outputText.addEventListener('keydown', (e) => {
   toggleMark(mark);
 });
 
+let emptyHint = false;
 function updateScrubButton() {
-  els.btnScrub.disabled = busy || els.paperText.value.trim().length === 0;
+  const empty = els.paperText.value.trim().length === 0;
+  els.btnScrub.disabled = busy;                       // busy still hard-disables — no double-scrubs
+  els.btnScrub.classList.toggle('not-ready', !busy && empty);
+  els.btnScrub.setAttribute('aria-disabled', String(empty));
+  els.btnBatchBack.classList.toggle('waiting', busy);
+  if (!empty && emptyHint) { emptyHint = false; hideStatus(); }
 }
 els.paperText.addEventListener('input', updateScrubButton);
 
+let sampleWasRun = false;
 els.btnSample.addEventListener('click', () => {
   if (busy) return;
+  sampleWasRun = true;
   els.paperText.value = TOOL === 'deid' ? SAMPLE_DEID : SAMPLE;
   updateScrubButton();
   hideStatus();
@@ -1488,7 +1517,14 @@ window.addEventListener('drop', (e) => {
 });
 
 els.btnScrub.addEventListener('click', async () => {
-  if (busy || !els.paperText.value.trim()) return;
+  if (busy) return;
+  if (!els.paperText.value.trim()) {
+    // the biggest thing on the page must never be a dead click
+    emptyHint = true;
+    setStatus(`Add ${TOOL === 'deid' ? 'a record' : 'a paper'} first — paste it in the box above, or click “${els.btnFile.textContent}”.`);
+    els.paperText.focus();
+    return;
+  }
   papers = [{
     id: 'pasted', file: null, name: '', kind: 'text', status: 'waiting',
     text: els.paperText.value, docx: null, findings: [], error: null,
@@ -1504,15 +1540,24 @@ els.btnScrub.addEventListener('click', async () => {
 });
 
 els.btnBack.addEventListener('click', () => {
-  if (papers.length > 1) { renderBatch(); showView('batch'); }
-  else showView('input');
+  if (papers.length > 1) { renderBatch(); showView('batch'); return; }
+  // leaving the demo: clear it out so her first real paste starts clean
+  if (sampleWasRun && els.paperText.value === (TOOL === 'deid' ? SAMPLE_DEID : SAMPLE)) {
+    els.paperText.value = '';
+    sampleWasRun = false;
+    updateScrubButton();
+  }
+  showView('input');
 });
 els.btnNext.addEventListener('click', () => {
   const next = papers.findIndex((q, j) => j > current && q.status === 'done');
   if (next !== -1) openReview(next);
 });
 els.btnBatchBack.addEventListener('click', () => {
-  if (busy) return;
+  if (busy) {
+    els.batchStatus.textContent = 'Still working — you can start over as soon as the last paper finishes.';
+    return;
+  }
   papers = [];
   current = -1;
   hideStatus();
@@ -1693,24 +1738,21 @@ async function isRoadReady() {
 
 let roadPoll = null;
 async function updateRoadReady() {
-  const el = els.roadReady;
+  const el = els.trustOffline;
   if (!el) return;
   if (DESKTOP) {
-    // nothing to download, nothing to wait for — the models ship in the bundle
-    el.hidden = false;
-    el.textContent = '✅ Everything runs inside this program, and everything identifying is removed automatically — names and details never reach the AI you paste into.';
+    el.textContent = 'Everything runs inside this program — nothing is sent anywhere';
     el.classList.add('ok');
     return;
   }
   if (await isRoadReady()) {
-    el.hidden = false;
-    el.textContent = '✅ Road-ready: everything is saved on this device — scrubbing works with no internet at all.';
+    el.textContent = 'Works offline — everything is saved on this device';
+    el.classList.remove('busy');
     el.classList.add('ok');
     if (roadPoll) { clearInterval(roadPoll); roadPoll = null; }
   } else if (navigator.onLine) {
-    el.hidden = false;
-    el.textContent = '📶 Setting up for offline use in the background (~100 MB, one time). Stay online a few minutes — this line flips to road-ready by itself.';
-    el.classList.remove('ok');
+    el.textContent = 'Getting offline-ready in the background — stay online a bit';
+    el.classList.add('busy');
     if (!roadPoll) roadPoll = setInterval(updateRoadReady, 4000);
   }
 }

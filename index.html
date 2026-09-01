@@ -41,42 +41,38 @@
 
 <ul class="trust-strip" aria-label="Privacy guarantees">
   <li>Nothing leaves this device</li>
-  <li>Works offline after the first use</li>
+  <li id="trustOffline" aria-live="polite">Works offline after the first use</li>
   <li>No sign-in, no cost, ever</li>
 </ul>
-<p class="trust-note">Don't take our word for it — after your first scrub, turn the Wi-Fi off. Everything still works, because the work never leaves this machine.
-  <a href="privacy.html">How it protects student privacy</a></p>
-<p id="roadReady" class="trust-note road-ready" hidden></p>
+<p class="trust-note"><a href="privacy.html">How it protects student privacy</a></p>
 
 <main>
 
   <!-- ============ INPUT VIEW ============ -->
   <section id="inputView">
     <ol class="steps" aria-label="How it works">
-      <li><span class="num">1</span><div><strong>Add the papers</strong><span>Drop in one — or your whole class set at once.</span></div></li>
+      <li><span class="num">1</span><div><strong>Add the papers</strong><span>One, or a whole class set.</span></div></li>
       <li><span class="num">2</span><div><strong>It scrubs each one</strong><span>Names, addresses, phones, birthdays… all replaced.</span></div></li>
       <li><span class="num">3</span><div><strong>Check &amp; save</strong><span>Fix anything it got wrong, then download.</span></div></li>
     </ol>
 
     <div class="card">
       <div id="dropCard" class="drop-zone">
-        <textarea id="paperText" placeholder="Paste a student's paper here…&#10;&#10;— or —&#10;&#10;Drag Word, PDF, or photo files anywhere onto this page. Drop a whole stack at once and each paper gets scrubbed separately."></textarea>
+        <textarea id="paperText" placeholder="Paste a student's paper here…&#10;&#10;— or —&#10;&#10;Use the “Choose papers or photos…” button below. A whole class set at once is fine."></textarea>
         <div class="drop-overlay" aria-hidden="true"><span>Let go — I'll scrub every one 📄</span></div>
       </div>
 
       <div class="input-actions">
+        <button id="btnSample" class="btn secondary" type="button"><span aria-hidden="true">▶</span> Try an example first</button>
         <button id="btnFile" class="btn secondary" type="button">Choose papers or photos…</button>
         <button id="btnCamera" class="btn secondary" type="button" hidden>📷 Take a photo</button>
-        <button id="btnSample" class="btn ghost" type="button">Show me an example first</button>
         <button id="btnInstall" class="btn ghost" type="button" hidden>📌 Install as an app</button>
         <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.md,.text,.png,.jpg,.jpeg,.webp,.bmp,.heic,.heif,image/*" multiple hidden>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
       </div>
-      <p class="filetypes">Word <code>.docx</code> comes back as Word, with your formatting intact. <code>.pdf</code>, photos, and plain <code>.txt</code> come back as text.
-        Scans and photos work when the paper is <em>typed</em> — handwriting can't be read.
-        <strong>Selecting a whole class set at once is the fast way</strong> — click one file, then press Ctrl+A (⌘A on a Mac).</p>
+      <p class="filetypes">Word, PDF, photos, and plain text all work — typed pages, not handwriting.</p>
 
-      <p class="mode-note">The first scrub downloads the scrubber once (64&nbsp;MB) and keeps it on this computer. After that it runs with the Wi-Fi off — papers are never uploaded anywhere.</p>
+      <p class="mode-note">The first scrub sets up once — give it a minute. Your papers never leave this computer.</p>
 
       <button id="btnScrub" class="btn primary big" type="button" disabled>Scrub this paper</button>
 
@@ -96,14 +92,12 @@
     <div id="batchList" class="batch-list"></div>
     <label class="safe-names">
       <input type="checkbox" id="safeNamesBatch" checked>
-      <span><strong>Use safe file names</strong> — a file called “Dalton Hall essay.docx” tells the AI his name before it reads a word. Each paper is saved under its tag instead, and a <code>WHO-IS-WHO</code> key goes in the zip so you can tell them apart.</span>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall essay.docx” tells the AI his name before it reads a word. Each paper is saved under its tag instead, and a <code>WHO-IS-WHO</code> list goes in the zip so you can tell them apart.</span>
     </label>
 
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all scrubbed papers</button>
-      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder — double-click it to open the papers inside. Word files stay Word files; PDFs come back as text.
-        <strong>The whole set shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every paper — so you can hand an AI several papers at once and it can keep track of who's who.
-        The <code>WHO-IS-WHO</code> file in the zip turns those tags back into your students — keep it, and don't send it to the AI.</p>
+      <p class="hint small">One file lands in your Downloads folder — double-click it to open. Inside: your scrubbed papers plus a <code>WHO-IS-WHO</code> list. <strong>The list is for you — never for the AI.</strong></p>
     </div>
 
     <details class="unscrub">
@@ -123,9 +117,11 @@
       <button id="btnNext" class="btn link" type="button" hidden>Next paper →</button>
     </div>
     <h2 id="summaryLine" aria-live="polite"></h2>
-    <p class="hint">Something highlighted that shouldn't be? <strong>Click it</strong> — or Tab to it and press Enter — to put the real word back. Handy for book characters like <mark class="t-name demo">Atticus Finch</mark>. Underlined words are ones you kept.</p>
-    <p id="ocrNote" class="hint warn" hidden>📷 This paper was read from a photo or scan. The reader can misread print and can't read handwriting — give names, numbers, and spellings an extra-careful look before you share it.</p>
+    <p class="hint"><mark class="t-name demo">[NAME 1]</mark> = replaced. Click it and the real word comes back — handy when it catches a book character, not a student. <mark class="kept demo">underlined</mark> = your call. Click to scrub.</p>
+    <p id="ocrNote" class="hint warn" hidden>📷 Read from a photo or scan — words can come out wrong. Double-check names, numbers, and spellings before you share.</p>
+    <p id="multiTip" class="hint small" hidden>Scrubbing a whole class? Pick them all at once next time — in the file window, click one paper, then press Ctrl+A (⌘A on a Mac) — and they come back together in one zip.</p>
 
+    <p id="legendHint" class="hint small" style="margin-bottom:.3rem" hidden>Flip a whole group at once:</p>
     <div id="legend" class="legend" role="group" aria-label="Detected categories"></div>
 
     <div id="outputText" class="output"></div>
@@ -139,11 +135,11 @@
       <input type="checkbox" id="safeNames" checked>
       <span><strong>Use safe file names</strong> — a file called “Dalton Hall essay.docx” tells the AI his name before it reads a word, so the paper is saved under its tag instead. Untick to keep the original name.</span>
     </label>
-    <p class="hint small">Give it a quick read before you share it. No tool catches everything — you're still the last set of eyes.</p>
+    <p class="hint small">Give it a quick read — no tool catches everything, and you're the last set of eyes. Then copy it into ChatGPT, Claude, or Gemini.</p>
 
     <details class="unscrub">
-      <summary>Next step: paste the scrubbed paper into your AI — and if its reply uses the tags, bring it back here</summary>
-      <p class="hint small">The AI's reply will use the same <code>[NAME 1]</code>-style tags anywhere it mentions or quotes what you scrubbed — "Nice hook, [NAME&nbsp;1]!", or a quoted sentence with an address in it. Paste the reply below and the tags flip back to the real words, so the feedback reads naturally when you hand it to the student. <strong>No tags in the reply? Then there's nothing to fix — skip this.</strong> Exact tags only (if the AI reworded one, fix it by hand), and it all happens on this device, as always.</p>
+      <summary>Got the AI's reply? Paste it here to put the real names back</summary>
+      <p class="hint small">It will say things like “Nice hook, <code>[NAME&nbsp;1]</code>!” — paste it below and every tag turns back into the real word, on this device. No [brackets] in the reply? Nothing to fix.</p>
       <textarea id="unscrubIn" placeholder="Paste the AI's feedback here…"></textarea>
       <div id="unscrubOut" class="output small" hidden></div>
       <button id="btnCopyUnscrub" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
@@ -180,7 +176,7 @@
     </div>
     <ol class="hsteps">
       <li><strong>Feed it papers.</strong> Paste one, or drop Word, PDF, or photo files anywhere on the page —
-        a whole class set at once is the fast way. On a phone, tap <strong>📷 Take a photo</strong> and shoot the page straight on.</li>
+        a whole class set at once is the fast way (in the file window, click one file, then Ctrl+A — ⌘A on a Mac). On a phone, tap <strong>📷 Take a photo</strong> and shoot the page straight on.</li>
       <li><strong>Let it scrub.</strong> The first scrub downloads the scrubber once (give it a minute); after that
         it works with the Wi-Fi off. Every personal detail becomes a tag like <mark class="t-name demo">[NAME 1]</mark>,
         and the same kid gets the same tag in every paper of a set.</li>
@@ -190,13 +186,13 @@
       <li><strong>Send it to the AI.</strong> Copy the scrubbed text into ChatGPT, Claude, or Gemini and ask for
         feedback, a rubric check, or revision ideas. Word files can also come back as real Word files, formatting intact.</li>
       <li><strong>Put the names back.</strong> When the reply says "Nice hook, [NAME 1]!", paste it into the box at
-        the bottom of the review screen and the real names return — on your device, like everything else.</li>
+        the bottom of the review screen and the real names return — on your device, like everything else. Exact tags only — if the AI reworded one, fix it by hand.</li>
     </ol>
     <div class="know">
       <strong>Take it on the road (IEP reviews, home visits, no-signal buildings)</strong>
       <ul>
         <li><strong>Install it like an app, once, on Wi-Fi:</strong> on Windows or a Chromebook, open this page in Chrome or Edge and click the install icon at the right end of the address bar (or this page's <em>Install as an app</em> button). On a <strong>Mac</strong>, use Chrome: puzzle-piece/⋮ menu → <em>Cast, save and share</em> → <em>Install Paper Scrubber</em>. In Safari: File → <em>Add to Dock</em>.</li>
-        <li><strong>Wait for the green line.</strong> The front page tells you when everything — app and AI — is saved on the device: <em>“✅ Road-ready.”</em> After that, airplane mode changes nothing.</li>
+        <li><strong>Wait for the top line to turn green:</strong> <em>“Works offline — everything is saved on this device.”</em> After that, airplane mode changes nothing.</li>
         <li>It gets its own icon and window, like any program. Updates arrive by themselves next time the laptop is online.</li>
       </ul>
     </div>

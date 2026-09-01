@@ -33,7 +33,7 @@ h1, h2, .num, .batch-row .b-name {
 main { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
 
 /* ---------- masthead ---------- */
-.masthead { background: var(--blue); color: #fff; padding-top: 1.5rem; }
+.masthead { background: var(--blue); color: #fff; padding-top: 1rem; }
 /* the De-Identifier wears the ridge green so an installed pair of apps —
    and a pair of open tabs — are never mistaken for each other */
 .masthead.deid { background: var(--green-deep); }
@@ -52,7 +52,7 @@ body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
 .tagline { margin: .45rem 0 0; font-size: 1.02rem; color: #cfe0f2; max-width: 34rem; }
 
 .coop { text-align: right; flex: none; padding-top: .3rem; }
-.coop img { display: block; height: 74px; width: auto; margin: 0 0 .3rem auto; background: #fff; border-radius: 8px; padding: 5px; }
+.coop img { display: block; height: 56px; width: auto; margin: 0 0 .3rem auto; background: #fff; border-radius: 8px; padding: 5px; }
 .coop-text { font-size: .78rem; color: #cfe0f2; letter-spacing: .02em; }
 .coop-text strong { color: #fff; }
 
@@ -72,8 +72,8 @@ body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
   font-size: .84rem; color: var(--ink-soft);
 }
 .trust-note a { color: var(--blue); }
-.road-ready { padding-top: 0; margin-top: -0.9rem; font-weight: 600; }
-.road-ready.ok { color: var(--green-deep); }
+.trust-strip li.busy { color: var(--ink-soft); }
+.trust-strip li.busy::before { content: "⏳ "; }
 
 /* ---------- steps ---------- */
 .steps {
@@ -158,6 +158,8 @@ body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
 .btn.primary { background: var(--green-deep); color: #fff; }
 .btn.primary:hover { background: #3f7423; }
 .btn.primary:disabled { background: #b3bcc4; cursor: not-allowed; }
+.btn.primary.not-ready, .btn.primary.not-ready:hover { background: #b3bcc4; }
+.btn.link.waiting { opacity: .5; }
 .btn.secondary { background: #fff; color: var(--blue-deep); border-color: var(--blue); }
 .btn.secondary:hover { background: var(--blue-wash); }
 .btn.ghost { background: none; color: var(--ink-soft); border-color: var(--rule); }
@@ -243,6 +245,11 @@ mark.kept {
   border-bottom: 2px solid #b9c3cc; white-space: normal;
 }
 mark.demo { cursor: default; }
+mark[data-id]:active { filter: brightness(.92); }
+@media (hover: hover) {
+  mark[data-id]:not(.kept):hover { box-shadow: 0 0 0 2px currentColor; }
+  mark.kept[data-id]:hover { background: #f0ece2; border-bottom-color: currentColor; }
+}
 mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
 
 .t-name     { background: #ffe08a; color: #6b4a05; }
@@ -414,4 +421,10 @@ body.desktop .safe-names { display: none; }
   .wordmark h1 { font-size: 1.9rem; }
   .review-nav { flex-wrap: wrap; }
   .batch-row { flex-wrap: wrap; }
+}
+
+/* ---------- short screens (1366x768 school laptops) ---------- */
+@media (max-height: 820px) {
+  .masthead .ridge { height: 36px; }
+  #paperText { min-height: 170px; }
 }

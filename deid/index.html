@@ -39,12 +39,10 @@
 
 <ul class="trust-strip" aria-label="Privacy guarantees">
   <li>Nothing leaves this device</li>
-  <li>Works offline after the first use</li>
+  <li id="trustOffline" aria-live="polite">Works offline after the first use</li>
   <li>No sign-in, no cost, ever</li>
 </ul>
-<p class="trust-note">Two AIs run right here on this machine — records are never uploaded anywhere. After the first run, it all works with the Wi-Fi off.
-  <a href="privacy.html">How it protects student privacy</a></p>
-<p id="roadReady" class="trust-note road-ready" hidden></p>
+<p class="trust-note"><a href="privacy.html">How it protects student privacy</a></p>
 
 <main>
 
@@ -58,22 +56,21 @@
 
     <div class="card">
       <div id="dropCard" class="drop-zone">
-        <textarea id="paperText" placeholder="Paste a record here…&#10;&#10;— or —&#10;&#10;Drag Word or PDF files anywhere onto this page. Drop a whole review stack at once and each record is handled separately."></textarea>
+        <textarea id="paperText" placeholder="Paste a record here…&#10;&#10;— or —&#10;&#10;Use the “Choose records…” button below. A whole review stack at once is fine."></textarea>
         <div class="drop-overlay" aria-hidden="true"><span>Let go — I'll de-identify every one 📄</span></div>
       </div>
 
       <div class="input-actions">
+        <button id="btnSample" class="btn secondary" type="button"><span aria-hidden="true">▶</span> Try an example first</button>
         <button id="btnFile" class="btn secondary" type="button">Choose records…</button>
         <button id="btnCamera" class="btn secondary" type="button" hidden>📷 Take a photo</button>
-        <button id="btnSample" class="btn ghost" type="button">Show me an example first</button>
         <button id="btnInstall" class="btn ghost" type="button" hidden>📌 Install as an app</button>
         <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.md,.text,.png,.jpg,.jpeg,.webp,.bmp,.heic,.heif,image/*" multiple hidden>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
       </div>
-      <p class="filetypes">Word <code>.docx</code> comes back as Word, formatting intact — including comments and tracked-changes authors, which get scrubbed from the file itself. <code>.pdf</code> and scans come back as text.
-        Scans work when the record is <em>typed</em> — handwriting can't be read.</p>
+      <p class="filetypes">Word, PDF, and scans of typed pages all work — handwriting can't be read.</p>
 
-      <p class="mode-note">First use downloads both AIs once (about 650&nbsp;MB — the contextual one is most of it) and keeps them on this laptop. A long document takes a few minutes; the page stays usable while it works.</p>
+      <p class="mode-note">First use downloads both AIs once (about 650&nbsp;MB). A long record takes a few minutes — the page stays usable.</p>
 
       <button id="btnScrub" class="btn primary big" type="button" disabled>De-identify this record</button>
 
@@ -93,14 +90,12 @@
     <div id="batchList" class="batch-list"></div>
     <label class="safe-names">
       <input type="checkbox" id="safeNamesBatch" checked>
-      <span><strong>Use safe file names</strong> — a file called “Dalton Hall IEP.docx” names the student before the AI reads a word. Each record is saved under its tag instead, and a <code>WHO-IS-WHO</code> key goes in the zip so you can tell them apart.</span>
+      <span><strong>Use safe file names</strong> — a file called “Dalton Hall IEP.docx” names the student before the AI reads a word. Each record is saved under its tag instead, and a <code>WHO-IS-WHO</code> list goes in the zip so you can tell them apart.</span>
     </label>
 
     <div class="zip-box">
       <button id="btnZip" class="btn primary big" type="button" disabled>⬇️ Download all de-identified records</button>
-      <p class="hint small">They arrive as one <code>.zip</code> in your Downloads folder. Word files stay Word files; PDFs come back as text.
-        <strong>The whole stack shares one set of tags</strong> — <code>[NAME 4]</code> means the same student in every record — so an AI can be handed several at once and keep track of who's who.
-        The <code>WHO-IS-WHO</code> file in the zip turns those tags back into your students — keep it, and never send it to the AI.</p>
+      <p class="hint small">One file lands in your Downloads folder — double-click it to open. Inside: every record plus a <code>WHO-IS-WHO</code> list. <strong>Keep the list — never send it to the AI.</strong></p>
     </div>
 
     <details class="unscrub">
@@ -121,8 +116,10 @@
     </div>
     <h2 id="summaryLine" aria-live="polite"></h2>
     <p class="hint"><strong>The underlines are the job.</strong> Colored tags are already scrubbed — click one to put the real word back if it's wrong. Underlined words are the neighbor-test calls only you can make: a diagnosis, a church, a team, a family detail. Click to scrub; the category chips scrub a whole group at once.</p>
-    <p id="ocrNote" class="hint warn" hidden>📷 This record was read from a photo or scan. The reader can misread print and can't read handwriting — give names, numbers, and spellings an extra-careful look before you share it.</p>
+    <p id="ocrNote" class="hint warn" hidden>📷 Read from a photo or scan — words can come out wrong. Double-check names, numbers, and spellings before you share.</p>
+    <p id="multiTip" class="hint small" hidden>De-identifying a stack? Pick them all at once next time — click one file, then press Ctrl+A (⌘A on a Mac) — and they come back together in one zip.</p>
 
+    <p id="legendHint" class="hint small" style="margin-bottom:.3rem" hidden>Flip a whole group at once:</p>
     <div id="legend" class="legend" role="group" aria-label="Detected categories"></div>
 
     <div id="outputText" class="output"></div>
@@ -139,8 +136,8 @@
     <p class="hint small">The neighbor test is the bar: could someone who knows the family recognize this student? The tool finds; you decide. You're the last set of eyes.</p>
 
     <details class="unscrub">
-      <summary>Next step: paste the de-identified record into your AI — and if its reply uses the tags, bring it back here</summary>
-      <p class="hint small">The AI's reply will use the same <code>[NAME 1]</code>-style tags anywhere it mentions what you scrubbed. Paste the reply below and the tags flip back to the real words. <strong>No tags in the reply? Then there's nothing to fix — skip this.</strong> Exact tags only, and it all happens on this device, as always.</p>
+      <summary>Got the AI's reply? Paste it here to put the real names back</summary>
+      <p class="hint small">It will use the same <code>[NAME&nbsp;1]</code>-style tags for what you scrubbed — paste it below and every tag turns back into the real word, on this device. No [brackets] in the reply? Nothing to fix. Exact tags only.</p>
       <textarea id="unscrubIn" placeholder="Paste the AI's reply here…"></textarea>
       <div id="unscrubOut" class="output small" hidden></div>
       <button id="btnCopyUnscrub" class="btn secondary" type="button" hidden>📋 Copy with real names</button>
@@ -204,7 +201,7 @@
       <strong>Take it on the road (IEP reviews in no-signal buildings)</strong>
       <ul>
         <li><strong>Install it like an app, once, on Wi-Fi:</strong> Chrome or Edge → install icon at the right end of the address bar (or this page's <em>Install as an app</em> button). Mac Safari: File → <em>Add to Dock</em>.</li>
-        <li><strong>Run one de-identify while still on Wi-Fi</strong> so both AIs finish downloading, and wait for the green <em>“✅ Road-ready”</em> line on the front page. After that, airplane mode changes nothing.</li>
+        <li><strong>Run one de-identify while still on Wi-Fi</strong> so both AIs finish downloading, and wait for the top line to turn green: <em>“Works offline — everything is saved on this device.”</em> After that, airplane mode changes nothing.</li>
         <li>Updates arrive by themselves next time the laptop is online.</li>
       </ul>
     </div>
@@ -213,7 +210,7 @@
       <ul>
         <li>Nothing leaves the machine — records, names, findings, nothing. The <a href="privacy.html">privacy page</a> says it in plain English, suitable for forwarding.</li>
         <li>Word downloads are scrubbed inside and out: document text, headers/footers, comment authors, tracked-change authors, and the file's own Author property.</li>
-        <li>Records save under their tag (<code>NAME-4-scrubbed.docx</code>) with a <code>WHO-IS-WHO</code> key in batch zips — keep the key, never send it.</li>
+        <li>Records save under their tag (<code>NAME-4-scrubbed.docx</code>) with a <code>WHO-IS-WHO</code> list in batch zips — keep the key, never send it.</li>
         <li>Grading essays instead? Use <a href="./">Paper Scrubber</a> — same engine, lighter, built for teachers.</li>
       </ul>
     </div>
