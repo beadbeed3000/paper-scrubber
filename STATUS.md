@@ -2,7 +2,21 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 31 August 2026, live version `paper-scrubber-v52`.
+stands. Last updated 31 August 2026, live version `paper-scrubber-v55`.
+
+## What changed in v54–v55 (deploys stop deleting the models)
+
+Model weights now live in their own cache, `kvec-models-v1`, which the
+version cleanup never touches — before this, every CACHE bump threw away the
+De-Identifier's 553 MB deep model and the 64 MB scrubber and every laptop
+re-downloaded them. The activate handler also *migrates* any model entries it
+finds in old versioned caches before purging, so this upgrade is the last one
+that could have cost a re-download. The scrubber model still precaches on
+install (road-ready unchanged), but skips files it already holds.
+
+**New deploy rule:** `kvec-models-v1` is keyed by path, so it must be bumped
+only if a model file is ever REPLACED at the same path — new models get new
+directories and need nothing. (v54 was a local test version; v55 shipped.)
 
 ## What changed in v52 (the computer-noob pass)
 
@@ -61,11 +75,6 @@ fix; these survived verification):
 - A field instruction split across several `<w:instrText>` runs, and
   `w:fldSimple w:instr=`, keep their real target. The common `w:hyperlink` +
   .rels form is covered; these legacy field forms are not.
-- Every `CACHE` bump deletes the De-Identifier's 553 MB of GLiNER parts —
-  they land in the versioned `paper-scrubber-*` cache and the activate handler
-  purges it. Watched this happen on the v47→v51 deploy. Give them their own
-  unversioned cache and exclude it from the purge, the way `transformers-cache`
-  already is.
 - A failed deep check is invisible: its only notice goes to the status line,
   which `hideStatus()` wipes before the review opens. The desktop edition then
   still says "there is nothing you have to do here" over a light-scrub-only

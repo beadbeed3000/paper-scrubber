@@ -13,8 +13,10 @@ Rules that matter here:
 - Test against the real app before committing: `node dev-server.mjs 8137`,
   then use `window.__dev` in the page (set text, read findings, build the
   docx/zip outputs). Synthetic drops via `DataTransfer` work for files.
-- Never let sw.js cleanup touch `transformers-cache` — that's the teachers'
-  downloaded 64–266 MB models.
+- Never let sw.js cleanup touch `transformers-cache` or `kvec-models-v1` —
+  those hold the downloaded models (64 MB scrubber, 553 MB deep model) that
+  must survive deploys. Bump the `kvec-models-v1` name only if a model file is
+  ever replaced at the same path.
 - Privacy is the product: nothing may send paper text anywhere, new vendor
   libraries get vendored into `vendor/` (no CDNs at runtime), and any feature
   that can't keep "nothing leaves this device" true doesn't ship.
