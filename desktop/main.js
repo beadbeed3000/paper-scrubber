@@ -158,7 +158,7 @@ async function createWindow() {
           secs: Math.round((Date.now() - t0) / 1000),
         };
       })()`, true);
-      const ok = r.findings >= 5 && r.flagged === 0 && r.leaks.length === 0;
+      const ok = r.findings >= 5 && r.deep >= 1 && r.flagged === 0 && r.leaks.length === 0;   // deep >= 1: a silently failed deep check fails the release
       console.log('SCRUB_TEST ' + JSON.stringify({ ok, ...r }));
       app.exit(ok ? 0 : 1);
     } catch (e) {

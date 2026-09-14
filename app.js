@@ -157,7 +157,7 @@ const els = {
   btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
   batchProgressWrap: $('batchProgressWrap'), batchProgressBar: $('batchProgressBar'),
   batchList: $('batchList'), btnZip: $('btnZip'),
-  btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'), ocrNote: $('ocrNote'),
+  btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'), ocrNote: $('ocrNote'), deepNote: $('deepNote'),
   summaryLine: $('summaryLine'), legend: $('legend'), outputText: $('outputText'),
   btnCopy: $('btnCopy'), btnDownloadTxt: $('btnDownloadTxt'), btnDownloadDocx: $('btnDownloadDocx'),
   unscrubIn: $('unscrubIn'), unscrubOut: $('unscrubOut'), btnCopyUnscrub: $('btnCopyUnscrub'),
@@ -514,7 +514,8 @@ async function scanChunk(pipe, piece, depth = 0) {
   return found;
 }
 
-async function detectText(text, ui, paperName = '') {
+async function detectText(text, ui, paperName = '', paper = null) {
+  if (paper) paper.deepFailed = false;
   const pipe = await getPipe(ui);
   const chunks = chunkText(text, MODEL.chunkChars);
   const raw = [];
@@ -570,6 +571,11 @@ async function detectText(text, ui, paperName = '') {
       list = mergeAdjacent(list, text);
     } catch (err) {
       console.error(err);
+      // the status line is wiped before the review opens, so a message there is
+      // invisible — the failure must live on the paper and show in the review,
+      // or the desktop edition tells a FERPA-scared reviewer "nothing to do"
+      // over a light-scrub-only result
+      if (paper) paper.deepFailed = true;
       ui.say(`The deep check couldn't run (${err.message}) — regular scrubbing was still applied.`);
     }
   }
@@ -989,7 +995,7 @@ async function scrubPapers(list) {
     if (list.length > 1) renderBatch();
     try {
       if (!p.text) await loadPaperContent(p, statusSurface(), list.length > 1 ? p.name : '');
-      p.findings = await detectText(p.text, statusSurface(), list.length > 1 ? p.name : '');
+      p.findings = await detectText(p.text, statusSurface(), list.length > 1 ? p.name : '', p);
       p.status = 'done';
     } catch (err) {
       console.error(err);
@@ -1117,6 +1123,9 @@ function openReview(i) {
   els.btnNext.hidden = !(multi && next !== -1);
   els.btnDownloadDocx.hidden = p.kind !== 'docx';
   els.ocrNote.hidden = !p.ocr;
+  if (els.deepNote) els.deepNote.hidden = !p.deepFailed;
+  // the desktop hint says "nothing you have to do here" — not when the deep check failed
+  if (DESKTOP) { const h = document.querySelector('#resultsView .hint'); if (h) h.hidden = !!p.deepFailed; }
   // she just scrubbed ONE picked file — the moment to teach that thirty at once works
   if (els.multiTip) els.multiTip.hidden = !(papers.length === 1 && !!p.file && !DESKTOP);
   paperUnscrub.reset();   // fresh box per paper
@@ -1162,6 +1171,8 @@ function renderResults() {
     : n === 0
       ? `Found ${p.findings.length} personal detail${p.findings.length === 1 ? '' : 's'}, all underlined — you decide.`
       : `Replaced ${n} personal detail${n === 1 ? '' : 's'}${kept ? ` · ${kept} more underlined — you decide` : ''}.`;
+
+  if (p.deepFailed) els.summaryLine.textContent = '⚠️ Deep check did not run. ' + els.summaryLine.textContent;
 
   paperUnscrub.render();   // keep the un-scrubbed preview in sync with toggles
 }
@@ -1297,6 +1308,7 @@ function renderBatch() {
       scanning: 'scrubbing now…',
       done: (hits ? `${hits} personal detail${hits === 1 ? '' : 's'} replaced` : 'nothing personal found')
         + (p.ocr ? ' · read from a photo — double-check it' : '')
+        + (p.deepFailed ? ' · ⚠️ deep check did not run — re-run before sharing' : '')
         + (nameOf.has(p) ? ` · saves as ${nameOf.get(p)}` : ''),
       error: `couldn't read this file — ${p.error}`,
     }[p.status];

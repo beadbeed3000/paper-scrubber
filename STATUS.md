@@ -4,6 +4,32 @@ Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
 stands. Last updated 31 August 2026, live version `paper-scrubber-v55`.
 
+## What changed in v56 (desktop installers rebuild with the engine; deep-check failure is visible)
+
+Two findings from a "is it all good?" check on 14 September 2026:
+
+- **The Mac/Windows installers were stale.** They bundle the engine at build
+  time, but the desktop workflow only rebuilt on `desktop/**` changes — so the
+  v51 Word-container privacy fix (tracked-change deletions, custom.xml, link
+  targets) shipped to the web on 28 Aug and never reached the installers built
+  19 Aug. The workflow now also triggers on app.js, deep-check-worker.mjs,
+  labels.js, sample.js, styles.css, deid/**, models/**, vendor/**. Rule going
+  forward: **any engine change rebuilds both installers automatically**; the
+  release link always serves the newest build.
+- **A failed deep check is no longer invisible** (was the second open item from
+  the v51 review). `detectText` now takes the paper and sets `paper.deepFailed`
+  in its catch; the review shows a `#deepNote` warning banner (deid page),
+  the summary line is prefixed "⚠️ Deep check did not run.", batch rows say
+  "re-run before sharing", and the desktop edition hides its "nothing you have
+  to do here" hint when it isn't true. The CI `--scrub-test` gate now also
+  requires `deep >= 1`, so a silently failing deep model fails the release
+  instead of shipping a light-scrub-only installer.
+
+Verified: desktop smoke + scrub-test pass on this Windows machine with the v55
+engine (9 findings, 3 deep, 0 flagged, 0 leaks); the web failure path was
+forced by stubbing `Worker` and the banner/prefix appeared with the light scrub
+intact. Desktop version 1.2.1.
+
 ## What changed in v54–v55 (deploys stop deleting the models)
 
 Model weights now live in their own cache, `kvec-models-v1`, which the

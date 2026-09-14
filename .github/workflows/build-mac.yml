@@ -12,6 +12,15 @@ on:
     branches: [main]
     paths:
       - 'desktop/**'
+      # the installers bundle the engine — any engine change must rebuild them
+      - 'app.js'
+      - 'deep-check-worker.mjs'
+      - 'labels.js'
+      - 'sample.js'
+      - 'styles.css'
+      - 'deid/**'
+      - 'models/**'
+      - 'vendor/**'
       - '.github/workflows/build-mac.yml'
 
 permissions:
