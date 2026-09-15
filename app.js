@@ -710,7 +710,76 @@ const APP_TITLE_LISTS = /<(TitlesOfParts|HeadingPairs)(\s[^>]*)?>[\s\S]*?<\/\1>/
 // still resolves to the student. Reserved TLD, so a stray click goes nowhere.
 const REDACTED_LINK = 'https://redacted.invalid/';
 const REL_EL = /<Relationship\b[\s\S]*?(?:\/>|<\/Relationship>)/g;
-const INSTR_EL = /(<w:(?:instrText|delInstrText)(?:\s[^>]*)?>)([\s\S]*?)(<\/w:(?:instrText|delInstrText)>)/g;
+// A field instruction is whatever the <w:instrText> runs spell out together,
+// and Word breaks them wherever it likes — HYPERLINK "mailto:jayden.co" +
+// "mbs@school.org" reads as two harmless halves. fldChar separate/end closes
+// an instruction, so the pieces between boundaries are judged as one.
+const FIELD_TOKEN = /<w:(instrText|delInstrText)((?:\s[^>]*)?)>([\s\S]*?)<\/w:\1>|<w:fldChar\b[^>]*w:fldCharType="(?:separate|end)"[^>]*?\/?>/g;
+const FLD_SIMPLE = /<w:fldSimple\b[^>]*?\/?>/g;
+
+const decodeXml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+const encodeXmlAttr = (s, q) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(q === '"' ? /"/g : /'/g, q === '"' ? '&quot;' : '&apos;');
+
+// Only HYPERLINK, and only its first argument — the rest of an instruction is
+// style names and switches (STYLEREF "Heading 1", a \o screentip) that must
+// survive untouched.
+function redactInstruction(instr, needles) {
+  if (!/\bHYPERLINK\b/i.test(instr)) return instr;
+  let seen = false;
+  return instr.replace(/"([^"]*)"/g, (q, url) => {
+    if (seen) return q;
+    seen = true;
+    return riskyLinkTarget(url, needles) ? `"${REDACTED_LINK}"` : q;
+  });
+}
+
+// The fixed instruction goes back into the first piece and the rest are
+// emptied: Word reads the concatenation, so that is the same instruction.
+function redactFieldRuns(xml, needles) {
+  const groups = [];
+  let cur = [];
+  let m;
+  FIELD_TOKEN.lastIndex = 0;
+  while ((m = FIELD_TOKEN.exec(xml)) !== null) {
+    if (!m[1]) { if (cur.length) { groups.push(cur); cur = []; } continue; }   // fldChar boundary
+    const piece = { start: m.index, end: m.index + m[0].length, tag: m[1], attrs: m[2] || '', body: m[3] };
+    if (cur.length && cur[0].tag !== piece.tag) { groups.push(cur); cur = []; }
+    cur.push(piece);
+  }
+  if (cur.length) groups.push(cur);
+
+  const edits = [];
+  for (const g of groups) {
+    const combined = g.map((p) => p.body).join('');
+    const fixed = redactInstruction(combined, needles);
+    if (fixed === combined) continue;
+    g.forEach((p, i) => {
+      // the whole instruction lands in one element now, so keep its spaces
+      const attrs = i === 0 && !/xml:space=/.test(p.attrs) ? `${p.attrs} xml:space="preserve"` : p.attrs;
+      edits.push({ start: p.start, end: p.end, text: `<w:${p.tag}${attrs}>${i === 0 ? fixed : ''}</w:${p.tag}>` });
+    });
+  }
+  if (!edits.length) return xml;
+  let out = '';
+  let pos = 0;
+  for (const e of edits.sort((a, b) => a.start - b.start)) { out += xml.slice(pos, e.start) + e.text; pos = e.end; }
+  return out + xml.slice(pos);
+}
+
+// <w:fldSimple w:instr=" HYPERLINK &quot;mailto:…&quot; "> — the same
+// instruction, living in an attribute where its quotes are escaped.
+function redactFldSimple(xml, needles) {
+  return xml.replace(FLD_SIMPLE, (tag) => {
+    const m = tag.match(/(\sw:instr=)(["'])([\s\S]*?)\2/);
+    if (!m) return tag;
+    const instr = decodeXml(m[3]);
+    const fixed = redactInstruction(instr, needles);
+    if (fixed === instr) return tag;
+    return tag.replace(m[0], `${m[1]}${m[2]}${encodeXmlAttr(fixed, m[2])}${m[2]}`);
+  });
+}
 
 // Only identifiers that actually turn up inside a URL are matched against
 // link targets. A name or place needle would take a legitimate citation with
@@ -775,19 +844,10 @@ async function stripDocxIdentity(zip, linkNeedles = []) {
     let cleaned = s;
     if (isXml) {
       cleaned = cleaned.replace(META_AUTHOR_ATTRS, '');
-      // field codes carry the same targets as the .rels: HYPERLINK "mailto:…".
-      // Only HYPERLINK, and only its first argument — the rest of a field
-      // instruction is style names and switches that must survive untouched.
-      cleaned = cleaned.replace(INSTR_EL, (m, open, body, close) => {
-        if (!/\bHYPERLINK\b/i.test(body)) return m;
-        let seen = false;
-        const fixed = body.replace(/"([^"]*)"/g, (q, url) => {
-          if (seen) return q;
-          seen = true;
-          return riskyLinkTarget(url, linkNeedles) ? `"${REDACTED_LINK}"` : q;
-        });
-        return fixed === body ? m : open + fixed + close;
-      });
+      // field codes carry the same targets as the .rels: HYPERLINK "mailto:…",
+      // in runs or in a fldSimple attribute
+      cleaned = redactFieldRuns(cleaned, linkNeedles);
+      cleaned = redactFldSimple(cleaned, linkNeedles);
       // a picture's alt text is written by whoever inserted it, and routinely
       // names the child in the photo
       cleaned = cleaned.replace(/<(?:wp:docPr|pic:cNvPr)\b[^>]*?\/?>/g, (tag) =>

@@ -2,7 +2,26 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 31 August 2026, live version `paper-scrubber-v55`.
+stands. Last updated 15 September 2026, live version `paper-scrubber-v57`.
+
+## What changed in v57 (the last hyperlink hiding place)
+
+Closes the final open item from the v51 review. A `HYPERLINK "mailto:…"` field
+kept its real target in two shapes the per-element pass could not see:
+
+- **Split across runs.** Word breaks an instruction wherever it likes, so
+  `HYPERLINK "mailto:jayden.co` + `mbs@school.org"` arrives as two halves that
+  each look harmless — neither holds a balanced quote pair. The pieces between
+  `fldChar` boundaries are now assembled, judged as one instruction, and the
+  fixed instruction is written back into the first piece with the rest emptied
+  (Word reads the concatenation, so that is the same instruction).
+- **`w:fldSimple w:instr=`**, where the instruction lives in an attribute and
+  its quotes are `&quot;`-escaped. Decoded, judged, re-encoded.
+
+Still only HYPERLINK and only its first argument, so a `\o` screentip, a
+`STYLEREF "Heading 1"`, and a `gutenberg.org` citation all survive untouched —
+verified, along with the split and attribute forms, in unit tests and through a
+real .docx in the running app.
 
 ## What changed in v56 (desktop installers rebuild with the engine; deep-check failure is visible)
 
