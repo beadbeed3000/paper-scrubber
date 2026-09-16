@@ -1692,9 +1692,19 @@ els.btnZip.addEventListener('click', async () => {
   }
 });
 
-// install-as-app button — only appears when the browser says installing is
-// possible (Chrome/Edge, not already installed). One click, desktop icon,
-// works offline; no IT rights needed.
+// Keep-it-on-this-computer button — only appears when the browser says it is
+// possible (Chrome/Edge, not already installed). The hard part was never the
+// installing, it was finding the thing afterwards, so the outcome is named
+// on the button and the place to look is spelled out once it lands.
+const WHERE_IT_LANDS = () => {
+  const p = navigator.userAgentData?.platform || navigator.platform || '';
+  const ua = navigator.userAgent;
+  if (/CrOS/.test(ua)) return 'Look for it in your launcher — the circle at the bottom-left of the screen.';
+  if (/Mac/i.test(p)) return 'Look for it in your Applications folder, or press ⌘ + Space and type “Paper Scrubber”.';
+  if (/Win/i.test(p)) return 'Look for it in the Start menu — click Start and type “Paper Scrubber”.';
+  return 'Look for it wherever your computer keeps its apps — search for “Paper Scrubber”.';
+};
+
 let installPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -1714,6 +1724,7 @@ els.btnInstall.addEventListener('click', async () => {
 window.addEventListener('appinstalled', () => {
   installPrompt = null;
   els.btnInstall.hidden = true;
+  setStatus(`✅ Saved to this computer. ${WHERE_IT_LANDS()} Opening it there works with the Wi-Fi off.`);
 });
 
 // help dialog — Escape closes it natively; clicking the backdrop closes too
