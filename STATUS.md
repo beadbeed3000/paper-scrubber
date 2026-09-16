@@ -2,7 +2,23 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 15 September 2026, live version `paper-scrubber-v57`.
+stands. Last updated 16 September 2026, live version `paper-scrubber-v59`.
+
+## v58–v59 (the KVEC mark; the De-Identifier goes link-only)
+
+- **The logo is finally there.** Alex sent the white-wordmark version, which is
+  drawn for a dark background, so the white box `.coop img` used to sit it in
+  had to go — it would have erased the words. Trimmed, 248x180, precached. The
+  site's last 404 is gone.
+- **The De-Identifier is unlisted, not gone.** While the review team trials it,
+  it is reachable only by its URL: the two public pointers on Paper Scrubber
+  (footer line and help bullet) are removed and `deid/index.html` carries
+  `noindex, nofollow`. The page, its handout, the manifest, the installers and
+  the service-worker precache are all untouched — staff links keep working.
+  **To re-list it:** delete that robots meta and restore the two links.
+  Note a project site cannot serve its own robots.txt (crawlers only read the
+  one at the domain root, which lives in another repo), so the per-page meta
+  tag is the mechanism that actually applies here.
 
 ## What changed in v57 (the last hyperlink hiding place)
 
