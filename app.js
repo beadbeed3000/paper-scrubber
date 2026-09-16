@@ -1874,8 +1874,14 @@ if (DESKTOP) {
 }
 
 if (!DESKTOP && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => updateRoadReady())
+  // updateViaCache:'none' is load-bearing. By default the browser may serve
+  // sw.js itself out of its HTTP cache, and GitHub Pages sends max-age=600 —
+  // so for ten minutes after a deploy the browser never even looks for a new
+  // version. A teacher can normally escape that with a hard refresh; inside an
+  // iframe she cannot, because a parent-page refresh does not reach through to
+  // the embedded app's worker. Checking on every load keeps both honest.
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+    .then((reg) => { updateRoadReady(); reg.update().catch(() => {}); })
     .catch(() => { /* dev over plain http is fine */ });
   // When a newer version of the app installs, pick it up right away instead of
   // making the teacher visit twice. The `had a controller` guard keeps the very
