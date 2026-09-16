@@ -2,7 +2,41 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 16 September 2026, live version `paper-scrubber-v59`.
+stands. Last updated 16 September 2026, live version `paper-scrubber-v63`.
+
+## v60–v63 (why it looked frozen, and the install wording)
+
+**A deploy could get stuck on a device forever.** Reproduced live: GitHub's
+CDN propagates files at slightly different times, so a browser can fetch the
+new `sw.js` before the new `app.js` has landed on its edge. `cache.addAll`
+then filled the NEW cache from the browser's HTTP cache — i.e. with the OLD
+`app.js` — and since `sw.js` does not change again until the next deploy, that
+stale copy was served indefinitely. In an iframe there is no escape at all: a
+hard refresh of the parent page does not reach the embedded app's worker.
+
+Three fixes, all live:
+- Registration uses `updateViaCache: 'none'` plus `reg.update()` on load.
+  The default lets the browser serve `sw.js` itself from its HTTP cache, and
+  Pages sends `max-age=600`, so for ten minutes it never even checked.
+- Precache fetches with `cache: 'reload'`, so it can never capture whatever
+  the browser was holding.
+- **The small files that carry behaviour (`*.html`, `*.js`, `*.mjs`, `*.css`
+  outside `vendor/`) are fresh-first with a 3 s budget, then the cache.**
+  Everything heavy — `vendor/`, `models/` — stays cache-first and is never
+  re-downloaded. Road-ready is intact: airplane mode fails instantly and falls
+  through to cache; a hung connection is cut off at 3 s.
+
+Also: the install button now says **"Keep it on this computer"** and, once
+installed, the page says where it landed (Applications/⌘-Space on a Mac, Start
+menu on Windows, launcher on a Chromebook) — Alex installed it, liked it, and
+could not find it again. The teacher help section was rewritten to match: the
+link works everywhere with nothing to install, the icon is optional.
+
+**Decided against a downloadable installer for teachers.** Their fleet is
+mixed (Windows, Chromebooks, Macs), so a download excludes Chromebooks
+entirely and hands the rest an unsigned-binary warning — more confusion, not
+less. A Paper Scrubber build would be ~130 MB (it skips the 568 MB deep model)
+if that ever changes.
 
 ## v58–v59 (the KVEC mark; the De-Identifier goes link-only)
 
