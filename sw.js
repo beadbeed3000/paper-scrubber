@@ -1,12 +1,19 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v62';
+const CACHE = 'paper-scrubber-v63';
 // Model weights live in their own cache that version cleanup never touches —
 // otherwise every deploy threw away the De-Identifier's 553 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
 // if a model file is ever replaced at the same path (new models get new paths).
 const MODEL_CACHE = 'kvec-models-v1';
 const isModelPath = (pathname) => pathname.includes('/models/');
+// The files that carry behaviour are small — the page, the styles, the code.
+// Those are fetched fresh when the network can answer quickly, so a deploy
+// reaches a teacher on her next load. Everything heavy (AI runtimes, models,
+// icons) stays cache-first and is never re-downloaded. vendor/ is excluded on
+// purpose: those are megabytes of runtime that never change without a rename.
+const isShell = (pathname) => !pathname.includes('/vendor/') && !isModelPath(pathname)
+  && (/\.(?:html|js|mjs|css)$/.test(pathname) || pathname.endsWith('/'));
 const ASSETS = [
   './',
   './index.html',
@@ -66,7 +73,7 @@ async function precacheModels() {
 
 self.addEventListener('install', (e) => {
   e.waitUntil(Promise.all([
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)),
+    caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))),
     precacheModels(),
   ]).then(() => self.skipWaiting()));
 });
@@ -99,16 +106,37 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Give the network a moment, then stop waiting. Airplane mode fails instantly
+// and falls through to the cache; a hung school connection is cut off at three
+// seconds so the tool opens anyway.
+const raced = (p, ms) => Promise.race([
+  p, new Promise((_, rej) => setTimeout(() => rej(new Error('slow network')), ms)),
+]);
+
+async function freshFirst(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const res = await raced(fetch(req, { cache: 'no-store' }), 3000);
+    if (res && res.ok) { cache.put(req, res.clone()); return res; }
+  } catch { /* offline, or slower than a teacher should have to wait */ }
+  return (await cache.match(req)) || fetch(req);
+}
+
+async function cacheFirst(req, isModel) {
+  const hit = await caches.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res.ok) {   // never cache failures — a cached 404 would outlive the fix for it
+    const copy = res.clone();
+    caches.open(isModel ? MODEL_CACHE : CACHE).then((c) => c.put(req, copy));
+  }
+  return res;
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // let HF model fetches pass through
-  e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
-      if (res.ok) {   // never cache failures — a cached 404 would outlive the fix for it
-        const copy = res.clone();
-        caches.open(isModelPath(url.pathname) ? MODEL_CACHE : CACHE).then((c) => c.put(e.request, copy));
-      }
-      return res;
-    })),
-  );
+  e.respondWith(isShell(url.pathname)
+    ? freshFirst(e.request)
+    : cacheFirst(e.request, isModelPath(url.pathname)));
 });
