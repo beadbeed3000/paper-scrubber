@@ -52,7 +52,7 @@ body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
 .tagline { margin: .45rem 0 0; font-size: 1.02rem; color: #cfe0f2; max-width: 34rem; }
 
 .coop { text-align: right; flex: none; padding-top: .3rem; }
-.coop img { display: block; height: 56px; width: auto; margin: 0 0 .3rem auto; background: #fff; border-radius: 8px; padding: 5px; }
+.coop img { display: block; height: 60px; width: auto; margin: 0 0 .3rem auto; }
 .coop-text { font-size: .78rem; color: #cfe0f2; letter-spacing: .02em; }
 .coop-text strong { color: #fff; }
 

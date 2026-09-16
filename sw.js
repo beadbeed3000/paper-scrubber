@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v57';
+const CACHE = 'paper-scrubber-v58';
 // Model weights live in their own cache that version cleanup never touches —
 // otherwise every deploy threw away the De-Identifier's 553 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
@@ -17,6 +17,7 @@ const ASSETS = [
   './sample.js',
   './manifest.webmanifest',
   './icons/favicon.svg',
+  './icons/kvec-logo.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './vendor/transformers.min.js',
