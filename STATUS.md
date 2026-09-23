@@ -122,10 +122,10 @@ now says so.
   restore it.
 - Tags stay exact-match by design, so "Mrs. Faith Hensley" and "Faith
   Hensley" get different numbers in one paper. Still scrubbed, never leaked.
-- **Policy question for Alex's boss:** the desktop edition scrubs diagnoses
-  and eligibility categories along with everything else, which makes an IEP
-  review much less useful to the outside AI. That is the zero-questions design
-  working as specified, but it is a trade the boss should choose knowingly.
+- **Known cost of Alex's scrub-everything decision (not open):** the desktop
+  edition scrubs diagnoses and eligibility categories along with everything
+  else, so the outside AI sees less of an IEP. That is the zero-questions
+  design working as Alex specified. It changes only if Alex decides it should.
 - Narrative quasi-identifiers ("the only student to bring a calf to school")
   are beyond any detector here; the neighbor-test help text covers them.
 
