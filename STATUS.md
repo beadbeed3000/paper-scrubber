@@ -2,7 +2,132 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 16 September 2026, live version `paper-scrubber-v63`.
+stands. Last updated 23 September 2026, live version `paper-scrubber-v64`,
+desktop 1.3.0.
+
+## v64 (light/dark switch; what testing the installed desktop app found)
+
+On 23 September 2026 the released installers were downloaded (checksums
+verified), the Windows build installed, and the installed program driven
+end to end over the DevTools protocol (`De-Identifier.exe
+--remote-debugging-port=9333`). Install location, Start-menu and uninstall
+entries, Open With, the release gates, hidden Word parts, scanned-PDF OCR and
+the network (loopback only) all checked out. Detection was the weak spot.
+
+**How detection was measured.** Two sets of synthetic, answer-keyed records
+(five each: ARC notes, transition IEP, FBA/BIP, speech eval, psych eval; then
+a held-out re-eval summary, preschool IEP, OT eval, progress report, 504 plan)
+went through as one batch, graded with desktop semantics (everything detected
+is replaced). Rules were written against the first set only; the held-out set
+checks they generalize. An identifier counts as leaked if it survives
+verbatim; a person also counts if any piece of their name survives:
+
+| Measure | Installed 1.2.1 | v64 / 1.3.0 |
+|---|---|---|
+| Tuning set: identifiers that got through | 35 of 367 | 8 of 367 |
+| Tuning set: people with any piece of their name left | 17 of 167 | 0 of 167 |
+| Tuning set: terms that must stay readable, kept | 33 of 50 | 47 of 50 |
+| Held-out: identifiers that got through | 45 of 358 | 7 of 358 |
+| Held-out: people with any piece of their name left | 29 of 157 | 3 of 157 |
+| Held-out: terms that must stay readable, kept | 34 of 60 | 45 of 60 |
+| Quasi-identifiers removed, both sets | 116 of 177 | 117 of 177 |
+
+The held-out set is not pristine any more. Measured before any change it
+informed, the new rules let 11 of 358 identifiers through there (12 of 157
+people by the piece count). The later fixes it prompted are general shapes
+(listed below), not document-specific patches. The scratch tooling for this
+(answer keys, the CDP grader, the piece-count rescorer) lived in the session
+scratchpad and is not in the repo.
+
+**What was added** (all in app.js, see the comments there): dotted initials
+("J.M.", minus degrees, times and places), signature initials on form lines, a
+first name after a family role or honorific ("Mamaw Hope", "Coach Gunner"),
+labeled case/lunch/record numbers with letters, rural routes and P.O. boxes,
+"X Holler/Hollow", "X County", named-month dates, "age 6", phone extensions,
+school initials echoed from the school's full name ("CFMS"), a middle initial
+joining two name pieces, and a first name + initial pulled onto a caught
+surname. On the keep side: test, subtest, score and service names
+(`KEEP_TERMS`) never scrub as health/age/activity, and a model AGE or SSN
+must look like one, so standard scores and T-scores stay readable.
+
+**Regressions caught in the teacher tool and fixed before shipping:** a name
+ran on across a sentence end ("J.R.R. Tolkien. In history" swallowed "In"),
+the period itself went into the tag ("[NAME] I also liked"), two people across
+a sentence merged into one tag, and historical dates scrubbed. Names now stop
+at a real sentence end (honorifics and initials still continue), and a date
+whose year is before 1900 stays readable (only a real date shape counts, so a
+house number the model calls a date stays scrubbed).
+
+**Fixed from the held-out set** (general shapes, but they are why that set is
+no longer pristine): the AGE check forgot "weeks" ("born at 35 weeks"); "D.C."
+was allowed as a place everywhere and is now allowed only after "Washington",
+since in a progress report it was a person; and a deep-model context hit was
+thrown away whole when a regular finding overlapped it ("CFMS archery team"
+left "archery team" readable), so the rest of such a hit now stays a finding.
+A stricter scorer then found name pieces the first grader could not see,
+because it only counted a keyed string that survived whole. Two shapes were
+fixed: the name echo now also scrubs the ALL-CAPS form of a caught name
+("Colton W. Fields" in the body, "STUDENT: FIELDS, COLTON WAYNE" in the
+header), and the capitalized word between a form label and a caught surname
+joins the name ("Outside therapist: Journey Adams"; role words such as "Coach"
+stay readable). The cost: a caught surname "Hall" also scrubs "CITY HALL".
+The ALL-CAPS echo then exposed one more overlap case: once "FIELDS" was
+echoed, the deep model's hit on "FIELDS, JOURNEY RAE" overlapped it and was
+dropped, so "JOURNEY RAE" leaked. Leftover pieces of deep name and school hits
+now stay too, if they still pass `looksLikeRealName`. The deep stop-list also
+gained "preschool" (a heading it read as a school) and clinician credentials
+such as "LPCC". Last, a nickname in quotes right after a caught name is now
+the same person and echoes through the record: 'Wren Callie Stidham-Rose
+("Wrennie")', 'Jaxon (goes by "Jax")', 'Loretta "Retta"'. Quoted words that
+don't follow a name ("Great job", a book title) stay readable. Scores kept
+readable too: an ordinal is a rank, not an age ("21st percentile"), a short
+number after a score label is not an ID ("scale score 471"), and "i-Ready
+Reading/Math" is a test name, not an activity.
+
+**Light/dark switch.** ☀️ Light / 🌙 Dark in the masthead of both tools and the
+privacy page, applied before first paint. The web remembers it in
+`localStorage` (`kvec.theme`); the desktop edition opens dark and stores the
+choice in `settings.json` in its user-data folder, because its page origin is
+a new loopback port every launch and browser storage forgets. Verified: the
+choice survives a relaunch and the window background matches, no flash.
+
+**Desktop wording fixed.** The desktop page said "First use downloads both AIs
+once (about 650 MB)" and its help described judging underlines. Both models
+ship inside the program and nothing is judged there, so the desktop edition
+now says so.
+
+**Lessons.**
+- A patch script that uses `String.replace(a, b)` with a plain string `b`
+  expands `` $` `` and `$'` in it — it spliced the file's own prefix into
+  app.js once. Use `s.replace(a, () => b)`.
+- Node 24 accepted that broken file; Electron 33's engine (Node 20) did not,
+  and the desktop app died with `__dev` undefined. Syntax-check with both:
+  `node --check app.js` and `ELECTRON_RUN_AS_NODE=1 npx --prefix desktop
+  electron --check copy-of-app.mjs` (it needs the .mjs extension).
+- Escaping in nested string patches ate backslashes in one regex silently
+  (`+s[A-Z].s` instead of `+\s[A-Z]\.\s`). Re-read patched regexes.
+- Grade name leaks by piece, not by whole string. "FIELDS, [NAME 1]" is a
+  leak even though "FIELDS, COLTON WAYNE" no longer appears.
+- The desktop version sat at 1.2.1 across many builds, so installers were
+  indistinguishable. It is 1.3.0 now; bump it when the engine changes.
+
+**Still open, and why.**
+- Leaks that remain are hard shapes: bare two-letter initials ("CS"), a
+  seven-digit phone with no area code, an ID with an unusual label, a
+  school-year range ("2025-26"), a bare "10/5".
+- The teacher tool now scrubs author initials ("E.B. White"), "Harlan County",
+  "Sleepy Hollow" and "Brother Bear" in a book report, and "CITY HALL" once
+  "Hall" is a caught surname. Deliberate: in eastern Kentucky those shapes are
+  usually a real person or a home place, and the teacher can click one to
+  restore it.
+- Tags stay exact-match by design, so "Mrs. Faith Hensley" and "Faith
+  Hensley" get different numbers in one paper. Still scrubbed, never leaked.
+- **Policy question for Alex's boss:** the desktop edition scrubs diagnoses
+  and eligibility categories along with everything else, which makes an IEP
+  review much less useful to the outside AI. That is the zero-questions design
+  working as specified, but it is a trade the boss should choose knowingly.
+- Narrative quasi-identifiers ("the only student to bring a calf to school")
+  are beyond any detector here; the neighbor-test help text covers them.
 
 ## v60–v63 (why it looked frozen, and the install wording)
 
@@ -399,7 +524,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v37) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v64) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

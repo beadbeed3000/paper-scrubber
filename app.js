@@ -79,7 +79,11 @@ const DEEP_LABEL_TO_TYPE = {
 // class-standing words GLiNER tags as "family relationship"; junk as flags —
 // plus IEP-world jargon that reads like organizations or interests but
 // identifies nobody (EXPLORE and ILP are assessments, ARC is the committee)
-const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'sibling', 'siblings', 'family', 'parent', 'parents', 'explore', 'arc', 'ilp', 'reading materials', 'reading']);
+const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'sibling', 'siblings', 'family', 'parent', 'parents', 'explore', 'arc', 'ilp', 'reading materials', 'reading',
+  // form labels and credentials (seen as [ACTIVITY] in a graded eval report)
+  'history', 'examiner', 'ncsp', 'ccc-slp', 'otr/l', 'ed.s.', 'school psychologist', 'parent/guardian',
+  // a document heading and clinicians' credentials, read as schools
+  'preschool', 'kindergarten', 'lpcc', 'lpc', 'lcsw', 'bcba', 'cdces', 'aprn', 'psy.d.', 'ph.d.']);
 const DEEP_NAME_STOP = new Set(['he', 'she', 'i', 'we', 'they', 'you', 'it', 'him', 'her', 'them', 'his', 'hers', 'my', 'me', 'our', 'us', 'your', 'their', 'who', 'mr', 'mrs', 'ms', 'miss', 'dr', 'student', 'students', 'teacher', 'nurse', 'mom', 'dad', 'mother', 'father', 'parents', 'sister', 'brother', 'grandma', 'grandmother', 'grandpa', 'grandfather', 'aunt', 'uncle', 'cousin', 'caseworker', 'counselor', 'guardian']);
 function looksLikeRealName(s) {
   const words = s.trim().split(/\s+/);
@@ -101,9 +105,42 @@ function looksLikeRealName(s) {
 // (and the Great Depression is a unit in every KY history class).
 const HEALTH_TERMS = 'autism|autistic|Asperger(?:[\'’]s)?|ADHD|dyslexi[ac]|dysgraphia|dyscalculia|apraxia|aphasia|anxiety disorder|panic disorder|clinical depression|major depression|bipolar|epilep(?:sy|tic)|seizures?|diabet(?:es|ic)|asthma(?:tic)?|cerebral palsy|Down syndrome|muscular dystrophy|cystic fibrosis|sickle cell|traumatic brain injury|wheelchair|hearing aids?|cochlear implants?|insulin|EpiPen|inhaler|Adderall|Ritalin|Concerta|Vyvanse|Strattera|Focalin|Zoloft|Prozac|Lexapro|Abilify';
 
+// ---- rules added after grading the installed app against answer-keyed
+// records (Sept 2026): every one closed a measured leak or over-scrub.
+const MONTHS = 'January|February|March|April|May|June|July|August|September|Sept|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+// dotted initials that are NOT people: degrees, times, places, therapies
+const INITIALS_OK = new Set(['U.S.', 'U.K.', 'A.M.', 'P.M.', 'M.A.', 'M.S.', 'B.A.', 'B.S.', 'M.D.', 'D.O.', 'R.N.', 'L.P.N.', 'P.O.', 'N.A.', 'T.V.', 'O.T.', 'P.T.', 'S.L.P.', 'E.S.', 'A.A.', 'B.S.N.', 'M.S.W.', 'L.C.S.W.', 'U.S.A.', 'E.U.', 'R.S.V.P.']);
+const ROLE_WORDS = 'Aunt|Uncle|Mamaw|Papaw|Mawmaw|Pawpaw|Memaw|Granny|Grandma|Grandpa|Nana|Cousin|Coach|Mr\\.|Mrs\\.|Ms\\.|Miss|Dr\\.|Brother|Sister|Pastor|Deacon|Stepdad|Stepmom';
+// Named assessments, their scales and indices, and service descriptions.
+// None of these identify a child, and a reviewer cannot review an IEP without
+// them — yet the models tagged KTEA-3 as an organization, DIBELS as an
+// activity, "Attention Problems" as a diagnosis and "Speech/Language Therapy:
+// 60 minutes" as an activity, and the desktop edition scrubbed them all.
+// Eligibility categories and diagnoses are deliberately NOT here — whether
+// those stay readable is a policy decision, not a detection bug.
+const KEEP_TERMS = new RegExp('\\b(?:' + [
+  'WISC(?:-V|-IV)?', 'WAIS(?:-IV|-5)?', 'WPPSI(?:-IV)?', 'KTEA(?:-3)?', 'KABC(?:-II)?', 'WIAT(?:-4|-III)?', 'WJ(?:-IV|-V|\\s?IV)?', 'Woodcock[- ]Johnson(?: IV)?',
+  'CELF(?:-5|-P3)?', 'GFTA(?:-3)?', 'PLS(?:-5)?', 'PPVT(?:-5)?', 'EVT(?:-3)?', 'CTOPP(?:-2)?', 'BASC(?:-3)?', 'BRIEF(?:-2)?', 'Vineland(?:-3)?', 'ABAS(?:-3)?',
+  'Conners(?:[- ]4)?', 'Vanderbilt(?: ratings)?', 'DIBELS(?: 8)?', 'i-Ready(?: (?:Reading|Math|Diagnostic))?','MAP Growth', 'Battelle(?: Developmental Inventory)?', 'BDI(?:-3)?', 'BOT(?:-2)?',
+  'Beery(?: VMI)?', 'Sensory Profile(?: 2)?', 'ADOS(?:-2)?', 'GARS(?:-3)?', 'TOWL(?:-4)?', 'GORT(?:-5)?', 'TOWRE(?:-2)?', 'KeyMath(?:-3)?', 'Bayley(?:-4)?', 'WRAT(?:-?5)?', 'KBIT(?:-2)?',
+  'Full Scale IQ', 'FSIQ', 'General Ability Index', '(?:Verbal Comprehension|Visual Spatial|Fluid Reasoning|Working Memory|Processing Speed)(?: Index)?',
+  'Core Language(?: Score)?', '(?:Receptive|Expressive) Language(?: Index)?', 'Standard Score', 'percentile rank',
+  'Attention Problems', 'Hyperactivity', 'Aggression', 'Conduct Problems', '(?:Externalizing|Internalizing|Learning|School) Problems', 'Atypicality', 'Withdrawal', 'Somatization',
+  'Adaptability', 'Social Skills', 'Leadership', 'Functional Communication', 'Activities of Daily Living', 'Sense of Inadequacy', 'Behavioral Symptoms Index', 'Adaptive Skills',
+  'Letter (?:&|and) Word Recognition', 'Reading Comprehension', 'Nonsense Word Decoding', 'Math Concepts (?:&|and) Applications', 'Written Expression', 'Oral Reading Fluency', 'ORF', 'wcpm',
+  'Broad (?:Reading|Math|Written Language)', 'Passage Comprehension', 'Math Calculation Skills', 'Applied Problems',
+  '(?:direct |pull-out )?speech[- /](?:language |and language )?(?:therapy|services|pathology)', 'occupational therapy', 'physical therapy', 'specially designed instruction', 'SDI',
+  'resource (?:room|setting)', 'extended school year', 'co-teaching', 'collaborative (?:class|setting)', 'Tier [123]', 'Office of Vocational Rehabilitation', 'First Steps',
+].join('|') + ')\\b', 'gi');
+// never NAME: several instruments share a name with real families (Conners, Bayley, Beery)
+const KEEP_CATS = new Set(['HEALTH', 'ACTIVITY', 'ORG', 'WORK', 'FAMILY', 'BENEFIT', 'CHURCH', 'AGE', 'SSN', 'LINK']);
+// common IEP acronyms that a school's initials must never be confused with
+const ACRONYM_OK = new Set(['ARC', 'IEP', 'SLD', 'OHI', 'EBD', 'SDI', 'LRE', 'FBA', 'BIP', 'ADHD', 'SLP', 'ESY', 'KSA', 'MAP', 'ILP', 'FAPE', 'IDEA', 'KDE', 'DCBS', 'OVR', 'FFA', 'GPA', 'ELA', 'MTSS', 'RTI', 'ESL', 'ELL', 'SSN', 'DOB', 'OTR', 'PBIS', 'CCC', 'NCSP', 'BCBA', 'KY', 'USA', 'THE', 'AND']);
+
 const REGEX_RULES = [
   { type: 'EMAIL', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
-  { type: 'PHONE', re: /(?:\+?1[\s.\-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.\-])\d{3}[\s.\-]\d{4}(?!\d)/g },
+  // an extension is part of the number: "(606) 555-0172 ext. 218" leaked the "ext. 218"
+  { type: 'PHONE', re: /(?:\+?1[\s.\-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.\-])\d{3}[\s.\-]\d{4}(?!\d)(?:,?\s*(?:[Ee]xt\.?|[Xx]\.?|[Ee]xtension)\s*\d{1,5}\b)?/g },
   { type: 'SSN',   re: /\b\d{3}-\d{2}-\d{4}\b/g },
   // bare digit runs — student IDs, lunch numbers, unformatted phones. The
   // models are inconsistent on these (one slipped through in testing), and
@@ -132,7 +169,110 @@ const REGEX_RULES = [
   { type: 'ROOM',   re: /\b(?:Bus|Room|Rm)\.?\s*#?\s*\d{1,4}\b/gi },
   { type: 'GRADE',  re: /\b(?:[1-9]|1[0-2]|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth)(?:st|nd|rd|th)?[- ]grade(?:rs?)?\b|\bkindergart(?:en|ner)\b/gi },
   { type: 'HEALTH', re: new RegExp(`\\b(?:${HEALTH_TERMS})\\b`, 'gi') },
+  // initials with periods — "J.M.", "J.M.H.", "R. W." — read as punctuation by the model
+  // ("D.C." is a place only after "Washington" — in a progress report it was a person)
+  { type: 'NAME', re: /(?<![A-Za-z.])(?:[A-Z]\.\s?){1,2}[A-Z]\.(?![A-Za-z])/g,
+    keep: (m, text, at) => {
+      const k = m.replace(/\s/g, '');
+      if (k === 'D.C.') return !/Washington,?\s*$/.test(text.slice(Math.max(0, at - 12), at));
+      return !INITIALS_OK.has(k);
+    } },
+  // a signature initial on a form line: "GRANTED __BH__"
+  { type: 'NAME', re: /(?<=_{2,}\s?)[A-Z]{2,3}(?=\s?_{2,})/g },
+  // a first name right after a family role or honorific: "Aunt Hope", "Uncle
+  // Gunner", "Mamaw Hope" — names that are also words slip past the model alone
+  { type: 'NAME', re: new RegExp(`(?<=\\b(?:${ROLE_WORDS})\\s)[A-Z][a-z]+(?:-[A-Z][a-z]+)?(?:\\s[A-Z][a-z]+(?:-[A-Z][a-z]+)?)?`, 'g') },
+  // labeled numbers of any length, letters allowed: "Lunch #: 40216",
+  // "ARC CASE#: 26-0412", "BIP Case #: BIP-26-0317"
+  { type: 'ID', re: /(?<=\b(?:student|case|record|file|ssid|lunch|medicaid|account|member|policy|claim|referral)\s*(?:number|no\.?|num|id|#)?\s*[:#]?\s*)(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{3,}\b/gi },
+  // rural route and post office boxes: "RR 1 Box 88", "RR 2 Box 118-A", "P.O. Box 44"
+  { type: 'ADDRESS', re: /\b(?:R\.?R\.?|Rural Route|HC|Route|P\.?\s?O\.?)\s*\d{0,3},?\s*Box\s+\d+(?:-?[A-Z])?\b/gi },
+  // hollers and hollows are where people live: "Coon Holler", "Bunyan Hollow"
+  { type: 'ADDRESS', re: /\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)?\s(?:Holler|Hollow)\b/g },
+  // "Hollin County" in running prose (the all-caps letterhead form was already caught)
+  { type: 'STATE', re: /\b[A-Z][a-z]+ County\b/g },
+  // named-month dates: "Sept. 9, 2026", "September 3rd. 2026", "March 2023", "Oct. 4"
+  { type: 'DATE', re: new RegExp(`\\b(?:${MONTHS})\\.?\\s+(?:\\d{1,2}(?:st|nd|rd|th)?[.,]?\\s+)?\\d{4}\\b|\\b(?:${MONTHS})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, 'g'),
+    // history is not a birthday: "April 12, 1861" in a Civil War report stays put
+    keep: (m) => { const y = m.match(/\d{4}$/); return !y || Number(y[0]) >= 1900; } },
+  // "AGE: 10-6", "(age 6)" — the age next to a birth date survived on a scan
+  { type: 'AGE', re: /(?<=\bage[:\s]\s*)\d{1,2}(?:[-;]\d{1,2})?\b/gi },
 ];
+
+// A model "AGE" must actually be an age. It tagged standard scores ("Full Scale
+// IQ was 84", "SS 74") as ages, and the desktop edition scrubbed the scores.
+function looksLikeAge(text, f) {
+  const t = text.slice(f.start, f.end);
+  // "13 years", "six" — but an ordinal is a rank, not an age: "(21st percentile)"
+  if (/[a-z]/i.test(t) && !/^\s*\d+(?:st|nd|rd|th)\s*$/i.test(t)) return true;
+  const before = text.slice(Math.max(0, f.start - 12), f.start);
+  const after = text.slice(f.end, f.end + 14);
+  return /\bage[ds]?\s*:?\s*$/i.test(before) || /^\s*(?:-?years?|yrs?|y\/o|-year-old|months?|mos?|weeks?|wks?|days?|birthday)\b/i.test(after);
+}
+// History is not a birthday. A date whose year is before 1900 ("April 12,
+// 1861", "September 1787") cannot point to a living student or parent, and
+// scrubbing it wrecks a history paper. The year may sit just outside a model
+// piece ("April 12" + ", 1861"), so look one step past the end too.
+function isHistoricalDate(text, f) {
+  if (f.type !== 'DATE' && f.type !== 'DOB') return false;   // the model calls some of these birth dates
+  // a bare four-digit number is no date shape at all — it may be the house
+  // number in "1187 Rockhouse Road", and that must stay scrubbed
+  if (!/[A-Za-z]|\d[\/.-]\d/.test(text.slice(f.start, f.end))) return false;
+  let years = text.slice(f.start, f.end).match(/\b\d{4}\b/g);
+  if (!years) {
+    const next = text.slice(f.end, f.end + 8).match(/^,?\s*(\d{4})\b/);
+    if (next) years = [next[1]];
+  }
+  return !!years && years.every((y) => Number(y) >= 1000 && Number(y) < 1900);
+}
+// A short number right after a score label is the score, whatever the model
+// called it: "i-Ready Math scale score 471" came back as an ID.
+function looksLikeScore(text, f) {
+  return /^\d{1,3}$/.test(text.slice(f.start, f.end)) &&
+    /(?:score|SS|RIT|Lexile|wcpm|T-score)\s*(?:of|was|is|=|:)?\s*$/i.test(text.slice(Math.max(0, f.start - 24), f.start));
+}
+// A model "SSN" must look like one. It tagged the T-scores in a BASC table.
+function looksLikeSsn(text, f) {
+  const digits = text.slice(f.start, f.end).replace(/\D/g, '');
+  if (digits.length >= 9) return true;
+  return digits.length === 4 && /(?:ssn|social|last four)[^\n]{0,12}$/i.test(text.slice(Math.max(0, f.start - 24), f.start));
+}
+// A school named once in full is often named again by its initials: "Pine
+// Knob Elementary" then "(PKE)", "Caney Branch High School" then "the CBHS
+// library". Echo those initials wherever they stand alone.
+function schoolAcronyms(text, list) {
+  const found = [];
+  for (const f of list) {
+    if (f.type !== 'ORG') continue;
+    let words = text.slice(f.start, f.end).split(/[\s-]+/).filter((w) => /^[A-Z]/.test(w) && !/^(?:Of|The|And)$/i.test(w));
+    // stop at the school word, so a name extended over "Lunch" still yields "UBE"
+    const last = words.map((w) => /^(?:Elementary|Middle|High|School|Academy|College|Primary|Intermediate)$/i.test(w)).lastIndexOf(true);
+    if (last >= 1) words = words.slice(0, last + 1);
+    if (words.length < 2) continue;
+    const full = words.map((w) => w[0].toUpperCase()).join('');
+    for (const acr of new Set([full, full.replace(/S$/, '')])) {
+      if (acr.length < 3 || ACRONYM_OK.has(acr)) continue;
+      const re = new RegExp(`(?<![A-Za-z])${acr}(?![A-Za-z])`, 'g');
+      let m;
+      while ((m = re.exec(text)) !== null) found.push({ type: 'ORG', start: m.index, end: m.index + acr.length, score: 0.95, source: 'regex' });
+    }
+  }
+  return found;
+}
+// drop findings that sit inside named assessments, scales, and services
+function dropKeepTerms(text, list) {
+  const spans = [];
+  KEEP_TERMS.lastIndex = 0;
+  let m;
+  while ((m = KEEP_TERMS.exec(text)) !== null) spans.push([m.index, m.index + m[0].length]);
+  if (!spans.length) return list;
+  return list.filter((f) => {
+    if (!KEEP_CATS.has(f.type)) return true;
+    let inside = 0;
+    for (const [a, b] of spans) inside += Math.max(0, Math.min(b, f.end) - Math.max(a, f.start));
+    return inside < (f.end - f.start) * 0.5;
+  });
+}
 
 // Google Docs and Word sprinkle non-breaking and thin spaces through exported
 // text. Treated as plain spaces they merge and extend normally; treated as
@@ -361,11 +501,24 @@ function resolveOverlaps(list) {
   return out;
 }
 
+// words that end in a period without ending the sentence, so a name runs on past them
+const NAME_ABBR = /^(?:Mr|Mrs|Ms|Dr|St|Rev|Prof)$/i;
+// a name piece ending in a real word (not an initial, not "Mrs") before ". "
+function endsSentence(piece) {
+  const w = (piece.match(/(\p{L}+)[.!?]?$/u) || [])[1];
+  return !!w && w.length > 1 && !NAME_ABBR.test(w);
+}
 function mergeAdjacent(list, text) {
   const out = [];
   for (const f of list) {
     const last = out[out.length - 1];
-    if (last && last.type === f.type && new RegExp(`^[${GAP}.,'’\\-]{0,3}$`).test(text.slice(last.end, f.start))) {
+    const gap = last ? text.slice(last.end, f.start) : '';
+    // two name pieces around a lone middle initial are one name: "Dale |R.| Mason"
+    const initialGap = last && last.type === 'NAME' && f.type === 'NAME' && /^\s[A-Z]\.\s$/.test(gap);
+    // …but a sentence end keeps two people apart: "Ask Faith Hensley. Robert's
+    // score" is two names ("Mrs. Faith" and "J. Tolkien" still join)
+    const sentenceGap = f.type === 'NAME' && /^[.!?]\s/.test(gap) && endsSentence(text.slice(last.start, last.end));
+    if (last && last.type === f.type && !sentenceGap && (initialGap || new RegExp(`^[${GAP}.,'’\\-]{0,3}$`).test(gap))) {
       last.end = f.end;
       last.score = Math.max(last.score, f.score);
     } else out.push(f);
@@ -400,13 +553,20 @@ function extendEntities(text, list) {
       // a possessive ENDS the name — "Robert's Quantile score" must not eat
       // "Quantile" (which the echo pass would then stamp out document-wide)
       if (/['’]s$/.test(text.slice(f.start, f.end))) break;
+      // a name ends at a sentence-ending period — "J.R.R. Tolkien. In history"
+      // must not swallow "In". Honorifics and initials end in a period too and
+      // still continue ("Mrs. |Faith", "J. |Tolkien").
+      if (f.type === 'NAME' && /[.!?]$/.test(text.slice(f.start, f.end)) && endsSentence(text.slice(f.start, f.end))) break;
       const m = text.slice(f.end).match(new RegExp(`^[${GAP}]([\\p{L}'’.\\-]+)`, 'u'));
       if (!m) break;
       const word = m[1];
       const isCap = /^\p{Lu}[\p{Ll}'’\-]+\.?$/u.test(word);   // Unicode-aware: Márquez, Peña
       const isStreet = f.type === 'ADDRESS' && STREET_WORDS.test(word);
       if (!isCap && !isStreet) break;
-      const nextEnd = f.end + 1 + word.length;
+      // …and a full stop after a surname belongs to the sentence: "by E.B.
+      // |White|. I also" keeps its period instead of reading "[NAME] I also"
+      const take = f.type === 'NAME' && word.endsWith('.') && endsSentence(word) ? word.length - 1 : word.length;
+      const nextEnd = f.end + 1 + take;
       if (list.some((g) => g !== f && g.start < nextEnd && g.end > f.end)) break; // don't swallow a neighboring finding
       f.end = nextEnd;
       extra++;
@@ -424,7 +584,12 @@ function propagateNames(text, list) {
     if (f.type !== 'NAME') continue;
     for (const w of text.slice(f.start, f.end).split(/[^\p{L}'’\-]+/u)) {
       const clean = w.replace(/[’']s$/i, '');
-      if (clean.length >= 3 && /^\p{Lu}/u.test(clean) && !HONORIFICS.has(clean.toLowerCase())) words.add(clean);
+      if (clean.length >= 3 && /^\p{Lu}/u.test(clean) && !HONORIFICS.has(clean.toLowerCase())) {
+        words.add(clean);
+        // records shout the name in their header: "Colton W. Fields" in the
+        // body, "STUDENT: FIELDS, COLTON WAYNE" on top — the surname leaked there
+        if (/\p{Ll}/u.test(clean)) words.add(clean.toUpperCase());
+      }
     }
   }
   const extra = [];
@@ -533,14 +698,54 @@ async function detectText(text, ui, paperName = '', paper = null) {
     rule.re.lastIndex = 0;
     let m;
     while ((m = rule.re.exec(text)) !== null) {
+      if (rule.keep && !rule.keep(m[0], text, m.index)) continue;
       raw.push({ type: rule.type, start: m.index, end: m.index + m[0].length, score: 1, source: 'regex' });
     }
+  }
+
+  // model findings that are not what they claim to be (scores as ages, T-scores as SSNs)
+  for (let i = raw.length - 1; i >= 0; i--) {
+    const f = raw[i];
+    if (f.source !== 'model') continue;
+    if ((f.type === 'AGE' && !looksLikeAge(text, f)) || (f.type === 'SSN' && !looksLikeSsn(text, f)) ||
+        ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f))) raw.splice(i, 1);
   }
 
   for (const f of raw) expandToWord(text, f);
   let list = resolveOverlaps(raw);
   list = mergeAdjacent(list, text);
   list = mergeAdjacent(extendEntities(text, list), text);
+  // a first name and middle initial right before a caught surname: "Tara L. |Whitaker"
+  for (const f of list) {
+    if (f.type !== 'NAME') continue;
+    const m = text.slice(Math.max(0, f.start - 30), f.start).match(/([A-Z][a-z'’-]+\s[A-Z]\.\s)$/);
+    if (m && !list.some((g) => g !== f && g.end > f.start - m[1].length && g.start < f.start)) f.start -= m[1].length;
+  }
+  // on a form, the capitalized word between a label and a caught surname is the
+  // first name, even when it is also a word: "Outside therapist: Journey |Adams|"
+  // (a role word stays readable: "Teacher: Coach |Wells|")
+  const roleWord = new RegExp(`^(?:${ROLE_WORDS})$`);
+  for (const f of list) {
+    if (f.type !== 'NAME') continue;
+    const m = text.slice(Math.max(0, f.start - 30), f.start).match(/[:(][ \t]*([A-Z][a-z'’-]+)[ \t]$/);
+    if (!m || roleWord.test(m[1])) continue;
+    const add = m[0].length - m[0].indexOf(m[1]);
+    if (!list.some((g) => g !== f && g.end > f.start - add && g.start < f.start)) f.start -= add;
+  }
+  // a nickname in quotes right after a name is the same person, and it gets
+  // used later on its own: 'Wren Callie Stidham-Rose ("Wrennie")', 'Jaxon
+  // (goes by "Jax")', 'Loretta "Retta"'
+  const nicks = [];
+  for (const f of list) {
+    if (f.type !== 'NAME') continue;
+    const m = text.slice(f.end, f.end + 50).match(/^[ \t]*\(?[ \t]*(?:(?:[Gg]oes by|[Cc]alled|[Nn]icknamed|[Kk]nown as|aka|AKA|a\.k\.a\.)[ \t]+)?["“'‘](\p{Lu}[\p{Ll}'’-]{1,20})["”'’]/u);
+    if (!m) continue;
+    const end = f.end + m[0].length - 1, start = end - m[1].length;
+    if (!list.some((g) => g.start < end && g.end > start)) nicks.push({ type: 'NAME', start, end, score: 0.95, source: 'regex' });
+  }
+  if (nicks.length) list = mergeAdjacent(resolveOverlaps([...list, ...nicks]), text);
+  const acr = schoolAcronyms(text, list);
+  if (acr.length) list = mergeAdjacent(resolveOverlaps([...list, ...acr]), text);
   // echoes can reveal new surname halves ("Boo" → "Boo Radley"), which can in
   // turn echo elsewhere — two rounds reaches a fixpoint on real papers
   for (let round = 0; round < 2; round++) {
@@ -549,7 +754,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
     list = mergeAdjacent(resolveOverlaps([...list, ...echoes]), text);
     list = mergeAdjacent(extendEntities(text, list), text);
   }
-  list = list.filter((f) => text.slice(f.start, f.end).trim().length >= 2);
+  // one-character findings are usually stray letters — but "age 6" is an age
+  list = list.filter((f) => text.slice(f.start, f.end).trim().length >= 2 || f.type === 'AGE');
 
   // opt-in second pass for contextual identifiers. A deep-check failure must
   // never kill the scrub — the regular pass has already done its job.
@@ -564,8 +770,27 @@ async function detectText(text, ui, paperName = '', paper = null) {
         // auto-replacing those mangles the sentence for no privacy gain
         if ((type === 'NAME' || type === 'ORG') && !looksLikeRealName(d.text)) continue;
         if (DEEP_FLAG_STOP.has(d.text.trim().toLowerCase())) continue;
-        if (list.some((f) => d.start < f.end && d.end > f.start)) continue;  // regular findings win
-        list.push({ type, start: d.start, end: d.end, score: d.score, source: 'deep' });
+        const hits = list.filter((f) => d.start < f.end && d.end > f.start);
+        if (!hits.length) {
+          list.push({ type, start: d.start, end: d.end, score: d.score, source: 'deep' });
+        } else {
+          // regular findings win the overlap, but the rest of the hit still
+          // counts: "CFMS archery team" is [ORG] plus an activity, and
+          // "FIELDS, JOURNEY RAE" is an echoed surname plus the first and
+          // middle name — dropping the whole hit left both readable. Leftover
+          // name/school pieces must still look like a proper noun.
+          let from = d.start;
+          const pieces = [];
+          for (const h of hits.sort((a, b) => a.start - b.start)) { pieces.push([from, h.start]); from = Math.max(from, h.end); }
+          pieces.push([from, d.end]);
+          for (let [a, b] of pieces) {
+            while (a < b && /[\s.,;:()'’"-]/.test(text[a])) a++;
+            while (b > a && /[\s.,;:()'’"-]/.test(text[b - 1])) b--;
+            const piece = text.slice(a, b);
+            const properNoun = type !== 'NAME' && type !== 'ORG' ? /\p{L}{4,}/u.test(piece) : looksLikeRealName(piece);
+            if (properNoun && !DEEP_FLAG_STOP.has(piece.toLowerCase())) list.push({ type, start: a, end: b, score: d.score, source: 'deep' });
+          }
+        }
         list.sort((a, b) => a.start - b.start);
       }
       list = mergeAdjacent(list, text);
@@ -584,6 +809,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
   // afraid of FERPA and do not want judgement calls: everything detected is
   // replaced, automatically, no questions. (Web versions keep the flag-for-
   // judgement behavior — teachers need the diagnosis left readable.)
+  list = dropKeepTerms(text, list);
+  list = list.filter((f) => !isHistoricalDate(text, f));
   return list.map((f, i) => ({ ...f, id: i, enabled: DESKTOP ? true : !DEFAULT_KEPT.has(f.type) }));
 }
 
@@ -1745,6 +1972,38 @@ for (const b of [els.safeNames, els.safeNamesBatch]) {
   if (b) b.addEventListener('change', () => setSafeNames(b.checked));
 }
 
+// ---------------------------------------------------------------- theme
+// Two plain buttons in the masthead — "Light" and "Dark", the current one
+// pressed — because a single icon toggle leaves people guessing which state
+// it shows. The <head> script already applied the saved choice; this keeps
+// the buttons, the browser chrome color, and the saved setting in step.
+// The desktop program serves itself on a new port every launch, so browser
+// storage forgets between launches — it saves through its own settings file.
+const themeSwitch = document.createElement('div');
+themeSwitch.className = 'theme-switch';
+themeSwitch.setAttribute('role', 'group');
+themeSwitch.setAttribute('aria-label', 'Screen colors');
+for (const [t, label] of [['light', '☀️ Light'], ['dark', '🌙 Dark']]) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.theme = t;
+  b.textContent = label;
+  b.addEventListener('click', () => setTheme(t));
+  themeSwitch.append(b);
+}
+document.querySelector('.masthead .coop')?.append(themeSwitch);
+
+function setTheme(t, save = true) {
+  document.documentElement.classList.toggle('theme-dark', t === 'dark');
+  for (const b of themeSwitch.children) b.setAttribute('aria-pressed', String(b.dataset.theme === t));
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = t === 'dark' ? '#0f1512' : (TOOL === 'deid' ? '#1e5c38' : '#1b5ea8');
+  if (!save) return;
+  try { localStorage.setItem('kvec.theme', t); } catch { /* private mode */ }
+  window.deidDesktop?.setSetting?.('theme', t);
+}
+setTheme(document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light', false);
+
 // ---------------------------------------------------------------- init
 try {
   // default ON: a teacher who never finds the checkbox is still protected
@@ -1851,6 +2110,13 @@ if (DESKTOP) {
   if (steps[2]) steps[2].innerHTML = '<strong>Save &amp; send</strong><span>The output carries tags, never identities. Paste the AI’s reply back here to restore the names.</span>';
   const reviewHint = document.querySelector('#resultsView .hint');
   if (reviewHint) reviewHint.innerHTML = 'Everything identifying was replaced automatically — there is nothing you have to do here. If it replaced something that isn’t about a person (a book title, a curriculum name), <strong>click it</strong> to restore just that word.';
+  // the AIs ship inside the program — "first use downloads" would tell a
+  // FERPA-worried reviewer that something goes over the network
+  const modeNote = document.querySelector('.mode-note');
+  if (modeNote) modeNote.textContent = 'Both AIs are built into this program — nothing is downloaded. A long record takes a few minutes; the window stays usable.';
+  const helpSteps = document.querySelectorAll('#helpDialog .hsteps li');
+  if (helpSteps[1]) helpSteps[1].innerHTML = '<strong>Two AIs read it.</strong> The first finds direct identifiers — names, addresses, phones, birthdays, schools, ID numbers, plus the Word file’s own hidden author fields. The second reads for <em>context</em>: diagnoses, medications, family members, churches, employers, teams, benefits. Both are built into this program, so it works with the Wi-Fi off.';
+  if (helpSteps[2]) helpSteps[2].innerHTML = '<strong>Nothing to judge.</strong> Everything both AIs find is replaced automatically, the context details too. If it replaced something that isn’t about a person (a book title, a curriculum name), click it to restore just that word.';
 
   // files arriving from the scans-folder watcher or Finder's "Open With"
   window.deidDesktop.onFile(({ name, data }) => {

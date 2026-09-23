@@ -97,6 +97,23 @@ ipcMain.handle('choose-inbox', async () => {
   return watchInbox(r.filePaths[0]);
 });
 
+// ---------------------------------------------------------------- settings
+// The page is served on a fresh loopback port every launch, so its browser
+// storage belongs to a new origin each time and forgets everything. The few
+// things worth remembering (just the light/dark choice today) live here.
+const SETTINGS_OK = { theme: ['light', 'dark'] };
+const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
+function readSettings() {
+  try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; }
+}
+ipcMain.on('get-setting', (e, key) => { e.returnValue = SETTINGS_OK[key] ? (readSettings()[key] ?? null) : null; });
+ipcMain.handle('set-setting', (_e, key, value) => {
+  if (!SETTINGS_OK[key] || !SETTINGS_OK[key].includes(value)) return false;
+  const s = readSettings();
+  s[key] = value;
+  try { fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 1)); return true; } catch { return false; }
+});
+
 // ---------------------------------------------------------------- app window
 async function createWindow() {
   port = await startServer();
@@ -106,7 +123,7 @@ async function createWindow() {
     minWidth: 760,
     minHeight: 560,
     show: !SMOKE && !SCRUB_TEST,
-    backgroundColor: '#151b17',
+    backgroundColor: readSettings().theme === 'light' ? '#f4f1e9' : '#151b17',   // no flash of the wrong color
     title: 'De-Identifier',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

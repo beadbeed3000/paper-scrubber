@@ -8,6 +8,16 @@
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#1b5ea8">
 <link rel="stylesheet" href="styles.css">
+<script>
+  // light or dark, set before first paint. The desktop program remembers the
+  // choice in its own settings (window.deidDesktop.theme); the web uses storage.
+  (function () {
+    var d = window.deidDesktop, t = null;
+    try { t = (d && d.theme) || localStorage.getItem('kvec.theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = d ? 'dark' : 'light';
+    if (t === 'dark') document.documentElement.classList.add('theme-dark');
+  })();
+</script>
 </head>
 <body>
 
@@ -50,7 +60,7 @@
     <h2>What's stored on the device</h2>
     <ul>
       <li>The app files and AI model, in the browser's offline cache (so it works without internet).</li>
-      <li>Your “safe file names” tick-box setting, in the browser's local storage.</li>
+      <li>Your “safe file names” tick-box and light/dark choice, in the browser's local storage.</li>
       <li><strong>Not stored:</strong> papers. When you close or reload the tab, they're gone.
         Scrubbed copies exist only where you save them — including the
         <code>WHO-IS-WHO</code> key, which lists your students' real names and belongs

@@ -148,11 +148,29 @@ Restoring it is a small change (a second `MODELS` entry, the `spa.traineddata.gz
 file, and the toggle markup) if a foreign-language teacher ever asks.
 
 It's a token-classification model trained on ai4privacy data. On top of the
-model, `app.js` adds deterministic regex rules (email, US phone, SSN, school names),
+model, `app.js` adds deterministic regex rules (email, US phone with extension,
+SSN, school names, dotted initials like "J.M.", a first name after a family role
+or honorific like "Mamaw Hope", labeled case and lunch numbers, rural routes and
+P.O. boxes, "Coon Holler", "Hollin County", named-month dates, "age 6"),
 boundary extension (models often catch "Jasmine" but not "Carter", or "118" but not
 "Deer Creek Road"), and a "name echo" pass: once a name is caught anywhere,
-identical words are scrubbed everywhere in the paper. Each of those layers closed a
-real leak found in testing.
+identical words are scrubbed everywhere in the paper, including the ALL-CAPS form
+a record header uses ("FIELDS, COLTON WAYNE"). A school named in full is
+also scrubbed wherever its initials appear ("PKE", "CBHS"). Each of those layers
+closed a real leak found in testing.
+
+Some things are deliberately kept readable, because an IEP review is useless
+without them: test and subtest names (WISC-V, BASC-3 scales, KTEA-3), score
+labels, and service names (speech therapy, resource room) are never scrubbed as
+a health detail or an age, and a model "AGE", "SSN" or short "ID" must actually
+look like one, so standard scores, percentiles and T-scores stay put. Dates before 1900 stay readable
+too, since history is not a birthday. A name stops at the end of its sentence,
+so "by J.R.R. Tolkien. In history" keeps both the period and "In".
+
+Both tools have a ☀️ Light / 🌙 Dark switch in the masthead. The web version
+remembers the choice in the browser. The desktop edition opens dark and keeps
+the choice in its own `settings.json`, since its loopback address changes on
+every launch and browser storage would forget.
 
 > **Why not Piiranha?** It was the original plan, but its browser-ready quantized
 > build turned out badly degraded in testing (missed obvious names), and the

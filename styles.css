@@ -369,46 +369,81 @@ body.page-dragging #globalDrop { display: flex; }
 .colophon { margin: 0; font-size: .78rem; line-height: 1.6; }
 .site-footer a { color: #b6d5a2; }
 
-/* ---------- desktop edition (the Mac program) ----------
-   Same page, different skin: a dark, quiet, pro look so the program reads as
-   its own tool, not a website in a frame. Token overrides do most of it. */
-body.desktop {
+/* ---------- light / dark ----------
+   Chosen by the person with the switch in the masthead and remembered; the
+   page's <head> sets html.theme-dark before first paint so there is no flash.
+   Paper Scrubber on the web starts light, the desktop De-Identifier starts dark
+   — each keeps the look its users already know until someone picks otherwise.
+   Every color here was checked against its background for WCAG AA. */
+.theme-switch {
+  display: inline-flex; margin-top: .45rem;
+  border: 1px solid rgba(255, 255, 255, .5); border-radius: 999px; overflow: hidden;
+}
+.theme-switch button {
+  font: inherit; font-size: .85rem; font-weight: 600; line-height: 1.2;
+  padding: .38rem .85rem; min-height: 2rem;
+  background: transparent; color: #fff; border: 0; cursor: pointer;
+}
+.theme-switch button:hover { background: rgba(255, 255, 255, .14); }
+.theme-switch button[aria-pressed="true"] { background: #fff; color: #17293c; }
+.theme-switch button:focus-visible { outline: 3px solid #bcdca4; outline-offset: -3px; }
+
+html.theme-dark {
+  color-scheme: dark;
   --paper: #1d2620;
   --bg: #151b17;
   --ink: #e7ece8;
-  --ink-soft: #9fb0a4;
+  --ink-soft: #a9b8ad;
   --rule: #34413a;
+  --blue: #7ab0ec;        /* links, borders, focus rings on dark */
+  --blue-deep: #b3d3f5;   /* headings and summaries — navy would vanish here */
   --blue-wash: #1a2733;
   --green-wash: #1d2f24;
 }
-body.desktop .masthead.deid { background: #0f1512; border-bottom: 1px solid #23302a; }
-body.desktop .ridge { display: none; }
-body.desktop .masthead { padding-bottom: 1.1rem; }
-body.desktop .card { box-shadow: none; }
-body.desktop #paperText,
-body.desktop .output,
-body.desktop .unscrub textarea {
-  background: #10150f;
-  color: var(--ink);
-  border-color: var(--rule);
+html.theme-dark .masthead { background: #0e1826; border-bottom: 1px solid #22324a; padding-bottom: 1.1rem; }
+html.theme-dark .masthead.deid { background: #0f1512; border-bottom-color: #23302a; }
+html.theme-dark .ridge, html.theme-dark .footer-ridge { display: none; }
+html.theme-dark .site-footer { background: #0f1512; }
+html.theme-dark .card { box-shadow: none; }
+html.theme-dark #paperText,
+html.theme-dark .output,
+html.theme-dark .unscrub textarea {
+  background: #10150f; color: var(--ink); border-color: var(--rule);
 }
-body.desktop #paperText::placeholder { color: #6d7f73; }
-body.desktop .mode-box,
-body.desktop .legend label,
-body.desktop .batch-row,
-body.desktop .btn.secondary { background: #232e27; color: var(--ink); }
-body.desktop .btn.secondary { border-color: var(--green); color: #cfe6c4; }
-body.desktop .btn.ghost { color: var(--ink-soft); border-color: var(--rule); }
-body.desktop .filetypes code { background: #232e27; color: #a8c6e8; }
-body.desktop .steps li { background: #1a231e; border-color: #2a362f; }
-body.desktop .steps strong { color: #bcd9ef; }
-body.desktop .site-footer { background: #0f1512; }
-body.desktop .footer-ridge { display: none; }
-body.desktop .trust-strip { color: #8fc573; }
-body.desktop .safe-names { background: var(--green-wash); border-color: #2c4433; }
-body.desktop .zip-box { background: var(--green-wash); border-color: #2c4433; }
-body.desktop mark.kept { border-bottom-color: #7d938a; }
-/* no choices in the desktop edition: file names are always safe */
+html.theme-dark #paperText::placeholder { color: #8a9a8f; }
+html.theme-dark .mode-box,
+html.theme-dark .legend label,
+html.theme-dark .batch-row { background: #232e27; color: var(--ink); }
+html.theme-dark .btn.secondary { background: #232e27; border-color: var(--green); color: #cfe6c4; }
+html.theme-dark .btn.secondary:hover { background: #2c3a31; }
+/* Paper Scrubber is the blue tool — its outline buttons stay blue, as in light */
+html.theme-dark body:not([data-tool="deid"]) .btn.secondary { background: #1a2430; border-color: var(--blue); color: var(--blue-deep); }
+html.theme-dark body:not([data-tool="deid"]) .btn.secondary:hover { background: #22303f; }
+html.theme-dark .btn.ghost { color: var(--ink-soft); border-color: var(--rule); }
+html.theme-dark .btn.ghost:hover { background: #2a352e; color: var(--ink); }
+html.theme-dark .btn.primary:disabled,
+html.theme-dark .btn.primary.not-ready,
+html.theme-dark .btn.primary.not-ready:hover { background: #3a4540; color: #c3cfc7; }
+html.theme-dark .filetypes code,
+html.theme-dark .safe-names code { background: #10150f; color: #b3d3f5; }
+html.theme-dark .steps li { background: #1a231e; border-color: #2a362f; }
+html.theme-dark .trust-strip { color: #9ccf7f; }
+html.theme-dark .safe-names,
+html.theme-dark .zip-box,
+html.theme-dark .know { border-color: #2c4433; }
+html.theme-dark .know > strong { color: #9ccf7f; }
+html.theme-dark .status p.error,
+html.theme-dark .batch-row .b-sub.err { color: #ff9f8a; }
+html.theme-dark .progress { background: #2a352e; }
+html.theme-dark .hint.warn { background: #33290f; border-color: #5c4a1a; color: #f3d98b; }
+html.theme-dark .hint.warn strong { color: #fbe7b0; }
+html.theme-dark mark.kept { border-bottom-color: #8fa298; }
+html.theme-dark mark.kept[data-id]:hover { background: #2a352e; }
+html.theme-dark .help-fab { background: #1b5ea8; }
+html.theme-dark .help-fab:hover { background: #2a6fbd; }
+html.theme-dark #helpDialog { border-top-color: #1b5ea8; }
+
+/* the desktop program asks no questions: file names are always safe */
 body.desktop .safe-names { display: none; }
 
 /* ---------- narrow screens ---------- */

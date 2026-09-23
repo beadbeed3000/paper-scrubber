@@ -18,6 +18,16 @@
 <link rel="icon" href="icons/deid-favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#1e5c38">
 <link rel="stylesheet" href="styles.css">
+<script>
+  // light or dark, set before first paint. The desktop program remembers the
+  // choice in its own settings (window.deidDesktop.theme); the web uses storage.
+  (function () {
+    var d = window.deidDesktop, t = null;
+    try { t = (d && d.theme) || localStorage.getItem('kvec.theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = d ? 'dark' : 'light';
+    if (t === 'dark') document.documentElement.classList.add('theme-dark');
+  })();
+</script>
 </head>
 <body data-tool="deid">
 
