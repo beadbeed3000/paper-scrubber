@@ -2,8 +2,31 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 28 September 2026, live version `paper-scrubber-v66`,
-desktop 1.3.1.
+stands. Last updated 28 September 2026, live version `paper-scrubber-v67`,
+desktop 1.3.2.
+
+## v67 / desktop 1.3.2 (the Roberts leak and the fractions)
+
+Two findings from grading the Roberts model IEP (v65 below), both fixed and
+re-graded on all eleven answer-keyed records, desktop and web behavior:
+- **"documented Karen-style" left "Karen" readable.** Neither AI tags a name
+  glued to "-style", "-like" or "-esque", so a rule does: a capitalized word in
+  that shape is a NAME, and the "-style" stays readable ("[NAME]-style").
+  De-Identifier only, since an essay says "a Shakespeare-style sonnet". Method
+  names in `EPONYM_OK` ("Wilson-style", "Venn-style", "Montessori-style") and
+  role words are left to the other checks.
+- **"can order fractions 1/2, 1/3, and 1/4" became birth dates.** The main
+  model called "2, 1/3" and "1/4" a DOB. `looksLikeFraction` drops a model
+  date made only of slash numbers when the words just before it in the same
+  sentence are about fractions, or a unit or "of the" follows ("3/4 cup", "1/2
+  of the class"). A date word right before it keeps it a date ("fractions on
+  4/2"), and three-part dates and month names are never touched. Both tools.
+
+Result: Roberts 0 of 19 identifiers through (was 1), no name piece left,
+readable terms 38 of 50 on the desktop and 48 of 50 on the web (was 37 and 47).
+Every other finding in all eleven records is unchanged. Still open from the
+Roberts list: "60→80" read as a birth date, "703 KAR" and "§6b" as addresses,
+and the heading and job-title hits listed under v65.
 
 ## v66 (the web De-Identifier stays offline-ready across updates)
 
@@ -724,7 +747,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v65) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v67) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

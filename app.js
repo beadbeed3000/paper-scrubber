@@ -134,6 +134,8 @@ const KEEP_TERMS = new RegExp('\\b(?:' + [
 ].join('|') + ')\\b', 'gi');
 // never NAME: several instruments share a name with real families (Conners, Bayley, Beery)
 const KEEP_CATS = new Set(['HEALTH', 'ACTIVITY', 'ORG', 'WORK', 'FAMILY', 'BENEFIT', 'CHURCH', 'AGE', 'SSN', 'LINK']);
+// methods named after people, which stay readable in "Wilson-style drills"
+const EPONYM_OK = new Set(['Wilson', 'Montessori', 'Frayer', 'Venn', 'Cornell', 'Singapore', 'Saxon', 'Socratic', 'Marzano', 'Kagan', 'Bloom', 'Waldorf', 'Reggio', 'Premack']);
 // common IEP acronyms that a school's initials must never be confused with
 const ACRONYM_OK = new Set(['ARC', 'IEP', 'SLD', 'OHI', 'EBD', 'SDI', 'LRE', 'FBA', 'BIP', 'ADHD', 'SLP', 'ESY', 'KSA', 'MAP', 'ILP', 'FAPE', 'IDEA', 'KDE', 'DCBS', 'OVR', 'FFA', 'GPA', 'ELA', 'MTSS', 'RTI', 'ESL', 'ELL', 'SSN', 'DOB', 'OTR', 'PBIS', 'CCC', 'NCSP', 'BCBA', 'KY', 'USA', 'THE', 'AND']);
 
@@ -182,6 +184,10 @@ const REGEX_RULES = [
   // a first name right after a family role or honorific: "Aunt Hope", "Uncle
   // Gunner", "Mamaw Hope" — names that are also words slip past the model alone
   { type: 'NAME', re: new RegExp(`(?<=\\b(?:${ROLE_WORDS})\\s)[A-Z][a-z]+(?:-[A-Z][a-z]+)?(?:\\s[A-Z][a-z]+(?:-[A-Z][a-z]+)?)?`, 'g') },
+  // a name made into an adjective: "documented Karen-style" (neither AI sees
+  // it). De-Identifier only: in an essay it is "a Shakespeare-style sonnet".
+  { type: 'NAME', re: /(?<![\p{L}-])\p{Lu}\p{Ll}{2,}(?=-(?:style|like|esque)\b)/gu,
+    keep: (m) => TOOL === 'deid' && !EPONYM_OK.has(m) && !new RegExp(`^(?:${ROLE_WORDS})$`).test(m) },
   // labeled numbers of any length, letters allowed: "Lunch #: 40216",
   // "ARC CASE#: 26-0412", "BIP Case #: BIP-26-0317"
   { type: 'ID', re: /(?<=\b(?:student|case|record|file|ssid|lunch|medicaid|account|member|policy|claim|referral)\s*(?:number|no\.?|num|id|#)?\s*[:#]?\s*)(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{3,}\b/gi },
@@ -236,6 +242,18 @@ function looksLikeSsn(text, f) {
   const digits = text.slice(f.start, f.end).replace(/\D/g, '');
   if (digits.length >= 9) return true;
   return digits.length === 4 && /(?:ssn|social|last four)[^\n]{0,12}$/i.test(text.slice(Math.max(0, f.start - 24), f.start));
+}
+// A model date made only of slash numbers is a fraction when the words just
+// before it are about fractions or a unit follows it: "can order fractions
+// 1/2, 1/3, and 1/4" came back as birth dates. "Fractions on 4/2" is a date.
+function looksLikeFraction(text, f) {
+  const t = text.slice(f.start, f.end);
+  if (!/\d\/\d/.test(t) || /\d\/\d+\/\d|\d{4}/.test(t) || !/^[\d\/,\s]*(?:(?:and|or)[\d\/,\s]*)?$/.test(t)) return false;
+  let before = text.slice(Math.max(0, f.start - 60), f.start);
+  before = before.slice(before.search(/[^.!?\n]*$/));   // this sentence only
+  if (/\b(?:on|by|due|dated|since|until|till|before|after|from|through|thru|as of)\s+$/i.test(before)) return false;
+  return /\b(?:fractions?|numerators?|denominators?|mixed numbers?)\b/i.test(before) ||
+    /^\s*(?:cups?|inch(?:es)?|miles?|hours?|teaspoons?|tablespoons?|pounds?|feet|foot|yards?|of (?:the|a|an|his|her|their|all|each)\b)/i.test(text.slice(f.end, f.end + 16));
 }
 // A school named once in full is often named again by its initials: "Pine
 // Knob Elementary" then "(PKE)", "Caney Branch High School" then "the CBHS
@@ -483,6 +501,8 @@ function expandToWord(text, ent) {
   while (ent.end < text.length && ok(text[ent.end])) ent.end++;
   // sentence punctuation isn't part of an email/link — give the period back
   if (loose) while (ent.end > ent.start && /[.!?,;:]/.test(text[ent.end - 1])) ent.end--;
+  // "Karen-style" is a name plus an ordinary word: give the "-style" back
+  if (ent.type === 'NAME') ent.end -= (text.slice(ent.start, ent.end).match(/-(?:style|like|esque)$/i) || [''])[0].length;
 }
 
 function weightOf(f) {
@@ -708,7 +728,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
     const f = raw[i];
     if (f.source !== 'model') continue;
     if ((f.type === 'AGE' && !looksLikeAge(text, f)) || (f.type === 'SSN' && !looksLikeSsn(text, f)) ||
-        ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f))) raw.splice(i, 1);
+        ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f)) ||
+        ((f.type === 'DOB' || f.type === 'DATE') && looksLikeFraction(text, f))) raw.splice(i, 1);
   }
 
   for (const f of raw) expandToWord(text, f);
