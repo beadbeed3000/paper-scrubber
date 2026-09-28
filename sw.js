@@ -1,12 +1,18 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v65';
+const CACHE = 'paper-scrubber-v66';
 // Model weights live in their own cache that version cleanup never touches —
 // otherwise every deploy threw away the De-Identifier's 553 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
 // if a model file is ever replaced at the same path (new models get new paths).
 const MODEL_CACHE = 'kvec-models-v1';
 const isModelPath = (pathname) => pathname.includes('/models/');
+// The deep check's own ONNX Runtime (vendor/gliner-ort/, 11 MB) is kept with
+// the models for the same reason: in the versioned cache, every deploy wiped
+// it and an offline laptop could not deep-check until it had been online
+// again. It is never re-fetched, so a newer runtime goes in a new folder
+// (deep-check-worker.mjs's wasmPaths), never over this one.
+const isDurablePath = (pathname) => isModelPath(pathname) || pathname.includes('/vendor/gliner-ort/');
 // The files that carry behaviour are small — the page, the styles, the code.
 // Those are fetched fresh when the network can answer quickly, so a deploy
 // reaches a teacher on her next load. Everything heavy (AI runtimes, models,
@@ -59,6 +65,13 @@ const MODEL_ASSETS = [
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/tokenizer_config.json',
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/special_tokens_map.json',
   './models/onnx-community/distilbert_finetuned_ai4privacy_v2-ONNX/onnx/model_quantized.onnx',
+  // The deep check's threaded runtime glue (24 KB). Only a multi-threaded
+  // session imports it (isolated page, 3+ cores), so a laptop whose deep checks
+  // all ran single-threaded never had it: the trust chip never turned green,
+  // and the first isolated session offline would fail. The 11 MB .wasm beside
+  // it is NOT precached (Paper Scrubber shares this list); it lands in
+  // MODEL_CACHE at the first deep check.
+  './vendor/gliner-ort/ort-wasm-simd-threaded.mjs',
 ];
 
 async function precacheModels() {
@@ -78,14 +91,15 @@ self.addEventListener('install', (e) => {
   ]).then(() => self.skipWaiting()));
 });
 
-// Laptops that downloaded models under the old scheme have them inside a
-// versioned paper-scrubber-* cache. Move those entries into MODEL_CACHE before
-// the purge, so this upgrade is the last one that could have cost 553 MB.
+// Laptops that downloaded models (or, before v66, the deep check's runtime)
+// under the old scheme have them inside a versioned paper-scrubber-* cache.
+// Move those entries into MODEL_CACHE before the purge, so this upgrade is the
+// last one that could have cost 553 MB or left the deep check offline-broken.
 async function rescueModels(oldKey) {
   const oldCache = await caches.open(oldKey);
   const mc = await caches.open(MODEL_CACHE);
   for (const req of await oldCache.keys()) {
-    if (!isModelPath(new URL(req.url).pathname)) continue;
+    if (!isDurablePath(new URL(req.url).pathname)) continue;
     if (await mc.match(req)) continue;
     const res = await oldCache.match(req);
     if (res) await mc.put(req, res);
@@ -122,13 +136,13 @@ async function freshFirst(req) {
   return (await cache.match(req)) || fetch(req);
 }
 
-async function cacheFirst(req, isModel) {
+async function cacheFirst(req, durable) {
   const hit = await caches.match(req);
   if (hit) return hit;
   const res = await fetch(req);
   if (res.ok) {   // never cache failures — a cached 404 would outlive the fix for it
     const copy = res.clone();
-    caches.open(isModel ? MODEL_CACHE : CACHE).then((c) => c.put(req, copy));
+    caches.open(durable ? MODEL_CACHE : CACHE).then((c) => c.put(req, copy));
   }
   return res;
 }
@@ -157,5 +171,5 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // let HF model fetches pass through
   e.respondWith((isShell(url.pathname)
     ? freshFirst(e.request)
-    : cacheFirst(e.request, isModelPath(url.pathname))).then((res) => isolate(e.request, res)));
+    : cacheFirst(e.request, isDurablePath(url.pathname))).then((res) => isolate(e.request, res)));
 });

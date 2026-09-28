@@ -2,8 +2,67 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 28 September 2026, live version `paper-scrubber-v65`,
+stands. Last updated 28 September 2026, live version `paper-scrubber-v66`,
 desktop 1.3.1.
+
+## v66 (the web De-Identifier stays offline-ready across updates)
+
+**Two faults, found on v65.** Both broke the promise that one visit on Wi-Fi
+leaves a laptop ready for a building with no signal:
+- *The trust chip could never turn green.* `isRoadReady()` in app.js wants
+  `vendor/gliner-ort/ort-wasm-simd-threaded.mjs` in the cache. Before v65
+  nothing fetched it. Since v65 only a multi-threaded session imports it
+  (isolated page and 3+ cores, since ONNX Runtime uses `min(4, ceil(cores/2))`
+  threads). First visits, iframe embeds, hard reloads and dual-core laptops
+  never do, so the chip said "Getting offline-ready in the background — stay
+  online a bit" forever. It was worse than a wrong label: a laptop whose deep
+  checks had all run single-threaded would have failed offline the first time
+  it ran isolated, because the threaded loader imports that file.
+- *Every deploy deleted the deep check's runtime.* `vendor/gliner-ort/` (11
+  MB .wasm, 24 KB .mjs) went into the versioned cache at the first deep check,
+  and each deploy's cleanup deleted it (the rescue only moved `/models/`
+  paths). After any update, an offline laptop could not deep-check until it
+  had been online once.
+
+**The fix is all in sw.js.** `vendor/gliner-ort/` is treated like a model
+(`isDurablePath`): it is stored in `kvec-models-v1` and rescued from old
+versioned caches on activate. The 24 KB .mjs is precached into
+`kvec-models-v1` with the scrubber model (`MODEL_ASSETS`, skipped once held).
+The 11 MB .wasm is not precached, because Paper Scrubber teachers share that
+install. Like the model parts, it lands in the durable cache at the first
+deep check. `isolate()` is unchanged. `deep-check-worker.mjs` was not touched,
+so the desktop installers did not rebuild.
+
+**New rule.** Nothing in `vendor/gliner-ort/` is ever re-fetched now. A newer
+deep-check ONNX Runtime must go in a new folder (update `wasmPaths` in
+deep-check-worker.mjs, the `isRoadReady` list in app.js and the precache
+line in sw.js), never over these files. Otherwise laptops keep the old
+.wasm next to a rebuilt bundle. Bumping `kvec-models-v1` also works, but it
+makes every laptop download 553 MB again.
+
+**Tested** on 28 September 2026 in headless Edge with fresh profiles. The
+harness served the repo the way GitHub Pages does: under `/paper-scrubber/`,
+with `max-age=600` and no COOP/COEP headers. "Offline" meant the server was
+shut down with every socket destroyed. The test record is a short synthetic
+one, and each deep check found the same six context hits.
+- *Fresh laptop, v66:* on the first visit (not isolated, single-threaded),
+  install fetched the .mjs and the first deep check fetched the .wasm. Both
+  went into `kvec-models-v1`, and the chip turned green in that same session.
+  Next, a simulated deploy (v66 → v67): `paper-scrubber-v66` was purged,
+  nothing was re-downloaded, and the chip stayed green. With the server down,
+  the deep check ran on the isolated top-level page and inside an iframe on
+  the Paper Scrubber page (not isolated, single-threaded). Both chips were
+  green, and so was Paper Scrubber's.
+- *Upgrade from v65:* the first deep check left the .wasm in
+  `paper-scrubber-v65`, no .mjs anywhere, and the chip amber (the bug,
+  reproduced). Deploying v66 fetched only the .mjs, moved the .wasm into
+  `kvec-models-v1`, and the chip turned green without another deep check.
+  With the server down, the isolated page ran the deep check on three
+  `em-pthread` threads loaded from the cached .mjs. The iframe ran it
+  single-threaded.
+- The only console output was ONNX Runtime's usual constant-folding warning.
+  There was no `worker sent an error!`. The harness (`offline-test.mjs`) lived
+  in the session scratchpad and is not in the repo.
 
 ## v65 / desktop 1.3.1 (the deep check is 3x faster; Mac ad-hoc signed)
 
@@ -131,11 +190,8 @@ eval. The printable PDF made from it in August is now out of date.
   `shell.openExternal` stub once opened every footer link in the real browser.
 
 **Still open.**
-- The web De-Identifier's offline chip can never turn green (it wants
-  `vendor/gliner-ort/ort-wasm-simd-threaded.mjs`, which only a threaded
-  session fetches), and the 11 MB `vendor/gliner-ort/` runtime sits in the
-  versioned cache that every deploy wipes. So after an update, a laptop needs
-  one online deep check before it works offline. Older than this change.
+- ~~The web De-Identifier's offline chip can never turn green, and every
+  deploy wipes the deep check's runtime.~~ Fixed in v66 (above).
 - Electron 33 is flagged by `npm audit` (every version up to 40), as is its
   installer's extract-zip. Older than this change, but worth an upgrade pass.
 
