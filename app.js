@@ -2113,7 +2113,7 @@ if (DESKTOP) {
   // the AIs ship inside the program — "first use downloads" would tell a
   // FERPA-worried reviewer that something goes over the network
   const modeNote = document.querySelector('.mode-note');
-  if (modeNote) modeNote.textContent = 'Both AIs are built into this program — nothing is downloaded. A long record takes a few minutes; the window stays usable.';
+  if (modeNote) modeNote.textContent = 'Both AIs are built into this program — nothing is downloaded. A long record takes about 2 minutes; the window stays usable.';
   const helpSteps = document.querySelectorAll('#helpDialog .hsteps li');
   if (helpSteps[1]) helpSteps[1].innerHTML = '<strong>Two AIs read it.</strong> The first finds direct identifiers — names, addresses, phones, birthdays, schools, ID numbers, plus the Word file’s own hidden author fields. The second reads for <em>context</em>: diagnoses, medications, family members, churches, employers, teams, benefits. Both are built into this program, so it works with the Wi-Fi off.';
   if (helpSteps[2]) helpSteps[2].innerHTML = '<strong>Nothing to judge.</strong> Everything both AIs find is replaced automatically, the context details too. If it replaced something that isn’t about a person (a book title, a curriculum name), click it to restore just that word.';
@@ -2137,6 +2137,7 @@ if (DESKTOP) {
 
   // web-only furniture has no meaning inside a program
   els.btnInstall?.remove();
+  document.querySelector('.get-program')?.remove();   // "Want it as a program?" — this is the program
 }
 
 if (!DESKTOP && 'serviceWorker' in navigator) {

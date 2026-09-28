@@ -2,8 +2,142 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 23 September 2026, live version `paper-scrubber-v64`,
-desktop 1.3.0.
+stands. Last updated 28 September 2026, live version `paper-scrubber-v65`,
+desktop 1.3.1.
+
+## v65 / desktop 1.3.1 (the deep check is 3x faster; Mac ad-hoc signed)
+
+**Speed, measured one change at a time** on 28 September 2026, in the dev
+desktop app over DevTools (i9-9900K, 8 cores): the Roberts model IEP (28,832
+characters) and the two answer-keyed sets from v64, eleven records in one
+batch. Deep-check seconds per document are timed from the worker request to
+its answer, with both models already loaded. Every change was graded under
+desktop behavior (everything detected is replaced) and web behavior (the
+`DEFAULT_KEPT` categories stay underlined).
+
+| Deep check, seconds | v64 | (a) skip + reuse | (a) + threads |
+|---|---|---|---|
+| Roberts IEP | 398 | 311 | 129 |
+| Tuning set, 5 records | 754 | 583 | 246 |
+| Held-out set, 5 records | 754 | 581 | 246 |
+| All 11 | 1,907 | 1,476 | 621 |
+
+Web (Edge 154 through the service worker): Roberts 333 s without isolation,
+154 s with it; all eleven 745 s. Graded results are identical in every column
+and in both behaviors: tuning 8 of 367 identifiers through, held-out 7 of
+358, Roberts 1 of 19; quasi-identifiers removed 65 of 102 and 52 of 75;
+readable terms kept 47 of 50 and 45 of 60 (web: 50 of 50 and 60 of 60). Deep
+spans are identical down to the score. The only output change is a form
+blank ("__") the deep check used to tag as a career interest.
+
+- **(a) Kept.** `deep-check-worker.mjs` skips sentence pieces with fewer than
+  three letters and reuses the answer for a piece it has already seen (form
+  labels, headings, boilerplate across a batch; up to 5,000 pieces). 13% fewer
+  pieces (1,602 → 1,396) and repeats answered from memory: 1.29x faster. The pieces it skips were lone initials and titles
+  ("J.", "Mr."), and the rules and `looksLikeRealName` already handled them.
+- **(b) Rejected.** Packing consecutive short pieces into one call, as the
+  original text slice. With 400-character packs: 2.9x faster than (a), but
+  "Journey" (a preschooler's name), "Big Laurel Family Health", "Mountain Laurel
+  ENT", "his uncle", "his stepdad" and more dropped out. 150-character packs,
+  1.56x faster, still leaked "Journey", "Troublesome Creek Pediatrics" and
+  "Brushy Fam. Ct.". That is the documented score collapse with input length;
+  the worker's header comment now says not to pack.
+- **(c) Kept, after a fix.** Cross-origin isolation (COOP `same-origin`, COEP
+  `require-corp`) so ONNX Runtime can use WebAssembly threads (4 on this
+  machine: `min(4, cores/2)`). Isolation alone made it *slower* (0.94x): the
+  threads started and failed with `worker sent an error!
+  gliner-bundle.mjs:3614: aT is not a function`. **Cause:** esbuild had folded
+  ONNX Runtime's glue into `vendor/gliner-bundle.mjs`, whose loader ignored
+  `wasmPaths`, so its thread workers started from the bundle, which cannot
+  start as one. The error also made the app's `onerror` terminate the deep
+  worker after every document, so each record reloaded the 553 MB model. It
+  never failed a document here, but it could have. **The fix is one patched
+  line in the bundle** (search it for `ort-wasm-simd-threaded.mjs`): with
+  threads, the loader imports `vendor/gliner-ort/ort-wasm-simd-threaded.mjs`,
+  the standalone glue of the same build (same `___start_em_js` fingerprint),
+  which starts threads properly. Without threads, the old path is untouched.
+  Re-apply it if the bundle is ever rebuilt. Result: 2.38x over (a), about
+  390% CPU, three `em-pthread` workers inside the deep worker, one model load
+  per session.
+
+**Where isolation applies.** Desktop: the loopback server sends both headers
+on every response. Web: `sw.js` adds them (GitHub Pages cannot), but only the
+De-Identifier's own page is isolated; Paper Scrubber's page is left as it was
+(no deep check to speed up, and iPhones and Chromebooks run it). Workers and
+scripts carry the headers too, because an isolated page refuses a worker
+whose script lacks them. Isolation starts on the next load after the new
+service worker takes over. The page never reloads itself for it (tested: the
+update landed under an open paper and the paper stayed). Checked working:
+scanned-PDF OCR (pdf.js and Tesseract workers) on the isolated desktop and web
+pages; a hard reload, which bypasses the service worker, so the page runs
+single-threaded as before; both tools inside a cross-site iframe, which cannot
+be isolated because the parent is not, so they scrub single-threaded exactly
+as before. theholler.org does not iframe the tool today: /paperscrubber/ is an
+Elementor HTML widget with a link button.
+
+**Roberts IEP, answer-keyed** (19 identifiers, 9 quasi-identifiers, 50 terms
+that must stay readable; key in the session scratchpad). In plain English:
+- *Leak:* "Karen" in "documented Karen-style" stays, in the text and in the
+  rebuilt Word file. A bare name in an odd spot; known since August.
+- *Left readable:* "Grade: 8" (the GRADE rule catches "8th grade", not a
+  grade after a form label) and "staying in shape" (an interest).
+- *Over-scrubbed in both editions (17 hits):* the fractions "1/2, 1/3, and
+  1/4" and the aim line "60→80" read as birthdates; "703" of "703 KAR 5:070"
+  and "§6b Reporting" as addresses; "Speech/Language Pathologist" and
+  "Readers" as names; "4" of "graduate in 4 years" as an age; table and form
+  headings as schools ("Regular Class" x3, "Regular Classroom", "Special
+  Education Services", "Present Levels", "Placement", "School", "Primary" of
+  "Primary Disability").
+- *Over-scrubbed in the desktop only (82 more):* deep-check hits the desktop
+  replaces under Alex's scrub-everything decision (a known cost, not an open
+  item). Headings and subjects ("Testing", "Writing", "Math", "Language Arts",
+  "General Intelligence", "Baseline", "Goal 4"), supports ("cue cards",
+  "text-reading software", "Supplementary Aids and Services", "Check and
+  Connect"), the IQ score "69", "5th-grade" and "12th grade" used generically,
+  and the special-factor questions ("blind or visually impaired", "deaf or
+  hard of hearing"). 86 of 110 occurrences of the needed terms survive on the
+  desktop, 107 of 110 on the web.
+
+**Mac: ad-hoc signed.** `mac.identity: "-"` and `hardenedRuntime: false` in
+`desktop/package.json`. That needs **electron-builder 26** (26.1.0 added ad-hoc
+signing; 25.1.8 took `"-"` as a keychain name, found nothing, and silently
+skipped signing), so it is pinned at 26.15.7. The workflow now fails the Mac
+build unless `codesign` verifies and reports `Signature=adhoc`. First launch
+on a current Mac: open it, click Done, then System Settings → Privacy &
+Security → Open Anyway. The Windows build with 26.15.7 was made on this
+machine and passed `--smoke` and `--scrub-test` as a packaged exe (still
+unsigned, as before).
+
+**Desktop links.** Footer, help and privacy links open in the regular browser
+(`setWindowOpenHandler` + `will-navigate` in main.js). The tool's own pages go
+to their public copies, and the window never leaves the tool; Save downloads
+are unaffected (tested with `shell.openExternal` stubbed). The "Want it as a
+program?" footer line is hidden inside the program.
+
+**Handout.** The promise now gives the tested rate (about 98 of every 100
+identifiers; 728 of 744 across the three sets) instead of "never receives a
+name, a number". The "machine test that blocks any release that would leak"
+clause went with it, since 2 in 100 do get through. Mac steps: Privacy &
+Security → Open Anyway. Timing: about 2 minutes for a long IEP, 1 for a short
+eval. The printable PDF made from it in August is now out of date.
+
+**Lessons.**
+- A worker that starts threads can fail inside them silently. Check the
+  console for `worker sent an error!`, and count busy cores, before
+  believing `crossOriginIsolated === true` means anything.
+- CDP `Page.reload({ ignoreCache: true })` is a hard reload and bypasses the
+  service worker. Web tests must use a normal reload.
+- A test stub must be verified before it is relied on. A failed
+  `shell.openExternal` stub once opened every footer link in the real browser.
+
+**Still open.**
+- The web De-Identifier's offline chip can never turn green (it wants
+  `vendor/gliner-ort/ort-wasm-simd-threaded.mjs`, which only a threaded
+  session fetches), and the 11 MB `vendor/gliner-ort/` runtime sits in the
+  versioned cache that every deploy wipes. So after an update, a laptop needs
+  one online deep check before it works offline. Older than this change.
+- Electron 33 is flagged by `npm audit` (every version up to 40), as is its
+  installer's extract-zip. Older than this change, but worth an upgrade pass.
 
 ## v64 (light/dark switch; what testing the installed desktop app found)
 
@@ -495,8 +629,8 @@ regex-only version wearing the name would be worse than none.
      0 flagged, 0 leaks incl. ADHD/free lunch/youth group/First Baptist).
      Both also run locally on Windows via `npx electron . --smoke|--scrub-test`
      after assembling `desktop/webapp/` (see the workflow's rsync step).
-   - **Unsigned** — first launch on a Mac is right-click → Open (no Apple
-     Developer cert yet; the workflow has a comment where signing goes).
+   - **Ad-hoc signed since 1.3.1** (no Apple Developer cert) — first launch on
+     a Mac is System Settings → Privacy & Security → Open Anyway. See v65.
    - Never claim the tool "guarantees FERPA compliance" — the honest claim is
      that identifiers never reach the third-party AI, and that's the wording
      everywhere.
@@ -512,8 +646,8 @@ regex-only version wearing the name would be worse than none.
 **Parked on purpose:** the scrubber.theholler.org domain (Alex chose to stay
 on github.io; a pending domain verification sits harmlessly on the GitHub
 account — the DNS records needed are in the README's deploy section if this
-ever revives, and self-hosting models + COOP/COEP multithreading only make
-sense alongside it). A downloadable/portable app was considered and rejected:
+ever revives. COOP/COEP multithreading no longer needs it: since v65 the
+service worker adds those headers for the De-Identifier's page). A downloadable/portable app was considered and rejected:
 Chromebooks can't run executables, district policy blocks unsigned binaries,
 and the PWA already covers "it's an app."
 
@@ -524,7 +658,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v64) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v65) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

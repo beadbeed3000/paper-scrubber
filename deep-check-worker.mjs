@@ -7,7 +7,11 @@
 //
 // Wrapper facts learned by experiment, do not relearn: labels must be short
 // noun phrases; multi-text batches silently return []; score collapses with
-// input length — so this worker is fed one sentence at a time.
+// input length — so this worker is fed one sentence at a time. Packing short
+// sentences into one call was measured in September 2026 (400- and 150-char
+// packs of consecutive pieces): 1.6-3.3x faster, but names, clinics and family
+// members dropped out of the answer-keyed test records ("Journey", "Mountain
+// Laurel ENT", "his uncle"). Do not pack.
 
 import { Gliner, xenv } from './vendor/gliner-bundle.mjs';
 
@@ -55,6 +59,12 @@ function getGliner() {
     postMessage({ kind: 'progress', label: 'Loading the deep-check AI into memory…', pct: 100 });
     const g = new Gliner({
       tokenizerPath: 'onnx-community/gliner_multi_pii-v1',
+      // When the page is cross-origin isolated, ONNX Runtime runs this on
+      // several threads. vendor/gliner-bundle.mjs is patched for that (search
+      // it for "ort-wasm-simd-threaded.mjs"): its loader ignored wasmPaths and
+      // started its thread workers from the bundle itself, which cannot start
+      // as one; they now start from vendor/gliner-ort/. Re-apply the patch if
+      // the bundle is ever rebuilt.
       onnxSettings: {
         modelPath: bytes.buffer,
         executionProvider: 'wasm',
@@ -89,17 +99,35 @@ function splitSentences(text) {
   return out;
 }
 
+// pieces with fewer than three letters ("3.", "a)", a stray bullet) cannot
+// name anyone, and a piece seen before (form labels, repeated headings, the
+// same boilerplate across a batch) gets the answer it got last time — the
+// model is deterministic, so asking again only costs time
+const MIN_LETTERS = 3;
+const MEMO_MAX = 5000;
+const memo = new Map();   // piece text -> spans relative to the piece
+
+async function inferPiece(g, text) {
+  let spans = memo.get(text);
+  if (!spans) {
+    const res = await g.inference({ texts: [text], entities: LABELS, threshold: THRESHOLD, flatNer: true });
+    spans = res[0].map((s) => ({ label: s.label, text: s.spanText, start: s.start, end: s.end, score: s.score }));
+    if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value);
+    memo.set(text, spans);
+  }
+  return spans;
+}
+
 self.onmessage = async (e) => {
   const { id, text } = e.data;
   try {
     const g = await getGliner();
-    const sentences = splitSentences(text);
+    const pieces = splitSentences(text).filter((p) => (p.text.match(/\p{L}/gu)?.length ?? 0) >= MIN_LETTERS);
     const spans = [];
-    for (let i = 0; i < sentences.length; i++) {
-      if (i % 5 === 0) postMessage({ kind: 'progress', label: `Deep check — part ${i + 1} of ${sentences.length}`, pct: (i / sentences.length) * 100 });
-      const res = await g.inference({ texts: [sentences[i].text], entities: LABELS, threshold: THRESHOLD, flatNer: true });
-      for (const s of res[0]) {
-        spans.push({ label: s.label, text: s.spanText, start: sentences[i].start + s.start, end: sentences[i].start + s.end, score: s.score });
+    for (let i = 0; i < pieces.length; i++) {
+      if (i % 5 === 0) postMessage({ kind: 'progress', label: `Deep check — part ${i + 1} of ${pieces.length}`, pct: (i / pieces.length) * 100 });
+      for (const s of await inferPiece(g, pieces[i].text)) {
+        spans.push({ ...s, start: pieces[i].start + s.start, end: pieces[i].start + s.end });
       }
     }
     postMessage({ kind: 'result', id, spans });

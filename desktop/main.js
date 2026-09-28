@@ -2,7 +2,7 @@
 // models) ships inside the app bundle; a loopback-only server serves it to the
 // window exactly the way the tested web version is served, so worker/WASM/fetch
 // behavior is identical. Nothing ever touches the network.
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -22,6 +22,17 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+// Cross-origin isolation lets the AI runtimes use several CPU cores
+// (WebAssembly threads need SharedArrayBuffer). Every file comes from this one
+// loopback origin, so require-corp blocks nothing.
+const ISOLATION = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
+};
+
+// the public copies of the tool's own pages (privacy page, Paper Scrubber)
+const LIVE_SITE = 'https://beadbeed3000.github.io/paper-scrubber/';
+
 let win = null;
 let port = 0;
 const pendingOpens = [];   // files handed to us before the window was ready
@@ -35,7 +46,7 @@ function startServer() {
         const file = path.normalize(path.join(WEB_ROOT, p));
         if (!file.startsWith(WEB_ROOT)) { res.writeHead(403).end(); return; }
         const data = await fs.promises.readFile(file);
-        res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
+        res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', ...ISOLATION });
         res.end(data);
       } catch {
         res.writeHead(404).end('Not found');
@@ -114,6 +125,28 @@ ipcMain.handle('set-setting', (_e, key, value) => {
   try { fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 1)); return true; } catch { return false; }
 });
 
+// ---------------------------------------------------------------- links
+// Links (footer, help, privacy) open in the regular browser. A link that
+// navigated the program window would strand the reviewer on a page with no way
+// back. The tool's own pages go to their public copies, because this loopback
+// address stops answering when the program closes.
+function openOutside(url) {
+  let u;
+  try { u = new URL(url); } catch { return; }
+  if (u.origin === `http://127.0.0.1:${port}`) u = new URL(u.pathname.replace(/^\//, '') + u.search + u.hash, LIVE_SITE);
+  if (['https:', 'http:', 'mailto:'].includes(u.protocol)) shell.openExternal(u.href);
+}
+
+function keepToolInWindow(contents) {
+  contents.setWindowOpenHandler(({ url }) => { openOutside(url); return { action: 'deny' }; });
+  contents.on('will-navigate', (e, url) => {
+    const u = new URL(url);
+    if (u.origin === `http://127.0.0.1:${port}` && /^\/deid\/(?:index\.html)?$/.test(u.pathname)) return;   // the tool itself
+    e.preventDefault();
+    openOutside(url);
+  });
+}
+
 // ---------------------------------------------------------------- app window
 async function createWindow() {
   port = await startServer();
@@ -132,6 +165,7 @@ async function createWindow() {
     },
   });
   win.on('closed', () => { win = null; });
+  keepToolInWindow(win.webContents);
   await win.loadURL(`http://127.0.0.1:${port}/deid/`);
 
   for (const f of pendingOpens.splice(0)) sendFile(f);

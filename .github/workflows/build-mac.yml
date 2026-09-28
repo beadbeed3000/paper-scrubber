@@ -3,8 +3,10 @@ name: Build the De-Identifier desktop apps
 # Builds the desktop app for macOS AND Windows on real machines of each kind,
 # gates every build on a boot test plus an actual de-identify run inside the
 # packaged stack, then publishes both installers to one GitHub Release.
-# Unsigned on both platforms (no Apple cert, no Windows cert): Mac first launch
-# is right-click -> Open; Windows shows SmartScreen -> More info -> Run anyway.
+# No certificates on either platform. The Mac app is ad-hoc signed (an Apple
+# Silicon Mac calls an app with a broken signature "damaged" and offers no way
+# past it); first launch is System Settings -> Privacy & Security -> Open Anyway.
+# Windows is unsigned: SmartScreen -> More info -> Run anyway.
 
 on:
   workflow_dispatch:
@@ -69,11 +71,20 @@ jobs:
         working-directory: desktop
         run: npx electron . --scrub-test
 
-      - name: Build installers (unsigned)
+      - name: Build installers (Mac ad-hoc signed, Windows unsigned)
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder ${{ matrix.args }} --publish never
+
+      - name: Mac — the app must carry a valid ad-hoc signature
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        run: |
+          APP="$(ls -d dist/mac*/De-Identifier.app | head -1)"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dv "$APP" 2>&1 | tee sig.txt
+          grep -q 'Signature=adhoc' sig.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -103,4 +114,4 @@ jobs:
             -R "${{ github.repository }}" \
             --title "De-Identifier for Mac & Windows (build ${{ github.run_number }})" \
             --latest \
-            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac**: open the .dmg, drag De-Identifier to Applications; first launch is right-click → Open → Open (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
+            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac**: open the .dmg, drag De-Identifier to Applications; the first time, the Mac refuses to open it: go to System Settings → Privacy & Security, click Open Anyway, and confirm (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."

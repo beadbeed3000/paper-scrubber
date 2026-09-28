@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v64';
+const CACHE = 'paper-scrubber-v65';
 // Model weights live in their own cache that version cleanup never touches —
 // otherwise every deploy threw away the De-Identifier's 553 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
@@ -133,10 +133,29 @@ async function cacheFirst(req, isModel) {
   return res;
 }
 
+// Cross-origin isolation for the De-Identifier. GitHub Pages cannot send
+// headers, so this worker adds them to what it serves; with them the deep
+// check's AI runtime may use several CPU cores (WebAssembly threads need
+// SharedArrayBuffer). Every file the tool loads is its own, so require-corp
+// blocks nothing. Scripts and workers carry the headers too, because an
+// isolated page refuses a worker whose script lacks them. Paper Scrubber's page
+// is left as it was: it has no deep check to speed up.
+// This takes effect on the next load after the worker takes over. The page is
+// never reloaded for it, so papers that are open are never lost.
+const ISOLATED_PAGE = /\/deid\/(?:index\.html)?$/;
+function isolate(req, res) {
+  if (!res || res.status === 0 || res.type === 'opaque' || res.type === 'opaqueredirect') return res;
+  if (req.mode === 'navigate' && !ISOLATED_PAGE.test(new URL(req.url).pathname)) return res;
+  const headers = new Headers(res.headers);
+  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // let HF model fetches pass through
-  e.respondWith(isShell(url.pathname)
+  e.respondWith((isShell(url.pathname)
     ? freshFirst(e.request)
-    : cacheFirst(e.request, isModelPath(url.pathname)));
+    : cacheFirst(e.request, isModelPath(url.pathname))).then((res) => isolate(e.request, res)));
 });
