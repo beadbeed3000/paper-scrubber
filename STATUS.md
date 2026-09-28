@@ -160,8 +160,14 @@ that must stay readable; key in the session scratchpad). In plain English:
 **Mac: ad-hoc signed.** `mac.identity: "-"` and `hardenedRuntime: false` in
 `desktop/package.json`. That needs **electron-builder 26** (26.1.0 added ad-hoc
 signing; 25.1.8 took `"-"` as a keychain name, found nothing, and silently
-skipped signing), so it is pinned at 26.15.7. The workflow now fails the Mac
-build unless `codesign` verifies and reports `Signature=adhoc`. First launch
+skipped signing), so it is pinned at 26.15.7 (exactly: `desktop/package-lock.json`
+is gitignored, so CI resolves ranges fresh). The workflow now fails the Mac
+build unless `codesign` verifies and reports `Signature=adhoc`. The first CI
+run with signing sat in "Build installers" for over an hour (it used to take
+2 minutes; the log needs a GitHub sign-in to read). 26 signs every binary file
+in the bundle separately, and each `codesign` call asked Apple's timestamp
+server for a secure timestamp, which means nothing on an ad-hoc signature. So
+`mac.timestamp` is `"none"`, and the step times out at 30 minutes. First launch
 on a current Mac: open it, click Done, then System Settings → Privacy &
 Security → Open Anyway. The Windows build with 26.15.7 was made on this
 machine and passed `--smoke` and `--scrub-test` as a packaged exe (still

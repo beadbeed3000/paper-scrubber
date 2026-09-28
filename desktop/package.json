@@ -40,7 +40,8 @@
       "category": "public.app-category.education",
       "icon": "build/icon.png",
       "identity": "-",
-      "hardenedRuntime": false
+      "hardenedRuntime": false,
+      "timestamp": "none"
     },
     "win": {
       "target": [
