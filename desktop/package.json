@@ -41,7 +41,7 @@
       "icon": "build/icon.png",
       "identity": "-",
       "hardenedRuntime": false,
-      "timestamp": "none"
+      "sign": "./adhoc-sign.cjs"
     },
     "win": {
       "target": [

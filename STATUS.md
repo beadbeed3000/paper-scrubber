@@ -162,12 +162,16 @@ that must stay readable; key in the session scratchpad). In plain English:
 signing; 25.1.8 took `"-"` as a keychain name, found nothing, and silently
 skipped signing), so it is pinned at 26.15.7 (exactly: `desktop/package-lock.json`
 is gitignored, so CI resolves ranges fresh). The workflow now fails the Mac
-build unless `codesign` verifies and reports `Signature=adhoc`. The first CI
-run with signing sat in "Build installers" for over an hour (it used to take
-2 minutes; the log needs a GitHub sign-in to read). 26 signs every binary file
-in the bundle separately, and each `codesign` call asked Apple's timestamp
-server for a secure timestamp, which means nothing on an ad-hoc signature. So
-`mac.timestamp` is `"none"`, and the step times out at 30 minutes. First launch
+build unless `codesign` verifies and reports `Signature=adhoc`. **26's own
+signer stalls on the GitHub Mac runner.** It runs codesign once per file in the
+bundle, and the first CI runs sat in packaging-and-signing for over an hour,
+then for 30 minutes with timestamps off (it used to take 2 minutes; the log
+needs a GitHub sign-in to read, so the exact file is unknown). Signing now goes
+through `mac.sign` → `desktop/adhoc-sign.cjs`: one `codesign --force --deep
+--sign - --timestamp=none` over the app, the standard ad-hoc sign for Electron.
+The Mac build runs as three steps (package + sign, signature check, DMG + zip
+from the signed app via `--prepackaged`), each with a time limit, so a future
+stall shows where it is in the public step timings. First launch
 on a current Mac: open it, click Done, then System Settings → Privacy &
 Security → Open Anyway. The Windows build with 26.15.7 was made on this
 machine and passed `--smoke` and `--scrub-test` as a packaged exe (still

@@ -87,7 +87,6 @@ jobs:
         timeout-minutes: 20
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          DEBUG: electron-osx-sign*
         run: npx electron-builder --mac dir --publish never
 
       - name: Mac — the app must carry a valid ad-hoc signature
