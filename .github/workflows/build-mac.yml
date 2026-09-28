@@ -71,12 +71,24 @@ jobs:
         working-directory: desktop
         run: npx electron . --scrub-test
 
-      - name: Build installers (Mac ad-hoc signed, Windows unsigned)
+      - name: Build the Windows installer (unsigned)
+        if: runner.os == 'Windows'
         working-directory: desktop
         timeout-minutes: 30   # normally ~2; a hang should fail, not burn six hours
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder ${{ matrix.args }} --publish never
+        run: npx electron-builder --win nsis --publish never
+
+      # The Mac build runs in three steps so a stall shows which part it is in:
+      # step timings are public, the log needs a GitHub sign-in.
+      - name: Mac — package the app and ad-hoc sign it
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        timeout-minutes: 20
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          DEBUG: electron-osx-sign*
+        run: npx electron-builder --mac dir --publish never
 
       - name: Mac — the app must carry a valid ad-hoc signature
         if: runner.os == 'macOS'
@@ -86,6 +98,14 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$APP"
           codesign -dv "$APP" 2>&1 | tee sig.txt
           grep -q 'Signature=adhoc' sig.txt
+
+      - name: Mac — disk image and zip from the signed app
+        if: runner.os == 'macOS'
+        working-directory: desktop
+        timeout-minutes: 20
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg zip --prepackaged "$(ls -d dist/mac*/De-Identifier.app | head -1)" --publish never
 
       - uses: actions/upload-artifact@v4
         with:
