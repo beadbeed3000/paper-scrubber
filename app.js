@@ -85,8 +85,10 @@ const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'si
   // a document heading and clinicians' credentials, read as schools
   'preschool', 'kindergarten', 'lpcc', 'lpc', 'lcsw', 'bcba', 'cdces', 'aprn', 'psy.d.', 'ph.d.']);
 const DEEP_NAME_STOP = new Set(['he', 'she', 'i', 'we', 'they', 'you', 'it', 'him', 'her', 'them', 'his', 'hers', 'my', 'me', 'our', 'us', 'your', 'their', 'who', 'mr', 'mrs', 'ms', 'miss', 'dr', 'student', 'students', 'teacher', 'nurse', 'mom', 'dad', 'mother', 'father', 'parents', 'sister', 'brother', 'grandma', 'grandmother', 'grandpa', 'grandfather', 'aunt', 'uncle', 'cousin', 'caseworker', 'counselor', 'guardian']);
-// staff titles, which GLiNER tags as people: "the Speech/Language Pathologist"
-const JOB_TITLES = new Set(['pathologist', 'therapist', 'psychologist', 'principal', 'coordinator', 'specialist', 'interventionist', 'paraprofessional', 'aide', 'director', 'supervisor', 'consultant', 'clinician', 'administrator', 'provider', 'examiner', 'evaluator', 'educator', 'instructor', 'liaison', 'diagnostician', 'audiologist', 'interpreter', 'superintendent']);
+// staff titles and support roles, which GLiNER tags as people: "the
+// Speech/Language Pathologist", "Readers (content areas above…)"
+const JOB_TITLES = new Set(['pathologist', 'therapist', 'psychologist', 'principal', 'coordinator', 'specialist', 'interventionist', 'paraprofessional', 'aide', 'director', 'supervisor', 'consultant', 'clinician', 'administrator', 'provider', 'examiner', 'evaluator', 'educator', 'instructor', 'liaison', 'diagnostician', 'audiologist', 'interpreter', 'superintendent',
+  'reader', 'scribe', 'tutor', 'mentor', 'proctor']);
 function looksLikeRealName(s) {
   const words = s.trim().split(/\s+/);
   if (!words.length) return false;
@@ -94,7 +96,9 @@ function looksLikeRealName(s) {
   for (const w of words) {
     const clean = w.replace(/[.,;:'’]+$/g, '');
     const lower = clean.toLowerCase();
-    if (DEEP_NAME_STOP.has(lower) || lower.split('/').some((p) => JOB_TITLES.has(p) || JOB_TITLES.has(p.replace(/s$/, '')))) return false;
+    // plurals count too ("Guardians"), but only past four letters: "Wes" is a name, not "we"
+    const role = (p) => DEEP_NAME_STOP.has(p) || JOB_TITLES.has(p) || JOB_TITLES.has(p.replace(/s$/, '')) || (p.length > 4 && DEEP_NAME_STOP.has(p.replace(/s$/, '')));
+    if (lower.split('/').some(role)) return false;
     if (!/^\p{Lu}/u.test(clean)) return false;   // every word capitalized, or it's prose
     if (clean.length >= 3) hasSubstance = true;
   }
@@ -212,10 +216,15 @@ const REGEX_RULES = [
 // IQ was 84", "SS 74") as ages, and the desktop edition scrubbed the scores.
 function looksLikeAge(text, f) {
   const t = text.slice(f.start, f.end);
-  // "13 years", "six" — but an ordinal is a rank, not an age: "(21st percentile)"
-  if (/[a-z]/i.test(t) && !/^\s*\d+(?:st|nd|rd|th)\s*$/i.test(t)) return true;
   const before = text.slice(Math.max(0, f.start - 12), f.start);
   const after = text.slice(f.end, f.end + 14);
+  // a length of time, not an age: "graduate in 4 years", "for 2 years", "3
+  // years ago" ("4 years old", "4-year-old" and "4 years of age" stay ages)
+  const rest = t.replace(/^\s*\d+/, '') + after;
+  if (/^\s*\d*\s*$/.test(t.replace(/\D+$/, '')) && /^\s*-?(?:years?|yrs?|months?|mos?|weeks?|wks?|days?)\b(?!\s*-?(?:old|of age))/i.test(rest) &&
+      (/\b(?:in|for|within|after|over|next|past|last|than)\s+$/i.test(before) || /^\s*\S+\s+ago\b/i.test(rest))) return false;
+  // "13 years", "six" — but an ordinal is a rank, not an age: "(21st percentile)"
+  if (/[a-z]/i.test(t) && !/^\s*\d+(?:st|nd|rd|th)\s*$/i.test(t)) return true;
   return /\bage[ds]?\s*:?\s*$/i.test(before) || /^\s*(?:-?years?|yrs?|y\/o|-year-old|months?|mos?|weeks?|wks?|days?|birthday)\b/i.test(after);
 }
 // History is not a birthday. A date whose year is before 1900 ("April 12,

@@ -2,8 +2,25 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v69`,
-desktop 1.3.4.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v70`,
+desktop 1.3.5.
+
+## v70 / desktop 1.3.5 (support roles and lengths of time stay readable)
+
+- **"Readers (content areas above…)" became a name.** The accommodation
+  roles (reader, scribe, tutor, mentor, proctor) joined `JOB_TITLES`, and the
+  role lists now count plurals, which also leaves "Guardians chose a Head
+  Start class" readable in the preschool record. Plurals of the short
+  pronoun entries are skipped, so "Wes" is still a name, not "we".
+- **"graduate in 4 years" became an age.** `looksLikeAge` now calls a number
+  of years, months, weeks or days a length of time when "in", "for",
+  "within", "after", "over", "next", "past", "last" or "than" comes right
+  before it, or "ago" after it. "6 years old", "4-year-old", "7 years of age",
+  "(14 months)", "born at 38 weeks" and "at about 20 months" still scrub.
+
+Re-graded on all eleven records: exactly those three findings changed, and
+no count moved. Still open from the Roberts list: the heading hits read as
+schools ("Regular Class", "Present Levels", "School", "Primary").
 
 ## v69 / desktop 1.3.4 (section numbers and staff titles stay readable)
 
@@ -20,8 +37,6 @@ desktop 1.3.4.
 
 Re-graded on all eleven records: no leak or quasi-identifier count moved;
 Roberts keeps 40 of 50 readable terms on the desktop and all 50 on the web.
-Still open from the Roberts list: "Readers" as a name, "4 years" as an age,
-and the heading hits ("Regular Class", "Present Levels", "School").
 
 ## v68 / desktop 1.3.3 (aim lines and regulation numbers stay readable)
 
@@ -778,7 +793,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v69) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v70) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.
