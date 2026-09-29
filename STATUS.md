@@ -27,7 +27,7 @@ desktop 1.3.7 (release desktop-b23).
 - **Test tooling** (answer keys for Roberts and both sets, the CDP benchmark
   and grader `bench.mjs` / `compare.mjs`) is not in the repo. It sits in a
   temporary folder on Alex's Windows machine that may be cleaned up:
-  `%TEMP%\claude\C--Users-Holler2-Documents-Claude-Projects-ClaudeCodec393c72-1265-4fad-88b5-ed7357a47c9d\scratchpad`.
+  `%TEMP%\claude\C--Users-Holler2-Documents-Claude-Projects-ClaudeCode\fc393c72-1265-4fad-88b5-ed7357a47c9d\scratchpad`.
 - **Open:** the hard-shape leaks listed under v64, the real-hardware pass (to
   do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
   remaining audit items (to do 8).
