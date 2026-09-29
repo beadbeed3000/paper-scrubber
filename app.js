@@ -279,13 +279,17 @@ function looksLikeSsn(text, f) {
 // before it are about fractions or a unit follows it: "can order fractions
 // 1/2, 1/3, and 1/4" came back as birth dates. "Fractions on 4/2" is a date.
 function looksLikeFraction(text, f) {
-  const t = text.slice(f.start, f.end);
+  // judge the whole slash number the model cut into: "2, 1" out of "1/2, 1/3"
+  let a = f.start, b = f.end;
+  while (a > 0 && /[\d\/]/.test(text[a - 1])) a--;
+  while (b < text.length && /[\d\/]/.test(text[b])) b++;
+  const t = text.slice(a, b);
   if (!/\d\/\d/.test(t) || /\d\/\d+\/\d|\d{4}/.test(t) || !/^[\d\/,\s]*(?:(?:and|or)[\d\/,\s]*)?$/.test(t)) return false;
-  let before = text.slice(Math.max(0, f.start - 60), f.start);
+  let before = text.slice(Math.max(0, a - 60), a);
   before = before.slice(before.search(/[^.!?\n]*$/));   // this sentence only
   if (/\b(?:on|by|due|dated|since|until|till|before|after|from|through|thru|as of)\s+$/i.test(before)) return false;
   return /\b(?:fractions?|numerators?|denominators?|mixed numbers?)\b/i.test(before) ||
-    /^\s*(?:cups?|inch(?:es)?|miles?|hours?|teaspoons?|tablespoons?|pounds?|feet|foot|yards?|of (?:the|a|an|his|her|their|all|each)\b)/i.test(text.slice(f.end, f.end + 16));
+    /^\s*(?:cups?|inch(?:es)?|miles?|hours?|teaspoons?|tablespoons?|pounds?|feet|foot|yards?|of (?:the|a|an|his|her|their|all|each)\b)/i.test(text.slice(b, b + 16));
 }
 // No date is written with an arrow: "graphed against a 60→80 aim line" came
 // back as a birth date.
@@ -774,7 +778,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
 
   // model findings that are not what they claim to be (scores as ages, T-scores as SSNs)
   const citations = citationSpans(text);
-  const inCitation = (f) => !/\p{L}/u.test(text.slice(f.start, f.end)) && citations.some(([a, b]) => f.start >= a && f.end <= b);
+  // a subsection letter is part of the number: "300.320(a)"
+  const inCitation = (f) => !/\p{L}/u.test(text.slice(f.start, f.end).replace(/\([a-z0-9]{1,4}\)?/gi, '')) && citations.some(([a, b]) => f.start >= a && f.end <= b);
   for (let i = raw.length - 1; i >= 0; i--) {
     const f = raw[i];
     if (f.source !== 'model') continue;

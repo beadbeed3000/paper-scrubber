@@ -1,0 +1,17 @@
+import { writeFileSync } from 'node:fs';
+const [port, url, out] = process.argv.slice(2);
+const v = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+const ws = new WebSocket(v.webSocketDebuggerUrl);
+await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
+let id = 0; const pending = new Map();
+ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pending.has(d.id)) { const p = pending.get(d.id); pending.delete(d.id); d.error ? p.rej(new Error(d.error.message)) : p.res(d.result); } };
+const send = (method, params = {}, sessionId) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params, ...(sessionId ? { sessionId } : {}) })); });
+const { targetId } = await send('Target.createTarget', { url });
+const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+await new Promise((r) => setTimeout(r, 2500));
+const { data } = await send('Page.printToPDF', { paperWidth: 8.5, paperHeight: 11, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0, printBackground: true, preferCSSPageSize: true }, sessionId);
+writeFileSync(out, Buffer.from(data, 'base64'));
+const pages = (Buffer.from(data, 'base64').toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+console.log(out, 'pages:', pages);
+await send('Target.closeTarget', { targetId });
+ws.close();

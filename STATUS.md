@@ -2,12 +2,12 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v74`,
-desktop 1.3.8.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v75`,
+desktop 1.3.9.
 
 ## Where things stand now (29 September 2026)
 
-- **Live:** web `paper-scrubber-v74`; desktop 1.3.8 for Mac (ad-hoc signed)
+- **Live:** web `paper-scrubber-v75`; desktop 1.3.9 for Mac (ad-hoc signed)
   and Windows (unsigned). Both CI release gates pass.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
@@ -27,10 +27,16 @@ desktop 1.3.8.
   decision, not an open item.
 - **Handout:** states the tested rate, the Mac Privacy & Security steps and
   the measured time. The PDF was regenerated on 29 September and sent to Alex.
-- **Test tooling** (answer keys for Roberts and both sets, the CDP benchmark
-  and grader `bench.mjs` / `compare.mjs`) is not in the repo. It sits in a
-  temporary folder on Alex's Windows machine that may be cleaned up:
-  `%TEMP%\claude\C--Users-Holler2-Documents-Claude-Projects-ClaudeCode\fc393c72-1265-4fad-88b5-ed7357a47c9d\scratchpad`.
+- **Test tooling is in `tests/`** (see its README): the answer keys and
+  records for Roberts and both sets, the CDP benchmark and grader
+  (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
+  (`rule-cases.mjs`, 16 cases), and the web, iframe, offline and desktop-link
+  checks. Run `node tests/rule-cases.mjs` and the benchmark before shipping a
+  detection change. The first suite run caught two gaps in v67 and v68 rules,
+  fixed in v75: the model cut "2, 1" out of "1/2, 1/3" (the fraction check now
+  looks at the whole slash number), and "300.320(a" in "34 CFR 300.320(a)"
+  (a subsection letter now counts as part of a citation). No graded finding
+  changed.
 - **Open:** the hard-shape leaks listed under v64, the real-hardware pass (to
   do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
   remaining audit items (to do 8).
@@ -925,7 +931,7 @@ and the PWA already covers "it's an app."
 - On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
   also holds his other GitHub account (beadbeed). Push with
   `git -c credential.username=beadbeed3000 push origin main`.
-- **Every deploy must bump `CACHE` in sw.js** (currently v74) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v75) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

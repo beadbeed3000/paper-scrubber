@@ -1,0 +1,22 @@
+// Reload the page, scrub one text, report deep time, console errors, and deep spans.
+import { connect } from './cdp.mjs';
+import { readFileSync } from 'node:fs';
+const [port, textFile] = process.argv.slice(2);
+let c = await connect(Number(port));
+await c.send('Page.reload', { ignoreCache: true });
+c.close();
+await new Promise((r) => setTimeout(r, 3000));
+c = await connect(Number(port));
+await c.send('Log.enable');
+await c.waitFor(`!!(window.__dev && document.readyState === 'complete')`, 60000, 500);
+const text = readFileSync(textFile, 'utf8');
+const t0 = Date.now();
+await c.evaluate(`window.__dev.setText(${JSON.stringify(text)}); document.getElementById('btnScrub').click();`);
+await c.waitFor(`!document.getElementById('resultsView').hidden`, 900000, 500);
+const secs = (Date.now() - t0) / 1000;
+const r = JSON.parse(await c.evaluate(`JSON.stringify({ coi: self.crossOriginIsolated, deepFailed: window.__dev.papers()[0].deepFailed, f: window.__dev.getFindings().map(f => f.source + ':' + f.type + '=' + f.text) })`));
+await new Promise((res) => setTimeout(res, 1500));
+const logs = c.events.filter((e) => e.method === 'Log.entryAdded' && /error/i.test(e.params.entry.level) && !/constant fold/.test(e.params.entry.text)).map((e) => e.params.entry.text.slice(0, 200));
+console.log(JSON.stringify({ secs, coi: r.coi, deepFailed: r.deepFailed, findings: r.f.length, deep: r.f.filter((x) => x.startsWith('deep')).length, errors: logs }));
+console.log(r.f.join(' | '));
+c.close();

@@ -1,0 +1,50 @@
+[{
+ "key": "roberts-iep",
+ "title": "Roberts IEP Revised Model (fictional KDE training sample)",
+ "identifiers": [
+  {"text": "Robert Scott Anderson", "category": "name"},
+  {"text": "Robert", "category": "name"},
+  {"text": "Scott", "category": "name"},
+  {"text": "Anderson", "category": "name"},
+  {"text": "Karen", "category": "name (staff, in 'documented Karen-style')"},
+  {"text": "05/01/2011", "category": "date (birth)"},
+  {"text": "101010", "category": "id_number"},
+  {"text": "Kentucky Middle School", "category": "school"},
+  {"text": "Kentucky County Public Schools", "category": "school (district)"},
+  {"text": "Kentucky County", "category": "geographic subdivision (county)"},
+  {"text": "500 Main Street", "category": "address"},
+  {"text": "Riverview", "category": "city"},
+  {"text": "40000", "category": "zip"},
+  {"text": "04-02-26", "category": "date"},
+  {"text": "04-01-27", "category": "date"},
+  {"text": "4-2-26", "category": "date"},
+  {"text": "9-30-26", "category": "date"},
+  {"text": "10-1-26", "category": "date"},
+  {"text": "4-1-27", "category": "date"}
+ ],
+ "quasi": [
+  {"text": "Mild Mental Disability", "category": "disability"},
+  {"text": "Grade: 8", "category": "grade"},
+  {"text": "wildlife", "category": "interest"},
+  {"text": "hunting", "category": "interest"},
+  {"text": "outdoors", "category": "interest"},
+  {"text": "body building", "category": "interest"},
+  {"text": "staying in shape", "category": "interest"},
+  {"text": "automobile service", "category": "career interest"},
+  {"text": "Technical career cluster", "category": "career interest"}
+ ],
+ "mustStayReadable": [
+  "Quantile", "635Q", "730Q to 1020Q", "EXPLORE", "Cuisenaire rods", "Check and Connect",
+  "text-reading software", "80% accuracy", "mean length of utterance: 8.34",
+  "English 9; Math 7; Reading 8; Science 7", "703 KAR 5:070", "Curriculum-Based Measures",
+  "Speech/Language Pathologist", "Speech/Language Therapy", "ILP", "KDE IEP Guidance Document Sample",
+  "fraction strips", "graphic organizer", "Language Arts", "Social Studies", "Resource Room",
+  "Special Education Teacher", "Extended School Year", "intellectual ability (69)", "Full Scale IQ",
+  "Tool Section 2b", "IEP Analysis Tool", "4.0 grade level", "15 words per minute",
+  "Health, Vision, Hearing, Motor Ability", "Social and Emotional Status", "General Intelligence",
+  "word prediction", "cue cards", "role play", "aim line", "Supplementary Aids and Services",
+  "Least Restrictive Environment", "ARC", "Special Ed Status: Active", "80% of day in general education programs",
+  "Communication Status", "8th grade year", "age of 14", "1/2, 1/3, and 1/4", "12th grade",
+  "5th-grade level", "grade 6–8 text complexity band", "20-minute language sample", "Goals 3 and 5"
+ ]
+}]
