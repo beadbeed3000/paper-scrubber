@@ -2,8 +2,26 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v68`,
-desktop 1.3.3.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v69`,
+desktop 1.3.4.
+
+## v69 / desktop 1.3.4 (section numbers and staff titles stay readable)
+
+- **"§6b Reporting" became a street address.** Anything the model tags right
+  after a section sign is a section reference, and is dropped.
+- **"the Speech/Language Pathologist" became a name.** GLiNER tags staff
+  titles as people, and every word was capitalized, so `looksLikeRealName`
+  let it through. `JOB_TITLES` (pathologist, therapist, psychologist,
+  principal, coordinator, specialist and so on; either side of a slash)
+  now rejects them, as `DEEP_NAME_STOP` already did for teacher and nurse.
+  That also leaves a bare "Principal" readable in three of the test records;
+  the person beside each one (Ronnie Gibson, Dwayne Ritchie, Rhonda Mayes,
+  Garrett Slone) still scrubs.
+
+Re-graded on all eleven records: no leak or quasi-identifier count moved;
+Roberts keeps 40 of 50 readable terms on the desktop and all 50 on the web.
+Still open from the Roberts list: "Readers" as a name, "4 years" as an age,
+and the heading hits ("Regular Class", "Present Levels", "School").
 
 ## v68 / desktop 1.3.3 (aim lines and regulation numbers stay readable)
 
@@ -18,9 +36,7 @@ Two more Roberts over-scrubs, fixed and re-graded on all eleven records:
 
 Roberts readable terms: 39 of 50 on the desktop, 49 of 50 on the web (was 38
 and 48). No other finding changed; addresses, dates, ZIPs and phones next to
-these still scrub. Still open from the Roberts list: "§6b Reporting" as an
-address, "Speech/Language Pathologist" and "Readers" as names, "4 years" as an
-age, and the heading hits listed under v65.
+these still scrub.
 
 ## v67 / desktop 1.3.2 (the Roberts leak and the fractions)
 
@@ -762,7 +778,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v68) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v69) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

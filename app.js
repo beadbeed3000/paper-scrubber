@@ -85,13 +85,16 @@ const DEEP_FLAG_STOP = new Set(['junior', 'senior', 'freshman', 'sophomore', 'si
   // a document heading and clinicians' credentials, read as schools
   'preschool', 'kindergarten', 'lpcc', 'lpc', 'lcsw', 'bcba', 'cdces', 'aprn', 'psy.d.', 'ph.d.']);
 const DEEP_NAME_STOP = new Set(['he', 'she', 'i', 'we', 'they', 'you', 'it', 'him', 'her', 'them', 'his', 'hers', 'my', 'me', 'our', 'us', 'your', 'their', 'who', 'mr', 'mrs', 'ms', 'miss', 'dr', 'student', 'students', 'teacher', 'nurse', 'mom', 'dad', 'mother', 'father', 'parents', 'sister', 'brother', 'grandma', 'grandmother', 'grandpa', 'grandfather', 'aunt', 'uncle', 'cousin', 'caseworker', 'counselor', 'guardian']);
+// staff titles, which GLiNER tags as people: "the Speech/Language Pathologist"
+const JOB_TITLES = new Set(['pathologist', 'therapist', 'psychologist', 'principal', 'coordinator', 'specialist', 'interventionist', 'paraprofessional', 'aide', 'director', 'supervisor', 'consultant', 'clinician', 'administrator', 'provider', 'examiner', 'evaluator', 'educator', 'instructor', 'liaison', 'diagnostician', 'audiologist', 'interpreter', 'superintendent']);
 function looksLikeRealName(s) {
   const words = s.trim().split(/\s+/);
   if (!words.length) return false;
   let hasSubstance = false;
   for (const w of words) {
     const clean = w.replace(/[.,;:'’]+$/g, '');
-    if (DEEP_NAME_STOP.has(clean.toLowerCase())) return false;
+    const lower = clean.toLowerCase();
+    if (DEEP_NAME_STOP.has(lower) || lower.split('/').some((p) => JOB_TITLES.has(p) || JOB_TITLES.has(p.replace(/s$/, '')))) return false;
     if (!/^\p{Lu}/u.test(clean)) return false;   // every word capitalized, or it's prose
     if (clean.length >= 3) hasSubstance = true;
   }
@@ -749,7 +752,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
     if ((f.type === 'AGE' && !looksLikeAge(text, f)) || (f.type === 'SSN' && !looksLikeSsn(text, f)) ||
         ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f)) ||
         ((f.type === 'DOB' || f.type === 'DATE') && (looksLikeFraction(text, f) || looksLikeArrowRange(text, f))) ||
-        inCitation(f)) raw.splice(i, 1);
+        inCitation(f) ||
+        /§\s?$/.test(text.slice(Math.max(0, f.start - 2), f.start))) raw.splice(i, 1);   // "§6b Reporting" is a section, not an address
   }
 
   for (const f of raw) expandToWord(text, f);
