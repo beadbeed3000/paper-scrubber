@@ -104,6 +104,22 @@ function looksLikeRealName(s) {
   }
   return hasSubstance;
 }
+// GLiNER tags headings and form labels as schools: "Regular Class", "Present
+// Levels", "Placement", "School Psych", "Gen Ed". A whole school hit made only
+// of these words names no school, so it stays readable; a real name always has
+// a word of its own ("Upper Bearpen", "Cordell Head Start").
+const GENERIC_SCHOOL_WORDS = new Set(['school', 'schools', 'class', 'classes', 'classroom', 'classrooms', 'regular', 'special', 'education', 'ed', 'services', 'service',
+  'present', 'levels', 'level', 'placement', 'primary', 'secondary', 'general', 'gen', 'public', 'county', 'district', 'program', 'programs', 'resource', 'room',
+  'exceptional', 'child', 'children', 'psych', 'sp', 'lea', 'rep', 'ela', 'sdi', 'cm', 'dose', 'reading', 'high', 'middle', 'elementary', 'of', 'the', 'and', 'for']);
+function looksLikeSchoolName(s) {
+  return looksLikeRealName(s) && s.split(/[\s\/-]+/).some((w) => w && !GENERIC_SCHOOL_WORDS.has(w.replace(/[.,;:'’()]+/g, '').toLowerCase()));
+}
+// …but "High" right after a capitalized word is the end of a real school's
+// name ("Brushy Co. High"), and stays scrubbed
+function endsSchoolName(text, d) {
+  if (!/(?:^|\s)(?:high|middle|elementary|school|schools|academy)$/i.test(d.text.trim())) return false;
+  return /\p{Lu}[\p{L}'’-]*\.?[ \t]+$/u.test(text.slice(Math.max(0, d.start - 30), d.start).split('\n').pop());
+}
 
 // Diagnoses, medications, and assistive devices that show up in K-12
 // paperwork. Deliberately NOT service words (speech therapy, IEP, 504) —
@@ -822,7 +838,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
         // hits that will SCRUB (names, orgs) must look like proper nouns —
         // GLiNER also tags "school nurse" and "his grade" as school, and
         // auto-replacing those mangles the sentence for no privacy gain
-        if ((type === 'NAME' || type === 'ORG') && !looksLikeRealName(d.text)) continue;
+        if ((type === 'NAME' && !looksLikeRealName(d.text)) ||
+            (type === 'ORG' && !looksLikeSchoolName(d.text) && !(looksLikeRealName(d.text) && endsSchoolName(text, d)))) continue;
         if (DEEP_FLAG_STOP.has(d.text.trim().toLowerCase())) continue;
         const hits = list.filter((f) => d.start < f.end && d.end > f.start);
         if (!hits.length) {
@@ -841,6 +858,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
             while (a < b && /[\s.,;:()'’"-]/.test(text[a])) a++;
             while (b > a && /[\s.,;:()'’"-]/.test(text[b - 1])) b--;
             const piece = text.slice(a, b);
+            // (a generic leftover still scrubs: in "Brushy Co. High" the "High"
+            // is the rest of a real school's name)
             const properNoun = type !== 'NAME' && type !== 'ORG' ? /\p{L}{4,}/u.test(piece) : looksLikeRealName(piece);
             if (properNoun && !DEEP_FLAG_STOP.has(piece.toLowerCase())) list.push({ type, start: a, end: b, score: d.score, source: 'deep' });
           }

@@ -2,8 +2,34 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v70`,
-desktop 1.3.5.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v71`,
+desktop 1.3.6.
+
+## v71 / desktop 1.3.6 (headings and form labels are not schools)
+
+GLiNER's "school" label fired on headings and form labels, and they passed
+`looksLikeRealName` because every word was capitalized: in Roberts "Regular
+Class" (x3), "Regular Classroom", "Special Education Services", "Present
+Levels", "Placement", "School" and "Primary"; elsewhere "School Psych", "Gen
+Ed", "Sp Ed/CM", "LEA", "DoSE", "ELA", "Secondary", "Exceptional Child
+Education", "Special Ed.". A whole school hit made only of
+`GENERIC_SCHOOL_WORDS` now stays readable (`looksLikeSchoolName`), because it
+names no school.
+
+Two guards, both found by the grader when a first version let "Brushy Co.
+High" through on the web ("Brushy Co." is tagged as a company, which the web
+only underlines, and the scrubbed "High" was what broke the name up):
+- a generic hit ending in High/Middle/Elementary/School/Academy right after a
+  capitalized word on the same line is the end of a real name and still
+  scrubs (`endsSchoolName`);
+- leftover pieces of a larger hit keep the old check, so "PUBLIC SCHOOLS"
+  after a caught county name still scrubs.
+
+Re-graded on all eleven records: 25 generic hits in nine records became
+readable, and no leak, name-piece or quasi-identifier count moved under
+either behavior. **Still open, older than this:** "Brushy Co." (a county
+written "Co.") reads as a company, so the web leaves it underlined, not
+scrubbed; the county rule catches "X County" only.
 
 ## v70 / desktop 1.3.5 (support roles and lengths of time stay readable)
 
@@ -19,8 +45,7 @@ desktop 1.3.5.
   "(14 months)", "born at 38 weeks" and "at about 20 months" still scrub.
 
 Re-graded on all eleven records: exactly those three findings changed, and
-no count moved. Still open from the Roberts list: the heading hits read as
-schools ("Regular Class", "Present Levels", "School", "Primary").
+no count moved.
 
 ## v69 / desktop 1.3.4 (section numbers and staff titles stay readable)
 
@@ -793,7 +818,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v70) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v71) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.
