@@ -2,8 +2,35 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v72`,
-desktop 1.3.7.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v73`,
+desktop 1.3.7 (release desktop-b23).
+
+## Where things stand now (29 September 2026)
+
+- **Live:** web `paper-scrubber-v73`; desktop 1.3.7 for Mac (ad-hoc signed)
+  and Windows (unsigned), release desktop-b23. Both CI release gates pass.
+- **Speed:** the deep check is about 3x faster than v64 (the Roberts model IEP
+  went from 398 s to 129 s on an 8-core desktop). It uses WebAssembly threads
+  in the desktop program and on the De-Identifier's own web page, from the
+  second visit. Details in v65.
+- **Detection, answer-keyed, desktop behavior:** Roberts 0 of 19 identifiers
+  through; tuning set 8 of 367; held-out set 7 of 358 (729 of 744 removed,
+  about 98 in 100). Quasi-identifiers removed 65 of 102 and 52 of 75.
+  Readable terms kept: Roberts 40 of 50 (all 50 on the web), tuning 47 of 50,
+  held-out 45 of 60 (50 of 50 and 60 of 60 on the web).
+- **The Roberts review list is closed** (v67–v72). The desktop-only
+  replacements of context hits (82 in Roberts when counted at v65: subjects,
+  supports, the IQ score) are the known cost of Alex's scrub-everything
+  decision, not an open item.
+- **Handout:** states the tested rate, the Mac Privacy & Security steps and
+  the measured time. The PDF was regenerated on 29 September and sent to Alex.
+- **Test tooling** (answer keys for Roberts and both sets, the CDP benchmark
+  and grader `bench.mjs` / `compare.mjs`) is not in the repo. It sits in a
+  temporary folder on Alex's Windows machine that may be cleaned up:
+  `%TEMP%\claude\C--Users-Holler2-Documents-Claude-Projects-ClaudeCodec393c72-1265-4fad-88b5-ed7357a47c9d\scratchpad`.
+- **Open:** the hard-shape leaks listed under v64, the real-hardware pass (to
+  do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
+  remaining audit items (to do 8).
 
 ## v72 / desktop 1.3.7 (a county written "Co.")
 
@@ -683,7 +710,7 @@ the model labels a person as ADDRESS/CITY rather than NAME, that person gets a
 different tag in that paper than in one where it read NAME — still scrubbed, never
 leaked, but the key file reads oddly. Worth a look; identity is type-scoped today.
 
-## Where things stand
+## Shipped features (overview)
 
 Everything below is shipped and live at
 https://beadbeed3000.github.io/paper-scrubber/ (all tested against the running
@@ -730,9 +757,7 @@ regex-only version wearing the name would be worse than none.
 
 ## To do
 
-1. **KVEC logo** — drop the real file at `icons/kvec-logo.png` and push
-   (with a `CACHE` bump in sw.js). It's the only 404 on the site; the layout
-   already handles it appearing.
+1. ~~**KVEC logo**~~ — done in v58.
 2. **Deploy the Docs add-on** — create the Apps Script project at
    script.google.com and paste in the three files; steps and district-rollout
    notes are in `google-docs-addon/README.md` (~10 minutes, needs a Google
@@ -806,7 +831,10 @@ regex-only version wearing the name would be worse than none.
 6. **Watch the inbox** — the footer email is the feature pipeline now. A
    foreign-language teacher asking is what brings the multilingual engine and
    the language toggle back (README says what to restore).
-5. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
+7. **Upgrade Electron** — `npm audit` flags Electron 33 (every version up to
+   40) and its installer's extract-zip. Rebuild both installers and rerun the
+   release gates and the graded benchmark after.
+8. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
    during a batch run, the aria-live summary written while hidden so it's never
    announced, focus rings too faint to see (1.2–1.5:1), all-or-nothing offline
    precache that fails silently, and the `#gdoc=` bridge writing paper text into
@@ -827,6 +855,9 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
+- On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
+  also holds his other GitHub account (beadbeed). Push with
+  `git -c credential.username=beadbeed3000 push origin main`.
 - **Every deploy must bump `CACHE` in sw.js** (currently v73) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
