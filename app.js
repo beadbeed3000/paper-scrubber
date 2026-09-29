@@ -255,6 +255,23 @@ function looksLikeFraction(text, f) {
   return /\b(?:fractions?|numerators?|denominators?|mixed numbers?)\b/i.test(before) ||
     /^\s*(?:cups?|inch(?:es)?|miles?|hours?|teaspoons?|tablespoons?|pounds?|feet|foot|yards?|of (?:the|a|an|his|her|their|all|each)\b)/i.test(text.slice(f.end, f.end + 16));
 }
+// No date is written with an arrow: "graphed against a 60→80 aim line" came
+// back as a birth date.
+function looksLikeArrowRange(text, f) {
+  const t = text.slice(f.start, f.end);
+  return !/\p{L}/u.test(t) && /[→⟶⇒]|->|=>/.test(t);
+}
+// Regulation and statute numbers: "703 KAR 5:070" came back with "703" as a
+// street address. A number-only model finding inside one of these is part of
+// the citation.
+const CITATION = /\b\d{1,3}\s+(?:KAR|CFR|C\.F\.R\.|U\.S\.C\.|USC)\s+§?\s*\d[\d:.()a-z-]*|\b(?:KRS|KAR|CFR)\s+§?\s*\d[\d:.()a-z-]*/g;
+function citationSpans(text) {
+  const spans = [];
+  CITATION.lastIndex = 0;
+  let m;
+  while ((m = CITATION.exec(text)) !== null) spans.push([m.index, m.index + m[0].length]);
+  return spans;
+}
 // A school named once in full is often named again by its initials: "Pine
 // Knob Elementary" then "(PKE)", "Caney Branch High School" then "the CBHS
 // library". Echo those initials wherever they stand alone.
@@ -724,12 +741,15 @@ async function detectText(text, ui, paperName = '', paper = null) {
   }
 
   // model findings that are not what they claim to be (scores as ages, T-scores as SSNs)
+  const citations = citationSpans(text);
+  const inCitation = (f) => !/\p{L}/u.test(text.slice(f.start, f.end)) && citations.some(([a, b]) => f.start >= a && f.end <= b);
   for (let i = raw.length - 1; i >= 0; i--) {
     const f = raw[i];
     if (f.source !== 'model') continue;
     if ((f.type === 'AGE' && !looksLikeAge(text, f)) || (f.type === 'SSN' && !looksLikeSsn(text, f)) ||
         ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f)) ||
-        ((f.type === 'DOB' || f.type === 'DATE') && looksLikeFraction(text, f))) raw.splice(i, 1);
+        ((f.type === 'DOB' || f.type === 'DATE') && (looksLikeFraction(text, f) || looksLikeArrowRange(text, f))) ||
+        inCitation(f)) raw.splice(i, 1);
   }
 
   for (const f of raw) expandToWord(text, f);
