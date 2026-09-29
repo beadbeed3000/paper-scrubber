@@ -220,6 +220,10 @@ const REGEX_RULES = [
   { type: 'ADDRESS', re: /\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)?\s(?:Holler|Hollow)\b/g },
   // "Hollin County" in running prose (the all-caps letterhead form was already caught)
   { type: 'STATE', re: /\b[A-Z][a-z]+ County\b/g },
+  // …and abbreviated: "(gr 9, Brushy Co. High)" read as a company, which the
+  // web only underlines. One word before "Co." only, so a business name
+  // ("Hensley Lumber Co.") is left to the models.
+  { type: 'STATE', re: /(?<!\b[A-Z][A-Za-z&'’-]*\s)\b[A-Z][a-z]+ Co\./g },
   // named-month dates: "Sept. 9, 2026", "September 3rd. 2026", "March 2023", "Oct. 4"
   { type: 'DATE', re: new RegExp(`\\b(?:${MONTHS})\\.?\\s+(?:\\d{1,2}(?:st|nd|rd|th)?[.,]?\\s+)?\\d{4}\\b|\\b(?:${MONTHS})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, 'g'),
     // history is not a birthday: "April 12, 1861" in a Civil War report stays put

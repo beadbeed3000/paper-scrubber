@@ -2,8 +2,19 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v71`,
-desktop 1.3.6.
+stands. Last updated 29 September 2026, live version `paper-scrubber-v72`,
+desktop 1.3.7.
+
+## v72 / desktop 1.3.7 (a county written "Co.")
+
+"(gr 9, Brushy Co. High)" and "Brushy Co. Fair 2025": the deep check read
+"Brushy Co." as a company, which the web only underlines, and the county rule
+matched "X County" only. A second STATE rule now matches one capitalized word
+plus "Co.". A business name with two or more words before "Co." ("Hensley
+Lumber Co.") does not match and is left to the models. Re-graded on all eleven
+records: both hits now scrub on the web, one more quasi-identifier is removed
+there (30 of 102 in the tuning set), and nothing else moved. That closes the
+Roberts review list.
 
 ## v71 / desktop 1.3.6 (headings and form labels are not schools)
 
@@ -27,9 +38,7 @@ only underlines, and the scrubbed "High" was what broke the name up):
 
 Re-graded on all eleven records: 25 generic hits in nine records became
 readable, and no leak, name-piece or quasi-identifier count moved under
-either behavior. **Still open, older than this:** "Brushy Co." (a county
-written "Co.") reads as a company, so the web leaves it underlined, not
-scrubbed; the county rule catches "X County" only.
+either behavior.
 
 ## v70 / desktop 1.3.5 (support roles and lengths of time stay readable)
 
@@ -818,7 +827,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v71) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v72) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.
