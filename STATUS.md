@@ -827,7 +827,7 @@ and the PWA already covers "it's an app."
 - Local test server: `node dev-server.mjs 8137` (any static server works; this
   one sets the right MIME types).
 - Deploy = push to `main`; GitHub Pages rebuilds in about 40 seconds.
-- **Every deploy must bump `CACHE` in sw.js** (currently v72) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v73) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.
