@@ -2143,11 +2143,12 @@ async function isRoadReady() {
   if (!('caches' in window) || !navigator.serviceWorker?.controller) return false;
   const need = [...ROAD_CRITICAL];
   if (deepCheckOn()) {
-    // deep check enabled = its 553 MB of parts must be on the device too
+    // deep check enabled = its 386 MB of parts must be on the device too
+    // (paths and slice count must match deep-check-worker.mjs)
     need.push('./deep-check-worker.mjs', './vendor/gliner-bundle.mjs',
       './vendor/gliner-ort/ort-wasm-simd-threaded.mjs', './vendor/gliner-ort/ort-wasm-simd-threaded.wasm',
-      './models/onnx-community/gliner_multi_pii-v1/tokenizer.json');
-    for (let i = 0; i < 7; i++) need.push(`./models/onnx-community/gliner_multi_pii-v1/onnx/model_fp16.onnx.part${String(i).padStart(2, '0')}`);
+      './models/onnx-community/gliner_multi_pii-v1-latin/tokenizer.json');
+    for (let i = 0; i < 5; i++) need.push(`./models/onnx-community/gliner_multi_pii-v1-latin/onnx/model_fp16.onnx.part${String(i).padStart(2, '0')}`);
   }
   const hits = await Promise.all(
     need.map((u) => caches.match(new URL(u, document.baseURI).href).then((r) => !!r).catch(() => false)),

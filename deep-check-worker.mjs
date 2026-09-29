@@ -3,7 +3,7 @@
 // at ~15% recall and must never ship) tags contextual identifiers the main
 // model has no labels for: diagnoses, family members, churches, employers,
 // benefits. Everything is fetched from this site's own address; the model
-// arrives as seven <100 MB slices (GitHub's file cap) and is reassembled here.
+// arrives as five <100 MB slices (GitHub's file cap) and is reassembled here.
 //
 // Wrapper facts learned by experiment, do not relearn: labels must be short
 // noun phrases; multi-text batches silently return []; score collapses with
@@ -15,8 +15,13 @@
 
 import { Gliner, xenv } from './vendor/gliner-bundle.mjs';
 
-const MODEL_DIR = new URL('models/onnx-community/gliner_multi_pii-v1/', self.location.href).href;
-const PARTS = 7;
+// The multilingual model with its vocabulary cut to the Latin alphabet: 386 MB
+// instead of 553, and identical output on English text, bit for bit (see
+// tools/trim-deep-model.py). A new model must get a new folder, never these
+// paths, because laptops keep these files for good.
+const MODEL_ID = 'onnx-community/gliner_multi_pii-v1-latin';
+const MODEL_DIR = new URL(`models/${MODEL_ID}/`, self.location.href).href;
+const PARTS = 5;
 
 // tokenizer fetches go to our models/ folder, never to huggingface.co
 xenv.allowLocalModels = false;
@@ -58,7 +63,7 @@ function getGliner() {
     const bytes = await fetchModelBytes();
     postMessage({ kind: 'progress', label: 'Loading the deep-check AI into memory…', pct: 100 });
     const g = new Gliner({
-      tokenizerPath: 'onnx-community/gliner_multi_pii-v1',
+      tokenizerPath: MODEL_ID,
       // When the page is cross-origin isolated, ONNX Runtime runs this on
       // several threads. vendor/gliner-bundle.mjs is patched for that (search
       // it for "ort-wasm-simd-threaded.mjs"): its loader ignored wasmPaths and

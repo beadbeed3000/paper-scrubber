@@ -8,7 +8,7 @@
   reports: everything the scrubber does, plus a second AI (GLiNER fp16, always on)
   that reads for contextual identifiers — diagnoses, medications, family members,
   churches, employers, teams, benefits — and underlines them for the reviewer's
-  neighbor-test judgement. ~650 MB total, one time, built for 16 GB staff laptops.
+  neighbor-test judgement. ~500 MB total, one time, built for 16 GB staff laptops.
 
 They share app.js, styles, models, and the service worker. `deid/index.html`
 carries `<base href="../">` so every relative path resolves at the shared root,
@@ -50,7 +50,7 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    12 · 3 more underlined for your judgement."
 
    **The deep check lives in the De-Identifier** (`deid/`), where it is always
-   on: a second, heavier AI — zero-shot GLiNER fp16, 553 MB one time, running in
+   on: a second, heavier AI — zero-shot GLiNER fp16, 386 MB one time, running in
    its own worker so the page stays responsive — hunts for what no fixed label
    set covers: diagnoses it's never seen, family members, churches, employers,
    teams and clubs, government benefits ("free lunch" gets flagged as a benefit).
@@ -58,7 +58,7 @@ Questions, bug reports, ideas: [alex@theholler.org](mailto:alex@theholler.org).
    catches that the main model missed are scrubbed. Plan on a few extra minutes
    for a long document. Like everything else it downloads once from this site's
    own address and then works offline. Paper Scrubber deliberately has no trace
-   of it — teachers never see a 553 MB decision.
+   of it — teachers never see a 386 MB decision.
 5. **Download Word file** (a real `.docx` with all original formatting — only the
    personal details are replaced), **Copy scrubbed text**, or **Save as .txt**.
 6. If the AI's reply mentions or quotes what was scrubbed ("Nice hook,
@@ -235,6 +235,10 @@ firewall blocks Hugging Face. Requirements and notes:
   free non-commercial use with attribution (the footer links it). Fine for a free
   teacher tool; the tool must never be sold while this model is the default.
 - Max engine (`Ar86Bat/multilang-pii-ner`): **MIT** — no restrictions.
+- Deep check (`urchade/gliner_multi_pii-v1`, fp16 ONNX): **Apache-2.0**. The copy
+  in `models/onnx-community/gliner_multi_pii-v1-latin/` is modified: its
+  vocabulary is cut to the Latin alphabet (`tools/trim-deep-model.py`, notice in
+  the folder's README). No weights were retrained.
 - transformers.js (Apache-2.0), ONNX Runtime Web (MIT), JSZip (MIT),
   pdf.js 5.7.284 legacy build (Apache-2.0 — the legacy build keeps older
   school Chromebooks working), tesseract.js 6.0.1 + tesseract.js-core

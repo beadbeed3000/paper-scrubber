@@ -2,13 +2,16 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v73`,
-desktop 1.3.7 (release desktop-b23).
+stands. Last updated 29 September 2026, live version `paper-scrubber-v74`,
+desktop 1.3.8.
 
 ## Where things stand now (29 September 2026)
 
-- **Live:** web `paper-scrubber-v73`; desktop 1.3.7 for Mac (ad-hoc signed)
-  and Windows (unsigned), release desktop-b23. Both CI release gates pass.
+- **Live:** web `paper-scrubber-v74`; desktop 1.3.8 for Mac (ad-hoc signed)
+  and Windows (unsigned). Both CI release gates pass.
+- **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
+  Latin alphabet with identical output on English text; the De-Identifier's
+  first-use download is about 500 MB. Details in v74.
 - **Speed:** the deep check is about 3x faster than v64 (the Roberts model IEP
   went from 398 s to 129 s on an 8-core desktop). It uses WebAssembly threads
   in the desktop program and on the De-Identifier's own web page, from the
@@ -31,6 +34,70 @@ desktop 1.3.7 (release desktop-b23).
 - **Open:** the hard-shape leaks listed under v64, the real-hardware pass (to
   do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
   remaining audit items (to do 8).
+
+## v74 / desktop 1.3.8 (the deep model is 30% smaller, same answers)
+
+Alex asked on 28 September to try cutting the deep model's vocabulary to
+English, since English is what the tool reads. The model is multilingual: its
+250,101-piece vocabulary table was 384 of its 580 MB (553 MB in the unit these
+notes use). The new copy keeps every piece made only of Latin letters (accents
+included), digits, punctuation, symbols and emoji, plus pieces with a single
+Greek letter ("5 μg"). That is 135,933 pieces, and the model is now 386 MB in
+five slices instead of seven. The De-Identifier's first-use download falls from
+677 MB to about 500 MB.
+
+**Why the cut stops at the whole Latin alphabet.** Half the vocabulary is
+Latin-script (Spanish, French, Indonesian and dozens more spell with the same
+letters), and a rare name like "Stidham" can split into any of those pieces.
+Keeping all of them guarantees identical input for any English text. A Unigram
+tokenizer only picks pieces that are substrings of the text, so nothing it
+would have picked is gone. An English-frequency cut would have been smaller
+(an estimated 250 MB, not built), but it changes how rare names split, and names are the thing
+the deep check exists to catch.
+
+**How.** `tools/trim-deep-model.py` (plain Python, no onnx package) copies the
+kept embedding rows unchanged and renumbers the tokens. One trap: besides the
+embedding lookup, the graph finds each label with `Equal(input_ids, 250103)`
+(the `<<ENT>>` token), so that constant is renumbered too. The JS side
+hardcodes only `[CLS]`=1 and padding 0, which stay put. The folder is
+`models/onnx-community/gliner_multi_pii-v1-latin/`, with an Apache-2.0 change
+notice. The old folder is deleted from the site (GitHub Pages caps a site near
+1 GB, and both would not fit) and, through the new `RETIRED_MODELS` list in
+sw.js, from each laptop's `kvec-models-v1` and `transformers-cache` when v74
+takes over.
+
+**Checked, 28–29 September 2026:**
+- *Tokenizer:* 18,218 words (the eleven answer-keyed records, both samples,
+  and a stress set with curly quotes, arrows, §, checkboxes, µg, emoji and
+  names like José Peña, Nguyễn Văn Anh and Łukasz Żółć) tokenize to the same
+  pieces as before.
+- *Model:* both models side by side in headless Edge on every piece the deep
+  check sends for those texts, 1,373 in all. On all 1,368 Latin-script pieces
+  the raw logits were identical bit for bit, before any threshold, so every
+  graded number (tuning, held-out and Roberts) is unchanged by construction.
+  The four pieces in Cyrillic, Arabic, Chinese and Devanagari changed. Those
+  scripts now read as unknown, and the regular scrub still runs on them.
+- *Speed:* 786 s against 787 s for the whole set. The model loads in about
+  half the time (1.2 s against 2.2 s from a local server), and it has 175 MB
+  less of weights to hold in memory.
+- *The real app, Pages-like server, fresh profiles:* a new laptop downloads the
+  five slices at its first deep check (not isolated, single-threaded), and the
+  chip turns green in that session. A simulated deploy after that re-downloaded
+  nothing. With the server down, the deep check ran on the isolated page (three
+  threads) and in an iframe (single-threaded), with the same six hits on the
+  test record every time.
+- *Upgrade from v73 with the old model downloaded* (the chip green, nine
+  old-model files in `kvec-models-v1` and two in `transformers-cache`): when
+  v74 took over, all eleven were deleted, and the deep-check runtime was kept.
+  The chip turned amber, which is true, since the new model was not there yet.
+  One online deep check fetched the five slices and the tokenizer, and the chip
+  turned green. Site storage fell from 799 to 601 MB. Offline, the isolated
+  page and the iframe both found the same six hits.
+
+**Cost, as told to Alex before shipping:** each De-Identifier laptop downloads
+the new 386 MB once, at its first deep check after the update, and the chip is
+amber until then. Rebuilding the model means a new folder, never the same
+paths, because laptops keep these files for good.
 
 ## v72 / desktop 1.3.7 (a county written "Co.")
 
@@ -858,7 +925,7 @@ and the PWA already covers "it's an app."
 - On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
   also holds his other GitHub account (beadbeed). Push with
   `git -c credential.username=beadbeed3000 push origin main`.
-- **Every deploy must bump `CACHE` in sw.js** (currently v73) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v74) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

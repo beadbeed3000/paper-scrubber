@@ -1,8 +1,8 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v73';
+const CACHE = 'paper-scrubber-v74';
 // Model weights live in their own cache that version cleanup never touches —
-// otherwise every deploy threw away the De-Identifier's 553 MB deep model and
+// otherwise every deploy threw away the De-Identifier's 386 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
 // if a model file is ever replaced at the same path (new models get new paths).
 const MODEL_CACHE = 'kvec-models-v1';
@@ -13,6 +13,14 @@ const isModelPath = (pathname) => pathname.includes('/models/');
 // again. It is never re-fetched, so a newer runtime goes in a new folder
 // (deep-check-worker.mjs's wasmPaths), never over this one.
 const isDurablePath = (pathname) => isModelPath(pathname) || pathname.includes('/vendor/gliner-ort/');
+// Model folders the app no longer loads. Their files are deleted from the
+// model caches when a new version takes over, so a laptop gets the space back
+// instead of carrying a dead model for good. The trailing slash matters: it
+// keeps the old deep model's folder from matching the "-latin/" one.
+const RETIRED_MODELS = [
+  '/models/onnx-community/gliner_multi_pii-v1/',   // 553 MB, replaced in v74
+];
+const isRetired = (pathname) => RETIRED_MODELS.some((p) => pathname.includes(p));
 // The files that carry behaviour are small — the page, the styles, the code.
 // Those are fetched fresh when the network can answer quickly, so a deploy
 // reaches a teacher on her next load. Everything heavy (AI runtimes, models,
@@ -99,10 +107,21 @@ async function rescueModels(oldKey) {
   const oldCache = await caches.open(oldKey);
   const mc = await caches.open(MODEL_CACHE);
   for (const req of await oldCache.keys()) {
-    if (!isDurablePath(new URL(req.url).pathname)) continue;
+    const { pathname } = new URL(req.url);
+    if (!isDurablePath(pathname) || isRetired(pathname)) continue;
     if (await mc.match(req)) continue;
     const res = await oldCache.match(req);
     if (res) await mc.put(req, res);
+  }
+}
+
+async function dropRetiredModels() {
+  for (const key of [MODEL_CACHE, 'transformers-cache']) {
+    if (!(await caches.has(key))) continue;
+    const c = await caches.open(key);
+    for (const req of await c.keys()) {
+      if (isRetired(new URL(req.url).pathname)) await c.delete(req);
+    }
   }
 }
 
@@ -110,12 +129,14 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       // only purge our own old versions — transformers.js's 'transformers-cache'
-      // and the model store above must survive app updates
+      // and the model store above must survive app updates, apart from the
+      // retired model folders listed at the top
       .then((keys) => {
         const old = keys.filter((k) => k.startsWith('paper-scrubber-') && k !== CACHE);
         return Promise.all(old.map((k) => rescueModels(k).catch(() => {})))
           .then(() => Promise.all(old.map((k) => caches.delete(k))));
       })
+      .then(() => dropRetiredModels().catch(() => {}))
       .then(() => self.clients.claim()),
   );
 });
