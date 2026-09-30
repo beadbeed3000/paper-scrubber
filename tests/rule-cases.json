@@ -1,50 +1,249 @@
 [
-  { "why": "a name glued to -style (v67)",
+  {
+    "why": "a name glued to -style (v67)",
     "text": "Four points below the line triggers a change in instruction, documented Karen-style (date, data, change, rationale).",
-    "keep": ["-style (date, data, change, rationale)"], "scrub": ["Karen"] },
-  { "why": "fractions are not birth dates (v67)",
+    "keep": [
+      "-style (date, data, change, rationale)"
+    ],
+    "scrub": [
+      "Karen"
+    ]
+  },
+  {
+    "why": "fractions are not birth dates (v67)",
     "text": "He can order fractions 1/2, 1/3, and 1/4 concretely. Add 3/4 cup of flour, then 1/2 of the sugar.",
-    "keep": ["1/2, 1/3, and 1/4", "3/4 cup", "1/2 of the sugar"], "scrub": [] },
-  { "why": "dates near fraction talk still scrub (v67)",
+    "keep": [
+      "1/2, 1/3, and 1/4",
+      "3/4 cup",
+      "1/2 of the sugar"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "dates near fraction talk still scrub (v67)",
     "text": "Robert worked on fractions on 4/2 with his tutor. Her birthday is 3/14 and she loves fractions. The ARC meeting moved to 10/5.",
-    "keep": [], "scrub": ["Robert", "4/2", "3/14", "10/5"] },
-  { "why": "arrow ranges are not dates (v68)",
+    "keep": [],
+    "scrub": [
+      "Robert",
+      "4/2",
+      "3/14",
+      "10/5"
+    ]
+  },
+  {
+    "why": "arrow ranges are not dates (v68)",
     "text": "Weekly percent-accuracy data graphed against a 60→80 aim line; four points below the line triggers a change. Bi-weekly data graphed against a 40→80 aim line.",
-    "keep": ["60→80", "40→80"], "scrub": [] },
-  { "why": "regulation citations are not addresses (v68)",
+    "keep": [
+      "60→80",
+      "40→80"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "regulation citations are not addresses (v68)",
     "text": "Testing accommodations meet all requirements of the State-Required Assessment and Accountability Programs, 703 KAR 5:070. Restraint only per 704 KAR 7:160. Services follow KRS 158.645 and 34 CFR 300.320(a).",
-    "keep": ["703 KAR 5:070", "704 KAR 7:160", "KRS 158.645", "34 CFR 300.320(a)"], "scrub": [] },
-  { "why": "real identifiers beside those still scrub",
+    "keep": [
+      "703 KAR 5:070",
+      "704 KAR 7:160",
+      "KRS 158.645",
+      "34 CFR 300.320(a)"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "real identifiers beside those still scrub",
     "text": "Robert lives at 500 Main Street, Riverview, KY 40000. Meeting Date: 04-02-26. DOB: 05/01/2011. Call 606-555-0142.",
-    "keep": [], "scrub": ["Robert", "500 Main Street", "Riverview", "40000", "04-02-26", "05/01/2011", "555-0142"] },
-  { "why": "section numbers are not addresses (v69)",
+    "keep": [],
+    "scrub": [
+      "Robert",
+      "500 Main Street",
+      "Riverview",
+      "40000",
+      "04-02-26",
+      "05/01/2011",
+      "555-0142"
+    ]
+  },
+  {
+    "why": "section numbers are not addresses (v69)",
     "text": "Every goal block now states its baseline, documented date-data-change-rationale.\n§6b Reporting\nQuarterly reporting retained. See §2 Goals and §3 LRE.",
-    "keep": ["§6b Reporting", "§2 Goals", "§3 LRE"], "scrub": [] },
-  { "why": "staff titles are not names (v69), and a heading is not a school (v71)",
+    "keep": [
+      "§6b Reporting",
+      "§2 Goals",
+      "§3 LRE"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "staff titles are not names (v69), and a heading is not a school (v71)",
     "text": "Program Modifications / Supports for School Personnel\nConsultation between the Speech/Language Pathologist and Robert's regular and special education teachers will occur monthly.",
-    "keep": ["Speech/Language Pathologist", "Supports for School Personnel"], "scrub": ["Robert"] },
-  { "why": "names beside staff titles still scrub (v69)",
+    "keep": [
+      "Speech/Language Pathologist",
+      "Supports for School Personnel"
+    ],
+    "scrub": [
+      "Robert"
+    ]
+  },
+  {
+    "why": "names beside staff titles still scrub (v69)",
     "text": "Examiner: Tara L. Whitaker, Ed.S., NCSP, School Psychologist. Principal Dana Hensley and Occupational Therapist Amy Carter attended.",
-    "keep": ["School Psychologist", "Occupational Therapist"], "scrub": ["Tara", "Whitaker", "Dana Hensley", "Amy Carter"] },
-  { "why": "support roles are not names (v70)",
+    "keep": [
+      "School Psychologist",
+      "Occupational Therapist"
+    ],
+    "scrub": [
+      "Tara",
+      "Whitaker",
+      "Dana Hensley",
+      "Amy Carter"
+    ]
+  },
+  {
+    "why": "support roles are not names (v70)",
     "text": "Testing accommodations are used consistently.\nReaders (content areas above instructional level, per fading plan)\nParaphrasing\nPrompting/cueing",
-    "keep": ["Readers (content areas"], "scrub": [] },
-  { "why": "lengths of time are not ages (v70)",
+    "keep": [
+      "Readers (content areas"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "lengths of time are not ages (v70)",
     "text": "He plans to graduate in 4 years once starting high school. He received reading intervention for 2 years and was diagnosed 3 years ago.",
-    "keep": ["in 4 years", "for 2 years", "3 years ago"], "scrub": [] },
-  { "why": "real ages still scrub (v70)",
+    "keep": [
+      "in 4 years",
+      "for 2 years",
+      "3 years ago"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "real ages still scrub (v70)",
     "text": "Paisley is 6 years old; baby brother Mason (14 months). Born at 38 weeks. First words at about 20 months. She is 7 years of age.",
-    "keep": [], "scrub": ["Paisley", "Mason", "6 years", "14 months", "38 weeks", "20 months", "7 years"] },
-  { "why": "plural roles are not names, and \"Wes\" still is (v70)",
+    "keep": [],
+    "scrub": [
+      "Paisley",
+      "Mason",
+      "6 years",
+      "14 months",
+      "38 weeks",
+      "20 months",
+      "7 years"
+    ]
+  },
+  {
+    "why": "plural roles are not names, and \"Wes\" still is (v70)",
     "text": "Guardians chose a Head Start class. Wes Caudill, his uncle, and the peer tutor Hunter Combs came.",
-    "keep": ["Guardians chose"], "scrub": ["Wes Caudill", "Hunter Combs"] },
-  { "why": "headings are not schools (v71)",
+    "keep": [
+      "Guardians chose"
+    ],
+    "scrub": [
+      "Wes Caudill",
+      "Hunter Combs"
+    ]
+  },
+  {
+    "why": "headings are not schools (v71)",
     "text": "Special Ed Status: Active\nPrimary Disability: Mild Mental Disability\nRegular Class: Science, Electives\nPlacement is defensible as the least restrictive environment for this student.",
-    "keep": ["Primary Disability", "Regular Class: Science", "Placement is defensible"], "scrub": [] },
-  { "why": "real school names still scrub (v71)",
+    "keep": [
+      "Primary Disability",
+      "Regular Class: Science",
+      "Placement is defensible"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "real school names still scrub (v71)",
     "text": "Jaxon is a 4th grader at Upper Bearpen Elementary. Older brother Hunter (gr 9, Brushy Co. High) has IEP-SLD.",
-    "keep": [], "scrub": ["Jaxon", "Upper Bearpen", "Hunter", "Brushy"] },
-  { "why": "a county written \"Co.\" (v72)",
+    "keep": [],
+    "scrub": [
+      "Jaxon",
+      "Upper Bearpen",
+      "Hunter",
+      "Brushy"
+    ]
+  },
+  {
+    "why": "a county written \"Co.\" (v72)",
     "text": "She showed bantams (Grand Champion, Brushy Co. Fair 2025). They moved from Harlan Co. last spring. Co-teaching in Social Studies.",
-    "keep": ["Co-teaching"], "scrub": ["Brushy", "Harlan"] }
+    "keep": [
+      "Co-teaching"
+    ],
+    "scrub": [
+      "Brushy",
+      "Harlan"
+    ]
+  },
+  {
+    "why": "coded IDs with unusual labels (v76)",
+    "text": "Temporary custody per Brushy Fam. Ct. order 24-J-0087. MRN LV-448120 at the clinic. Scores: CELF-5 Core Language 78; WISC-V FSIQ 84; ICD-10 code F90.2.",
+    "keep": [
+      "CELF-5",
+      "WISC-V",
+      "ICD-10"
+    ],
+    "scrub": [
+      "24-J-0087",
+      "LV-448120"
+    ]
+  },
+  {
+    "why": "a phone number with no area code (v76)",
+    "text": "3. Mamaw and Papaw, home 555-0187, landline only. Lexile range 600-1100L; reads 110-120 words per minute.",
+    "keep": [
+      "600-1100L",
+      "110-120 words"
+    ],
+    "scrub": [
+      "555-0187"
+    ]
+  },
+  {
+    "why": "the rest of a dated data list (v76)",
+    "text": "Data: 45% (8/31), 52% (9/14), 60% (9/28), 63% (10/5)\nGoal: 4 of 5 trials (4/5 trials) with 80% accuracy.",
+    "keep": [
+      "(4/5 trials)",
+      "4 of 5 trials"
+    ],
+    "scrub": [
+      "8/31",
+      "9/14",
+      "9/28",
+      "10/5"
+    ]
+  },
+  {
+    "why": "initials under an Init. column and after an Initials label; the WCPM scores stay (v76)",
+    "text": "Date        WCPM   Accuracy   Init.\n08/25/26    55     89%        CS\n09/01/26    58     90%        CS\nProgress Code: SP\n\nSchool Nurse: Loretta Branch, RN        Initials: LB",
+    "keep": [
+      "WCPM   Accuracy   Init.",
+      "55     89%",
+      "58     90%",
+      "Progress Code: SP"
+    ],
+    "scrub": [
+      "CS",
+      "LB",
+      "Loretta Branch"
+    ]
+  },
+  {
+    "why": "a caught town echoes into the prose (v76)",
+    "text": "Address: 4410 Left Fork Rd, Redbud, KY 41799\nHe was placed with a cousin, Dakota Pratt of Redbud, while his mother completed treatment.",
+    "keep": [],
+    "scrub": [
+      "Redbud",
+      "Dakota Pratt"
+    ]
+  },
+  {
+    "why": "a school year the model mislabels as a ZIP stays scrubbed (v76)",
+    "text": "Behavior: No office referrals in SY 25-26. Lexile range 600-1100L.",
+    "keep": [
+      "600-1100L"
+    ],
+    "scrub": [
+      "25-26"
+    ]
+  }
 ]

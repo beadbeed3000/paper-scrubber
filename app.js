@@ -213,7 +213,14 @@ const REGEX_RULES = [
     keep: (m) => TOOL === 'deid' && !EPONYM_OK.has(m) && !new RegExp(`^(?:${ROLE_WORDS})$`).test(m) },
   // labeled numbers of any length, letters allowed: "Lunch #: 40216",
   // "ARC CASE#: 26-0412", "BIP Case #: BIP-26-0317"
-  { type: 'ID', re: /(?<=\b(?:student|case|record|file|ssid|lunch|medicaid|account|member|policy|claim|referral)\s*(?:number|no\.?|num|id|#)?\s*[:#]?\s*)(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{3,}\b/gi },
+  { type: 'ID', re: /(?<=\b(?:student|case|record|file|ssid|lunch|medicaid|account|member|policy|claim|referral|order|docket|petition|mrn|chart|patient)\s*(?:number|no\.?|num|id|#)?\s*[:#]?\s*)(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{3,}\b/gi },
+  // letter-digit codes with a long number in them, whatever the label: "MRN
+  // LV-448120", "Ct. order 24-J-0087" (test names like CELF-5 are too short)
+  { type: 'ID', re: /\b(?:[A-Z]{1,4}-\d{4,}|\d{2,4}-[A-Z]{1,3}-\d{3,})\b/g },
+  // a seven-digit phone after a phone word: "home 555-0187, landline only"
+  { type: 'PHONE', re: /(?<=\b(?:[Hh]ome|[Cc]ell|[Ww]ork|[Pp]hone|[Pp]h|[Tt]el|[Cc]all|[Tt]ext|[Ll]andline|[Mm]obile)\.?:?[ \t]{0,3})\d{3}[-.]\d{4}(?![\d-])/g },
+  // an initials label: "School Nurse: Loretta Branch, RN   Initials: LB"
+  { type: 'NAME', re: /(?<=\b(?:[Ii]nitials?|INITIALS?|[Ii]nit\.|INIT\.)[ \t]*:?[ \t]{1,3})[A-Z]{2,3}(?![A-Za-z])/g },
   // rural route and post office boxes: "RR 1 Box 88", "RR 2 Box 118-A", "P.O. Box 44"
   { type: 'ADDRESS', re: /\b(?:R\.?R\.?|Rural Route|HC|Route|P\.?\s?O\.?)\s*\d{0,3},?\s*Box\s+\d+(?:-?[A-Z])?\b/gi },
   // hollers and hollows are where people live: "Coon Holler", "Bunyan Hollow"
@@ -285,11 +292,33 @@ function looksLikeFraction(text, f) {
   while (b < text.length && /[\d\/]/.test(text[b])) b++;
   const t = text.slice(a, b);
   if (!/\d\/\d/.test(t) || /\d\/\d+\/\d|\d{4}/.test(t) || !/^[\d\/,\s]*(?:(?:and|or)[\d\/,\s]*)?$/.test(t)) return false;
+  // a count, not a date: "4/5 trials", "3/4 opportunities", "correct on 8/10 probes"
+  if (/^\s*(?:trials?|opportunit(?:y|ies)|attempts?|probes?|sessions?|items?|correct|times|occasions?|data points?|responses?|problems?|questions?|steps?|tries)\b/i.test(text.slice(b, b + 20))) return true;
   let before = text.slice(Math.max(0, a - 60), a);
   before = before.slice(before.search(/[^.!?\n]*$/));   // this sentence only
   if (/\b(?:on|by|due|dated|since|until|till|before|after|from|through|thru|as of)\s+$/i.test(before)) return false;
   return /\b(?:fractions?|numerators?|denominators?|mixed numbers?)\b/i.test(before) ||
     /^\s*(?:cups?|inch(?:es)?|miles?|hours?|teaspoons?|tablespoons?|pounds?|feet|foot|yards?|of (?:the|a|an|his|her|their|all|each)\b)/i.test(text.slice(b, b + 16));
+}
+// …but a mislabeled hit can still be covering something real: "SY 25-26" came
+// back as a ZIP. Two years a year apart are a school year: keep it, as a DATE.
+// Both checks read the whole number run the model cut into (it tagged "25").
+function numberRun(text, f) {
+  let a = f.start, b = f.end;
+  while (a > 0 && /[\d\-–\/]/.test(text[a - 1])) a--;
+  while (b < text.length && /[\d\-–\/]/.test(text[b])) b++;
+  return text.slice(a, b);
+}
+function retypeSchoolYear(text, f) {
+  const m = numberRun(text, f).match(/^\s*(\d{2}|\d{4})\s*[-–\/]\s*(\d{2}|\d{4})\s*$/);
+  if (!m || (Number(m[1]) + 1) % 100 !== Number(m[2]) % 100) return false;
+  f.type = 'DATE';
+  return true;
+}
+// A bare one- to three-digit number is no date unless it is part of one: the
+// WCPM scores in "09/15/26    63     92%" came back as birth dates.
+function looksLikeBareNumber(text, f) {
+  return /^\d{1,3}$/.test(text.slice(f.start, f.end)) && !/[\d\/.-]/.test(text[f.start - 1] || '') && !/[\d\/.-]/.test(text[f.end] || '');
 }
 // No date is written with an arrow: "graphed against a 60→80 aim line" came
 // back as a birth date.
@@ -650,6 +679,66 @@ function extendEntities(text, list) {
 
 // If a name was caught anywhere, scrub the same word everywhere else too
 // (models are inconsistent on repeated mentions; students repeat their names).
+// A data table whose last column is headed "Init." holds the initials of
+// whoever took the data: "09/15/26    63     92%        CS"
+function initialsColumn(text) {
+  const out = [];
+  const lines = text.split('\n');
+  let at = 0, inTable = false;
+  for (const line of lines) {
+    if (/\bInit(?:\.|ials)[ \t]*$/.test(line)) inTable = true;
+    else if (!line.trim()) inTable = false;
+    else if (inTable) {
+      // data rows start with their date; "Progress Code: SP" ends the table
+      const m = /^[ \t]*\d/.test(line) && line.match(/[ \t]([A-Z]{2,3})[ \t]*$/);
+      if (m) out.push({ type: 'NAME', start: at + line.lastIndexOf(m[1]), end: at + line.lastIndexOf(m[1]) + m[1].length, score: 1, source: 'regex' });
+      else inTable = false;
+    }
+    at += line.length + 1;
+  }
+  return out;
+}
+// Dated data points come in lists: "45% (8/31), 52% (9/14), 63% (10/5)". When
+// the models catch two or more of a line's "(m/d)" points, the rest are dates too.
+function dateSiblings(text, list) {
+  const byLine = new Map();
+  const re = /\((\d{1,2})\/(\d{1,2})\)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (Number(m[1]) < 1 || Number(m[1]) > 12 || Number(m[2]) < 1 || Number(m[2]) > 31) continue;
+    const line = text.lastIndexOf('\n', m.index);
+    const s = m.index + 1, e = m.index + m[0].length - 1;
+    const covered = list.some((f) => (f.type === 'DATE' || f.type === 'DOB') && f.start < e && f.end > s);
+    if (!byLine.has(line)) byLine.set(line, []);
+    byLine.get(line).push({ s, e, covered });
+  }
+  const extra = [];
+  for (const pts of byLine.values()) {
+    if (pts.filter((p) => p.covered).length < 2) continue;
+    for (const p of pts) if (!p.covered && !list.some((f) => f.start < p.e && f.end > p.s)) extra.push({ type: 'DATE', start: p.s, end: p.e, score: 0.95, source: 'regex' });
+  }
+  return extra;
+}
+// A town caught once, usually in the address ("Redbud, KY 41799"), is the same
+// town in the prose ("a cousin of Redbud"), the way a caught name is
+function propagatePlaces(text, list) {
+  const places = new Set();
+  for (const f of list) {
+    if (f.type !== 'CITY') continue;
+    const w = text.slice(f.start, f.end).replace(/[.,;:]+$/, '').trim();
+    if (/^\p{Lu}[\p{L}'’-]{3,}(?: \p{Lu}[\p{L}'’-]+){0,2}$/u.test(w)) places.add(w);
+  }
+  const extra = [];
+  for (const w of places) {
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(w)}(?![\\p{L}\\p{N}])`, 'gu');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (!list.some((f) => m.index < f.end && m.index + w.length > f.start)) extra.push({ type: 'CITY', start: m.index, end: m.index + w.length, score: 0.95, source: 'echo' });
+    }
+  }
+  return extra;
+}
+
 function propagateNames(text, list) {
   const HONORIFICS = new Set(['mr', 'mrs', 'ms', 'miss', 'dr', 'coach', 'professor', 'prof']);
   const words = new Set();
@@ -775,6 +864,7 @@ async function detectText(text, ui, paperName = '', paper = null) {
       raw.push({ type: rule.type, start: m.index, end: m.index + m[0].length, score: 1, source: 'regex' });
     }
   }
+  raw.push(...initialsColumn(text));
 
   // model findings that are not what they claim to be (scores as ages, T-scores as SSNs)
   const citations = citationSpans(text);
@@ -785,7 +875,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
     if (f.source !== 'model') continue;
     if ((f.type === 'AGE' && !looksLikeAge(text, f)) || (f.type === 'SSN' && !looksLikeSsn(text, f)) ||
         ((f.type === 'ID' || f.type === 'AGE') && looksLikeScore(text, f)) ||
-        ((f.type === 'DOB' || f.type === 'DATE') && (looksLikeFraction(text, f) || looksLikeArrowRange(text, f))) ||
+        ((f.type === 'DOB' || f.type === 'DATE') && (looksLikeFraction(text, f) || looksLikeArrowRange(text, f) || looksLikeBareNumber(text, f))) ||
+        (f.type === 'ZIP' && !/(?<!\d)\d{5}(?!\d)/.test(text.slice(f.start, f.end) + ' ' + numberRun(text, f)) && !retypeSchoolYear(text, f)) ||   // "Lexile range 600-1100L" is no ZIP code
         inCitation(f) ||
         /§\s?$/.test(text.slice(Math.max(0, f.start - 2), f.start))) raw.splice(i, 1);   // "§6b Reporting" is a section, not an address
   }
@@ -825,6 +916,8 @@ async function detectText(text, ui, paperName = '', paper = null) {
   if (nicks.length) list = mergeAdjacent(resolveOverlaps([...list, ...nicks]), text);
   const acr = schoolAcronyms(text, list);
   if (acr.length) list = mergeAdjacent(resolveOverlaps([...list, ...acr]), text);
+  const siblings = dateSiblings(text, list), places = propagatePlaces(text, list);
+  if (siblings.length || places.length) list = mergeAdjacent(resolveOverlaps([...list, ...siblings, ...places]), text);
   // echoes can reveal new surname halves ("Boo" → "Boo Radley"), which can in
   // turn echo elsewhere — two rounds reaches a fixpoint on real papers
   for (let round = 0; round < 2; round++) {

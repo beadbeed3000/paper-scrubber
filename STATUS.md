@@ -2,12 +2,12 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 29 September 2026, live version `paper-scrubber-v75`,
-desktop 1.3.9.
+stands. Last updated 30 September 2026, live version `paper-scrubber-v76`,
+desktop 1.3.10.
 
-## Where things stand now (29 September 2026)
+## Where things stand now (30 September 2026)
 
-- **Live:** web `paper-scrubber-v75`; desktop 1.3.9 for Mac (ad-hoc signed)
+- **Live:** web `paper-scrubber-v76`; desktop 1.3.10 for Mac (ad-hoc signed)
   and Windows (unsigned). Both CI release gates pass.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
@@ -16,30 +16,74 @@ desktop 1.3.9.
   went from 398 s to 129 s on an 8-core desktop). It uses WebAssembly threads
   in the desktop program and on the De-Identifier's own web page, from the
   second visit. Details in v65.
-- **Detection, answer-keyed, desktop behavior:** Roberts 0 of 19 identifiers
-  through; tuning set 8 of 367; held-out set 7 of 358 (729 of 744 removed,
-  about 98 in 100). Quasi-identifiers removed 65 of 102 and 52 of 75.
-  Readable terms kept: Roberts 40 of 50 (all 50 on the web), tuning 47 of 50,
-  held-out 45 of 60 (50 of 50 and 60 of 60 on the web).
+- **Detection, answer-keyed, desktop behavior.** On records the rules have
+  never seen (the fresh set, v76) 39 of 356 identifiers get through, about 89
+  in 100: mostly initials (17) and bare dates (15), and no full name. On the
+  sets the rules were written against it is 7 of 744 (Roberts 0 of 19, tuning
+  6 of 367, held-out 1 of 358). The 89 is the honest number for new records.
+  Quasi-identifiers removed: 65 of 102, 52 of 75, 44 of 68. Readable terms
+  kept: Roberts 40 of 50 (all 50 on the web), tuning 47 of 50, held-out 45 of
+  60, fresh 49 of 72.
 - **The Roberts review list is closed** (v67–v72). The desktop-only
   replacements of context hits (82 in Roberts when counted at v65: subjects,
   supports, the IQ score) are the known cost of Alex's scrub-everything
   decision, not an open item.
-- **Handout:** states the tested rate, the Mac Privacy & Security steps and
-  the measured time. The PDF was regenerated on 29 September and sent to Alex.
-- **Test tooling is in `tests/`** (see its README): the answer keys and
-  records for Roberts and both sets, the CDP benchmark and grader
-  (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
-  (`rule-cases.mjs`, 16 cases), and the web, iframe, offline and desktop-link
-  checks. Run `node tests/rule-cases.mjs` and the benchmark before shipping a
-  detection change. The first suite run caught two gaps in v67 and v68 rules,
-  fixed in v75: the model cut "2, 1" out of "1/2, 1/3" (the fraction check now
-  looks at the whole slash number), and "300.320(a" in "34 CFR 300.320(a)"
-  (a subsection letter now counts as part of a citation). No graded finding
-  changed.
-- **Open:** the hard-shape leaks listed under v64, the real-hardware pass (to
+- **Handout:** states the Mac Privacy & Security steps, the measured time, and
+  "about 98 of every 100" identifiers, which is the rate on the tuned sets.
+  The fresh set says about 89; changing the promise is Alex's call.
+- **Test tooling is in `tests/`** (see its README): answer keys and records
+  for Roberts, the tuning, held-out and fresh sets, the CDP benchmark and
+  grader (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
+  (`rule-cases.mjs`, 22 cases), and the web, iframe, offline and desktop-link
+  checks. Run the suite and the benchmark before shipping a detection change.
+- **Open:** initials and bare dates on the fresh set (v76), the real-hardware pass (to
   do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
   remaining audit items (to do 8).
+
+## v76 / desktop 1.3.10 (a fresh test set, and fewer leaks)
+
+**A fresh, blind test set.** The held-out set had informed so many fixes that
+it no longer tested fairly. `tests/keys/fresh.json` holds five new fictional
+records (TBI eligibility, manifestation determination review, DHH itinerant
+report, autism annual IEP, nurse seizure plan) with 356 keyed identifiers,
+written by an agent that never saw the rules. One labeling difference: named
+churches and businesses are keyed as identifiers there, where the old keys
+call them quasi-identifiers. Graded on v75 before any change: 47 of 356 got
+through on the desktop (about 87 in 100), against 15 of 744 on the old sets.
+The old sets' rate reflects tuning.
+
+**Fixed, written against the old sets only:**
+- letter-digit codes: new ID labels (order, docket, petition, MRN, chart,
+  patient) and a code shape with a four-digit run ("Ct. order 24-J-0087",
+  "MRN LV-448120"), so CELF-5 and WISC-V stay readable;
+- a seven-digit phone right after a phone word ("home 555-0187");
+- initials after an Initials label, and in a data table's "Init." column
+  (rows must start with their date, so "Progress Code: SP" stays readable);
+- the rest of a dated list once two of its "(m/d)" points are caught
+  ("63% (10/5)");
+- a caught town echoing through the record ("of Redbud").
+
+**Over-scrubs fixed on the way:** trial counts read as birth dates ("4/5
+trials"); bare one- to three-digit numbers read as dates (WCPM scores, the
+"504" of "504 plan", scale scores); a model ZIP with no five-digit run
+("Lexile range 600-1100L").
+
+**A regression caught before shipping.** The model had mislabeled "SY 25-26"
+as a ZIP, and the new ZIP check dropped it. Two numbers a year apart are now
+kept as a school year. The check reads the whole number run, because the
+model had tagged only "25".
+
+**Results:** old sets 7 of 744 through (was 15), fresh set 39 of 356 (was 47);
+on the web 14 and 45. No leak, quasi-identifier or readable term was lost in
+any record, and the 22-case suite passes. What still gets through on the
+fresh set is initials in other shapes (17 of 28) and bare dates (15 of 74:
+years, months, other school-year spellings, "the week of 9/22"). Fixing those
+means reading the fresh set's misses, after which it is no longer blind:
+write another set first, or accept that.
+
+**Lesson.** A mislabeled model hit can be the only thing covering an
+identifier. A check that drops a hit must be sure the text is no identifier
+at all, and must judge the whole run the model cut into.
 
 ## v74 / desktop 1.3.8 (the deep model is 30% smaller, same answers)
 
@@ -931,7 +975,7 @@ and the PWA already covers "it's an app."
 - On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
   also holds his other GitHub account (beadbeed). Push with
   `git -c credential.username=beadbeed3000 push origin main`.
-- **Every deploy must bump `CACHE` in sw.js** (currently v75) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v76) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

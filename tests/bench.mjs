@@ -7,7 +7,7 @@
 // Usage: node tests/bench.mjs <port> <label> <out.json> [--match /deid/] [--sets roberts,tuning,heldout] [--soft] [--no-reload]
 // --soft reloads normally: a hard reload bypasses the web version's service worker.
 import { connect } from './cdp.mjs';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const [port, label, outPath, ...flags] = process.argv.slice(2);
 const matchIdx = flags.indexOf('--match');
@@ -17,6 +17,8 @@ const SETS = [
   { name: 'roberts', key: here('keys/roberts.json'), dir: here('files/roberts/') },
   { name: 'tuning', key: here('keys/tuning.json'), dir: here('files/tuning/') },
   { name: 'heldout', key: here('keys/heldout.json'), dir: here('files/heldout/') },
+  // written 30 Sep 2026 by an agent that never saw the rules: the honest check
+  ...(existsSync(here('keys/fresh.json')) ? [{ name: 'fresh', key: here('keys/fresh.json'), dir: here('files/fresh/') }] : []),
 ];
 const setsIdx = flags.indexOf('--sets');
 if (setsIdx >= 0) { const want = flags[setsIdx + 1].split(','); SETS.splice(0, SETS.length, ...SETS.filter((s) => want.includes(s.name))); }
