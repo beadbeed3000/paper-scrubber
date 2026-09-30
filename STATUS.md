@@ -2,12 +2,12 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 30 September 2026, live version `paper-scrubber-v76`,
+stands. Last updated 30 September 2026, live version `paper-scrubber-v77`,
 desktop 1.3.10.
 
 ## Where things stand now (30 September 2026)
 
-- **Live:** web `paper-scrubber-v76`; desktop 1.3.10 for Mac (ad-hoc signed)
+- **Live:** web `paper-scrubber-v77`; desktop 1.3.10 for Mac (ad-hoc signed)
   and Windows (unsigned). Both CI release gates pass.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
@@ -29,8 +29,9 @@ desktop 1.3.10.
   supports, the IQ score) are the known cost of Alex's scrub-everything
   decision, not an open item.
 - **Handout:** states the Mac Privacy & Security steps, the measured time, and
-  "about 98 of every 100" identifiers, which is the rate on the tuned sets.
-  The fresh set says about 89; changing the promise is Alex's call.
+  the fresh-set rate: every full name and about 89 of every 100 identifiers
+  on records the tool had never seen. Step 3 tells reviewers it misses
+  initials and dates most often. PDF regenerated 30 September.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
   for Roberts, the tuning, held-out and fresh sets, the CDP benchmark and
   grader (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
@@ -975,7 +976,7 @@ and the PWA already covers "it's an app."
 - On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
   also holds his other GitHub account (beadbeed). Push with
   `git -c credential.username=beadbeed3000 push origin main`.
-- **Every deploy must bump `CACHE` in sw.js** (currently v76) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v77) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.
