@@ -40,11 +40,12 @@ jobs:
             args: --win nsis
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
+          package-manager-cache: false   # no lockfile in the repo to key a cache on
 
       - name: Assemble the web bundle (page + engine + BOTH models)
         shell: bash
@@ -70,6 +71,11 @@ jobs:
       - name: Release gate — a real de-identify run inside the app, offline
         working-directory: desktop
         run: npx electron . --scrub-test
+
+      - name: Release gate — the detection rule cases (fixed leaks stay fixed)
+        working-directory: desktop
+        timeout-minutes: 20
+        run: npx electron . --rule-test=../tests/rule-cases.json
 
       - name: Build the Windows installer (unsigned)
         if: runner.os == 'Windows'
@@ -106,7 +112,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder --mac dmg zip --arm64 --prepackaged "$(ls -d dist/mac*/De-Identifier.app | head -1)" --publish never
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}
           retention-days: 3
@@ -119,7 +125,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: dist
@@ -134,4 +140,4 @@ jobs:
             -R "${{ github.repository }}" \
             --title "De-Identifier for Mac & Windows (build ${{ github.run_number }})" \
             --latest \
-            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac** (macOS 12 Monterey or newer): open the .dmg, drag De-Identifier to Applications; the first time, the Mac refuses to open it: go to System Settings → Privacy & Security, click Open Anyway, and confirm (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
+            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac** (Apple chip, M1 or newer, on macOS 12 Monterey or newer): open the .dmg, drag De-Identifier to Applications; the first time, the Mac refuses to open it: go to System Settings → Privacy & Security, click Open Anyway, and confirm (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."

@@ -17,7 +17,9 @@ ever. Current results are in STATUS.md under "Where things stand now".
   `Hunter Mullins IEP draft.docx`, which hides a name in every Word part the
   v51 and v57 fixes clean (it is not graded, only checked by eye).
 - `rule-cases.json` holds short regression sentences for the rules added in
-  v67–v72, each with what must stay readable and what must scrub.
+  v67–v76, each with what must stay readable and what must scrub. The desktop
+  build runs them as a release gate (`npx electron . --rule-test=../tests/rule-cases.json`
+  from `desktop/`), so a failing case stops the release.
 
 ## Start the dev desktop app
 

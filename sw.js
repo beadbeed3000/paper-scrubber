@@ -1,6 +1,6 @@
 // Paper Scrubber service worker — makes the app shell work offline.
 // (Model files are cached separately by transformers.js in the browser's Cache API.)
-const CACHE = 'paper-scrubber-v78';
+const CACHE = 'paper-scrubber-v79';
 // Model weights live in their own cache that version cleanup never touches —
 // otherwise every deploy threw away the De-Identifier's 386 MB deep model and
 // the 64 MB scrubber, and every laptop re-downloaded them. Bump THIS name only
@@ -51,7 +51,7 @@ const ASSETS = [
   './vendor/tesseract-worker.min.js',
   './vendor/tesseract-core-simd-lstm.wasm.js',
   './vendor/eng.traineddata.gz',
-  // deep-check shell (small). The 553 MB of model parts are NOT precached —
+  // deep-check shell (small). The 386 MB of model parts are NOT precached —
   // they land in MODEL_CACHE at first deep-check use, via the fetch handler.
   './deep-check-worker.mjs',
   './vendor/gliner-bundle.mjs',
@@ -92,10 +92,15 @@ async function precacheModels() {
   }
 }
 
+// The app shell installs all or nothing, so a half-copied update never runs.
+// The scrubber model is best effort: a 64 MB download cut off by school Wi-Fi
+// used to fail the whole install, leaving no offline copy and no deep-check
+// threads. Now a missed model file lands at the first scrub instead (the fetch
+// handler caches it), and the offline chip on the page stays amber until then.
 self.addEventListener('install', (e) => {
   e.waitUntil(Promise.all([
     caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))),
-    precacheModels(),
+    precacheModels().catch(() => {}),
   ]).then(() => self.skipWaiting()));
 });
 

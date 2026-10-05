@@ -394,7 +394,7 @@ const els = {
   btnCamera: $('btnCamera'), cameraInput: $('cameraInput'),
   btnScrub: $('btnScrub'), statusArea: $('statusArea'), statusText: $('statusText'),
   progressWrap: $('progressWrap'), progressBar: $('progressBar'),
-  btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'),
+  btnBatchBack: $('btnBatchBack'), batchTitle: $('batchTitle'), batchStatus: $('batchStatus'), batchHold: $('batchHold'),
   batchProgressWrap: $('batchProgressWrap'), batchProgressBar: $('batchProgressBar'),
   batchList: $('batchList'), btnZip: $('btnZip'),
   btnBack: $('btnBack'), btnNext: $('btnNext'), crumb: $('crumb'), ocrNote: $('ocrNote'), deepNote: $('deepNote'),
@@ -1593,6 +1593,11 @@ function openReview(i) {
   paperUnscrub.reset();   // fresh box per paper
   renderResults();
   showView('review');
+  // The summary was written while the view was hidden, and a screen reader
+  // ignores a live region it cannot see. Say it again now that it is shown.
+  const said = els.summaryLine.textContent;
+  els.summaryLine.textContent = '';
+  setTimeout(() => { if (!els.summaryLine.textContent) els.summaryLine.textContent = said; }, 100);
 }
 
 function renderResults() {
@@ -1944,6 +1949,7 @@ function updateScrubButton() {
   els.btnScrub.classList.toggle('not-ready', !busy && empty);
   els.btnScrub.setAttribute('aria-disabled', String(empty));
   els.btnBatchBack.classList.toggle('waiting', busy);
+  if (!busy && els.batchHold) els.batchHold.textContent = '';
   if (!empty && emptyHint) { emptyHint = false; hideStatus(); }
 }
 els.paperText.addEventListener('input', updateScrubButton);
@@ -2029,7 +2035,8 @@ els.btnNext.addEventListener('click', () => {
 });
 els.btnBatchBack.addEventListener('click', () => {
   if (busy) {
-    els.batchStatus.textContent = 'Still working — you can start over as soon as the last paper finishes.';
+    // its own line: the progress messages rewrite batchStatus several times a second
+    els.batchHold.textContent = `Still working — you can start over as soon as the last ${TOOL === 'deid' ? 'record' : 'paper'} finishes.`;
     return;
   }
   papers = [];

@@ -2,14 +2,15 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 5 October 2026, live version `paper-scrubber-v78`,
-desktop 1.4.0.
+stands. Last updated 5 October 2026, live version `paper-scrubber-v79`,
+desktop 1.4.1.
 
 ## Where things stand now (5 October 2026)
 
-- **Live:** web `paper-scrubber-v78`; desktop 1.4.0 on Electron 43, for
+- **Live:** web `paper-scrubber-v79`; desktop 1.4.1 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
-  (unsigned). Both CI release gates pass.
+  (unsigned). All three CI release gates pass: boot, a real scrub, and the
+  22 rule cases.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
   first-use download is about 500 MB. Details in v74.
@@ -32,14 +33,33 @@ desktop 1.4.0.
 - **Handout:** states the Mac Privacy & Security steps, the measured time, and
   the fresh-set rate: every full name and about 89 of every 100 identifiers
   on records the tool had never seen. Step 3 tells reviewers it misses
-  initials and dates most often. PDF regenerated 30 September.
+  initials and dates most often. The Mac box says it needs an Apple chip
+  (M1 or newer). PDF regenerated 5 October.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
   for Roberts, the tuning, held-out and fresh sets, the CDP benchmark and
   grader (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
   (`rule-cases.mjs`, 22 cases), and the web, iframe, offline and desktop-link
   checks. Run the suite and the benchmark before shipping a detection change.
 - **Open:** initials and bare dates on the fresh set (v76), the real-hardware pass (to
-  do 3), and the remaining audit items (to do 8).
+  do 3), and the last audit item, the Docs add-on's `#gdoc=` link (to do 8).
+
+## v79 and desktop 1.4.1 (rule gate, audit items)
+
+- **The 22 rule cases are a release gate now.** `--rule-test=<cases.json>`
+  runs them inside the desktop app (the same check as `tests/rule-cases.mjs`)
+  on both CI machines, so a fixed leak or over-scrub that comes back stops the
+  release. About 50 s on the dev machine.
+- **Workflow:** the actions moved off Node 20 (checkout and setup-node v7,
+  upload-artifact v7, download-artifact v8) and the build runs on Node 24.
+  The release notes name the Apple chip.
+- **Audit items fixed:** focus rings were 1.2–1.5:1 and are now 5:1 or more
+  in both themes. The results summary is written again once the view shows,
+  so a screen reader announces it. "Start over" during a batch run says why
+  on its own line (the progress text used to overwrite it at once). A dropped
+  scrubber-model download no longer fails the whole service-worker install;
+  the model lands at the first scrub, and the offline chip stays amber until
+  it does.
+- **Handout:** the Mac box says "with an Apple chip (M1 or newer)".
 
 ## desktop 1.4.0 (Electron 43, Apple Silicon only)
 
@@ -977,11 +997,12 @@ regex-only version wearing the name would be worse than none.
    supports only its three newest versions, so plan an upgrade every few
    months: change the pin, then run the release gates, `tests/rule-cases.mjs`
    and `tests/bench.mjs`.
-8. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
-   during a batch run, the aria-live summary written while hidden so it's never
-   announced, focus rings too faint to see (1.2–1.5:1), all-or-nothing offline
-   precache that fails silently, and the `#gdoc=` bridge writing paper text into
-   browser history. Worth a pass; nothing here sends a student's name anywhere.
+8. **Last audit item: the `#gdoc=` bridge** (the rest were fixed in v79).
+   The Docs add-on carries the paper text in the link, and the browser saves
+   that link in its history before the page strips it. The fix is to hand the
+   text over with postMessage instead, but it can only be tested inside a real
+   Google account, and the add-on is not deployed yet. Do it when the add-on
+   is (to do 2). Paper Scrubber only; the De-Identifier has no add-on.
 
 **Parked on purpose:** the scrubber.theholler.org domain (Alex chose to stay
 on github.io; a pending domain verification sits harmlessly on the GitHub

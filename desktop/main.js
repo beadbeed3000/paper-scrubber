@@ -9,6 +9,8 @@ const http = require('node:http');
 
 const SMOKE = process.argv.includes('--smoke');
 const SCRUB_TEST = process.argv.includes('--scrub-test');
+// --rule-test=<cases.json>: the detection rule cases (tests/rule-cases.json)
+const RULE_TEST = (process.argv.find((a) => a.startsWith('--rule-test=')) || '').slice('--rule-test='.length);
 const WEB_ROOT = app.isPackaged
   ? path.join(process.resourcesPath, 'webapp')
   : path.join(__dirname, 'webapp');
@@ -155,7 +157,7 @@ async function createWindow() {
     height: 840,
     minWidth: 760,
     minHeight: 560,
-    show: !SMOKE && !SCRUB_TEST,
+    show: !SMOKE && !SCRUB_TEST && !RULE_TEST,
     backgroundColor: readSettings().theme === 'light' ? '#f4f1e9' : '#151b17',   // no flash of the wrong color
     title: 'De-Identifier',
     webPreferences: {
@@ -214,6 +216,43 @@ async function createWindow() {
       app.exit(ok ? 0 : 1);
     } catch (e) {
       console.error('SCRUB_TEST FAILED: ' + e.message);
+      app.exit(1);
+    }
+  }
+
+  // The rule gate: each case runs with every finding applied, the same check
+  // tests/rule-cases.mjs makes against a running copy. A case that fails means
+  // a fixed leak or over-scrub came back.
+  if (RULE_TEST) {
+    try {
+      const cases = JSON.parse(fs.readFileSync(RULE_TEST, 'utf8'));
+      let failed = 0;
+      for (const k of cases) {
+        const out = await win.webContents.executeJavaScript(`(async () => {
+          document.getElementById('btnBack')?.click();
+          window.__dev.setText(${JSON.stringify(k.text)});
+          document.getElementById('btnScrub').click();
+          await new Promise((res) => setTimeout(res, 400));
+          const t0 = Date.now();
+          while (document.getElementById('resultsView').hidden || !window.__dev.papers().every((p) => p.status === 'done')) {
+            if (Date.now() - t0 > 300000) throw new Error('scrub timed out');
+            await new Promise((res) => setTimeout(res, 300));
+          }
+          const i = window.__dev.papers().length - 1;
+          window.__dev.papers()[i].findings.forEach((f) => { f.enabled = true; });
+          return window.__dev.scrubbedPlainText(i);
+        })()`, true);
+        const lost = (k.keep || []).filter((w) => !out.includes(w));
+        const left = (k.scrub || []).filter((w) => out.includes(w));
+        if (lost.length || left.length) failed++;
+        console.log(`${lost.length || left.length ? 'FAIL' : 'PASS'}  ${k.why}`);
+        if (lost.length) console.log(`      should stay readable: ${lost.join(' | ')}`);
+        if (left.length) console.log(`      should be scrubbed:   ${left.join(' | ')}`);
+      }
+      console.log(`RULE_TEST ${cases.length - failed} of ${cases.length} cases pass`);
+      app.exit(failed ? 1 : 0);
+    } catch (e) {
+      console.error('RULE_TEST FAILED: ' + e.message);
       app.exit(1);
     }
   }

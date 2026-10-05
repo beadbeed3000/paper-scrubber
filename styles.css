@@ -212,6 +212,7 @@ body[data-tool="deid"] .card { border-top-color: var(--green-deep); }
 #summaryLine { margin: 0 0 .35rem; font-size: 1.35rem; color: var(--blue-deep); }
 .hint { font-size: .88rem; color: var(--ink-soft); margin: .25rem 0 .95rem; }
 .hint.small { font-size: .81rem; margin-top: .85rem; }
+#batchHold:empty { margin: 0; }   /* stays in the page, so a screen reader hears it when it fills */
 .hint.warn {
   background: #fbf3e4; border: 1px solid #ecd9b0; border-radius: 4px;
   padding: .55rem .75rem; color: #6b4a05;
@@ -250,7 +251,7 @@ mark[data-id]:active { filter: brightness(.92); }
   mark[data-id]:not(.kept):hover { box-shadow: 0 0 0 2px currentColor; }
   mark.kept[data-id]:hover { background: #f0ece2; border-bottom-color: currentColor; }
 }
-mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
+mark:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 
 .t-name     { background: #ffe08a; color: #6b4a05; }
 .t-org      { background: #d4edb9; color: #3d5f1c; }
@@ -308,7 +309,7 @@ mark:focus-visible { outline: 3px solid #bcdca4; outline-offset: 1px; }
   transition: transform .12s, background .12s;
 }
 .help-fab:hover { background: var(--blue-deep); transform: scale(1.08); }
-.help-fab:focus-visible { outline: 3px solid #bcdca4; }
+.help-fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 #helpDialog {
   border: none; border-top: 4px solid var(--blue); border-radius: 6px;
@@ -386,7 +387,8 @@ body.page-dragging #globalDrop { display: flex; }
 }
 .theme-switch button:hover { background: rgba(255, 255, 255, .14); }
 .theme-switch button[aria-pressed="true"] { background: #fff; color: #17293c; }
-.theme-switch button:focus-visible { outline: 3px solid #bcdca4; outline-offset: -3px; }
+/* the ring takes the text color: white on the masthead, ink on the pressed (white) button */
+.theme-switch button:focus-visible { outline: 2px solid currentColor; outline-offset: -5px; }
 
 html.theme-dark {
   color-scheme: dark;
