@@ -2,13 +2,14 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 30 September 2026, live version `paper-scrubber-v77`,
-desktop 1.3.10.
+stands. Last updated 5 October 2026, live version `paper-scrubber-v78`,
+desktop 1.4.0.
 
-## Where things stand now (30 September 2026)
+## Where things stand now (5 October 2026)
 
-- **Live:** web `paper-scrubber-v77`; desktop 1.3.10 for Mac (ad-hoc signed)
-  and Windows (unsigned). Both CI release gates pass.
+- **Live:** web `paper-scrubber-v78`; desktop 1.4.0 on Electron 43, for
+  Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
+  (unsigned). Both CI release gates pass.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
   first-use download is about 500 MB. Details in v74.
@@ -38,8 +39,31 @@ desktop 1.3.10.
   (`rule-cases.mjs`, 22 cases), and the web, iframe, offline and desktop-link
   checks. Run the suite and the benchmark before shipping a detection change.
 - **Open:** initials and bare dates on the fresh set (v76), the real-hardware pass (to
-  do 3), an Electron upgrade (`npm audit` flags Electron 33; to do 7), and the
-  remaining audit items (to do 8).
+  do 3), and the remaining audit items (to do 8).
+
+## desktop 1.4.0 (Electron 43, Apple Silicon only)
+
+Electron 33 was out of support and flagged by `npm audit`. The desktop
+program now runs on Electron 43.7.7 (Chromium 150, Node 24), pinned exactly
+(the lockfile is gitignored). `npm audit` is clean.
+- **Why 43, not 44:** 44 needs macOS 13; 43 still runs on macOS 12 Monterey.
+  Every supported Electron drops macOS 11 Big Sur (since 38), so Big Sur Macs
+  stay on 1.3.10. Every Apple Silicon Mac can update to 13, so moving to 44
+  later is one line in `desktop/package.json`.
+- **Apple Silicon only, explicitly:** `--arm64` on both Mac build steps and
+  `arch: arm64` in the Mac targets. The runner was already arm64; this keeps
+  it that way if GitHub changes runners.
+- **Since Electron 42 the binary downloads the first time `npx electron` runs**,
+  not at `npm install`. The workflow's smoke step does exactly that.
+- **Checked:** both release gates (dev and packaged Windows build), isolation
+  and threads (three thread workers each, no thread errors), desktop links
+  and Save, the 22 regression cases, and all 16 graded records: every finding
+  identical to Electron 33.
+- **Cost:** the deep check is about 10–15% slower on some records under
+  Chromium 148–152 (Electron 42, 43 and 44 all measured; 297–306 s against
+  257 s on five records), the same on others. Eager WebAssembly compilation
+  (`--no-wasm-dynamic-tiering`) did not change it. Still well over twice as
+  fast as before v65.
 
 ## v76 / desktop 1.3.10 (a fresh test set, and fewer leaks)
 
@@ -949,9 +973,10 @@ regex-only version wearing the name would be worse than none.
 6. **Watch the inbox** — the footer email is the feature pipeline now. A
    foreign-language teacher asking is what brings the multilingual engine and
    the language toggle back (README says what to restore).
-7. **Upgrade Electron** — `npm audit` flags Electron 33 (every version up to
-   40) and its installer's extract-zip. Rebuild both installers and rerun the
-   release gates and the graded benchmark after.
+7. ~~**Upgrade Electron**~~ — done in desktop 1.4.0 (Electron 43). Electron
+   supports only its three newest versions, so plan an upgrade every few
+   months: change the pin, then run the release gates, `tests/rule-cases.mjs`
+   and `tests/bench.mjs`.
 8. **Remaining audit items, none of them leaks** — dead escape-hatch buttons
    during a batch run, the aria-live summary written while hidden so it's never
    announced, focus rings too faint to see (1.2–1.5:1), all-or-nothing offline
@@ -976,7 +1001,7 @@ and the PWA already covers "it's an app."
 - On Alex's Windows machine pushes go over HTTPS, and Git Credential Manager
   also holds his other GitHub account (beadbeed). Push with
   `git -c credential.username=beadbeed3000 push origin main`.
-- **Every deploy must bump `CACHE` in sw.js** (currently v77) or returning
+- **Every deploy must bump `CACHE` in sw.js** (currently v78) or returning
   visitors keep the old version. This is the rule that bites when forgotten —
   it also applies when testing locally, since the dev origin runs the same
   service worker.

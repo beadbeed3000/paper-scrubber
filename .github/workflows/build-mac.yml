@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            args: --mac dmg zip
+            args: --mac dmg zip (Apple Silicon)
           - os: windows-latest
             args: --win nsis
     runs-on: ${{ matrix.os }}
@@ -87,7 +87,7 @@ jobs:
         timeout-minutes: 20
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --mac dir --publish never
+        run: npx electron-builder --mac dir --arm64 --publish never
 
       - name: Mac — the app must carry a valid ad-hoc signature
         if: runner.os == 'macOS'
@@ -104,7 +104,7 @@ jobs:
         timeout-minutes: 20
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npx electron-builder --mac dmg zip --prepackaged "$(ls -d dist/mac*/De-Identifier.app | head -1)" --publish never
+        run: npx electron-builder --mac dmg zip --arm64 --prepackaged "$(ls -d dist/mac*/De-Identifier.app | head -1)" --publish never
 
       - uses: actions/upload-artifact@v4
         with:
@@ -134,4 +134,4 @@ jobs:
             -R "${{ github.repository }}" \
             --title "De-Identifier for Mac & Windows (build ${{ github.run_number }})" \
             --latest \
-            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac**: open the .dmg, drag De-Identifier to Applications; the first time, the Mac refuses to open it: go to System Settings → Privacy & Security, click Open Anyway, and confirm (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
+            --notes "The De-Identifier as a desktop program — both AIs ship inside, no downloads, no internet, ever. **Mac** (macOS 12 Monterey or newer): open the .dmg, drag De-Identifier to Applications; the first time, the Mac refuses to open it: go to System Settings → Privacy & Security, click Open Anyway, and confirm (not Apple-notarized yet). **Windows**: run De-Identifier-Setup (installs per-user, no admin rights needed); if SmartScreen appears, More info → Run anyway. Includes the watched scans folder: point it at wherever the scanner saves, and every new scan de-identifies itself."
