@@ -12,12 +12,15 @@ ever. Current results are in STATUS.md under "Where things stand now".
   quasi-identifiers and the terms that must stay readable. `tuning.json` has 5
   records, `heldout.json` has 5 more (never write rules against these; they
   check that rules generalize), and `roberts.json` has the Roberts IEP.
+  `fresh.json` (30 Sep) and `fresh2.json` (5 Oct) were each written by an
+  agent that never saw the rules, as blind checks. Both have since been read
+  to write rules (v76 and v80), so the next honest rate needs a new set.
 - `files/` holds the same records as Word files, one folder per set, each
   with a `manifest.json`. `files/tuning/` also has a scanned PDF (OCR) and
   `Hunter Mullins IEP draft.docx`, which hides a name in every Word part the
   v51 and v57 fixes clean (it is not graded, only checked by eye).
-- `rule-cases.json` holds short regression sentences for the rules added in
-  v67–v76, each with what must stay readable and what must scrub. The desktop
+- `rule-cases.json` holds short regression sentences (30) for the rules added in
+  v67–v80, each with what must stay readable and what must scrub. The desktop
   build runs them as a release gate (`npx electron . --rule-test=../tests/rule-cases.json`
   from `desktop/`), so a failing case stops the release.
 
@@ -37,7 +40,7 @@ The separate profile lets it run beside an installed copy.
 | Command | What it does | Time |
 |---|---|---|
 | `node tests/rule-cases.mjs` | runs every sentence in `rule-cases.json`, prints PASS/FAIL | ~1 min |
-| `node tests/bench.mjs 9334 <label> tests/results/<label>.json` | all 11 records in one batch: deep-check seconds per record, every deep span, graded under desktop and web behavior | ~11 min |
+| `node tests/bench.mjs 9334 <label> tests/results/<label>.json` | all 21 records in one batch (`--sets fresh2` for one set): deep-check seconds per record, every deep span, graded under desktop and web behavior | ~16 min |
 | `node tests/compare.mjs <before.json> <after.json>` | times, graded totals, and exactly what changed: new leaks, name pieces left, quasi-identifiers, readable terms, deep spans | seconds |
 | `node tests/same-findings.mjs <before.json> <after.json>` | finding-by-finding diff, to tell real changes from tag renumbering | seconds |
 

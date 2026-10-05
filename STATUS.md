@@ -2,15 +2,15 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 5 October 2026, live version `paper-scrubber-v79`,
-desktop 1.4.1.
+stands. Last updated 5 October 2026, live version `paper-scrubber-v80`,
+desktop 1.4.2.
 
 ## Where things stand now (5 October 2026)
 
-- **Live:** web `paper-scrubber-v79`; desktop 1.4.1 on Electron 43, for
+- **Live:** web `paper-scrubber-v80`; desktop 1.4.2 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
-  22 rule cases.
+  30 rule cases.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
   first-use download is about 500 MB. Details in v74.
@@ -18,30 +18,82 @@ desktop 1.4.1.
   went from 398 s to 129 s on an 8-core desktop). It uses WebAssembly threads
   in the desktop program and on the De-Identifier's own web page, from the
   second visit. Details in v65.
-- **Detection, answer-keyed, desktop behavior.** On records the rules have
-  never seen (the fresh set, v76) 39 of 356 identifiers get through, about 89
-  in 100: mostly initials (17) and bare dates (15), and no full name. On the
-  sets the rules were written against it is 7 of 744 (Roberts 0 of 19, tuning
-  6 of 367, held-out 1 of 358). The 89 is the honest number for new records.
-  Quasi-identifiers removed: 65 of 102, 52 of 75, 44 of 68. Readable terms
-  kept: Roberts 40 of 50 (all 50 on the web), tuning 47 of 50, held-out 45 of
-  60, fresh 49 of 72.
+- **Detection, answer-keyed, desktop behavior.** Two blind measurements on
+  records the rules had never seen: about 89 in 100 identifiers removed on
+  the fresh set (v76) and about 97 in 100 on the fresh2 set (v80, before its
+  misses were read). No full name got through either time. fresh2 was the
+  easier set (v79 already removed 97 in 100 there), so 89 stays the
+  conservative figure. Since v80, on the sets the rules have now seen: fresh
+  11 of 356 through (9 in fact, see v80), fresh2 0 of 322, the old sets 1 of
+  744. Quasi-identifiers removed: tuning 66 of 102, held-out 52 of 75, fresh
+  47 of 68, fresh2 42 of 69. Readable terms kept: Roberts 40 of 50 (all 50
+  on the web), tuning 47 of 50, held-out 45 of 60, fresh 49 of 72, fresh2
+  58 of 70.
 - **The Roberts review list is closed** (v67–v72). The desktop-only
   replacements of context hits (82 in Roberts when counted at v65: subjects,
   supports, the IQ score) are the known cost of Alex's scrub-everything
   decision, not an open item.
 - **Handout:** states the Mac Privacy & Security steps, the measured time, and
   the fresh-set rate: every full name and about 89 of every 100 identifiers
-  on records the tool had never seen. Step 3 tells reviewers it misses
-  initials and dates most often. The Mac box says it needs an Apple chip
+  on records the tool had never seen (conservative since v80). Step 3 tells
+  reviewers it misses initials and dates most often, which v80 cut back. The Mac box says it needs an Apple chip
   (M1 or newer). PDF regenerated 5 October.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
-  for Roberts, the tuning, held-out and fresh sets, the CDP benchmark and
+  for Roberts, the tuning, held-out, fresh and fresh2 sets, the CDP benchmark and
   grader (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
-  (`rule-cases.mjs`, 22 cases), and the web, iframe, offline and desktop-link
+  (`rule-cases.mjs`, 30 cases, also a CI release gate), and the web, iframe, offline and desktop-link
   checks. Run the suite and the benchmark before shipping a detection change.
-- **Open:** initials and bare dates on the fresh set (v76), the real-hardware pass (to
-  do 3), and the last audit item, the Docs add-on's `#gdoc=` link (to do 8).
+- **Open:** a third blind set before quoting a new rate; what fresh still
+  leaks (two towns, a cooperative's acronym, three case numbers like
+  "KCS-MDR-26-0031", a counseling practice, an employer, one bare "9/10");
+  the real-hardware pass (to do 3); and the last audit item, the Docs
+  add-on's `#gdoc=` link (to do 8).
+
+## v80 / desktop 1.4.2 (initials and dates)
+
+**A second blind set first.** Fixing the fresh set's misses meant reading
+them, which would leave no blind check. So `tests/keys/fresh2.json` came
+first: five more fictional records (preschool developmental delay
+eligibility, OT evaluation, vision and O&M report, homebound plan, EBD
+progress report) with 322 keyed identifiers, written 5 October by an agent
+that never saw the rules.
+
+**Rules added.** Each was dry-run against all five keyed sets before it went
+in: every hit was a keyed identifier, and none touched a readable term.
+- initials on a signature line, between the name and the date that ends it,
+  after a dotted leader, a colon or a wide gap ("Rusty Blankenship, parent
+  ...... RB 10/7/26"); codes that sit in that spot (SP, IP, OK, IEP, PT and a
+  few more) stay readable;
+- a contact log's initials, after the closing punctuation of a line that
+  starts with its date ("06/24/2026 Called mother; left voicemail. DKM");
+- an Init. column whose rows start with a weekday, past a row with no
+  initials;
+- school years without "SY" ("2026-27", "2025-2026"), the years one apart;
+- De-Identifier only: a year after in, since, during, until, from, before or
+  after ("moved back in 2016", "since the 2022 flood"), a season and year
+  ("spring 2017"), and a month on its own ("passed in May", "last August").
+  Paper Scrubber leaves these, since in an essay "in 2001" is usually history;
+- a labeled nickname ("Nickname: Spud", "Goes by: Birdie");
+- a clinic or hospital by name ("Highland Low Vision Clinic", "Kinnaird ENT
+  Associates").
+
+**Results, desktop behavior.**
+- Blind (fresh2, before its misses were read): 11 of 322 through with v79,
+  9 with the initials and date rules, about 97 in 100. The nine were
+  contact-log initials, a nickname and a clinic; after the last three rules
+  fresh2 is 0 of 322, and no longer blind.
+- fresh: 39 of 356 through, now 11. Really 9: "PT" and "CH" still count only
+  because the grader matches substrings ("PT" inside "PTA"); no standalone
+  copy is left.
+- Old sets: 7 of 744 through, now 1 (a "2019" in the tuning psych eval).
+- No readable term lost anywhere, no quasi-identifier lost on the desktop,
+  deep-model output identical, 30 of 30 rule cases pass.
+- Web: fresh 45 → 18, tuning 10 → 5, held-out 4 → 3, fresh2 13 → 1. One
+  web-only shift: the model had called "Laurel" (of "Laurel Branch
+  Pediatrics") a town, and the echo pass scrubbed every "Laurel" in the
+  tuning speech eval, by accident including the father's employer "Big Laurel
+  Mining". The clinic rule now reads the clinic correctly, so on the web the
+  employer is underlined, as employers are there by design.
 
 ## v79 and desktop 1.4.1 (rule gate, audit items)
 

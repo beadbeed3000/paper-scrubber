@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const [aPath, bPath] = process.argv.slice(2);
 const A = JSON.parse(readFileSync(aPath, 'utf8')), B = JSON.parse(readFileSync(bPath, 'utf8'));
-const keys = Object.fromEntries(['roberts', 'tuning', 'heldout', 'fresh'].filter((f) => existsSync(new URL(`keys/${f}.json`, import.meta.url))).flatMap((f) => JSON.parse(readFileSync(new URL(`keys/${f}.json`, import.meta.url), 'utf8')).map((k) => [k.key, k])));
+const keys = Object.fromEntries(['roberts', 'tuning', 'heldout', 'fresh', 'fresh2'].filter((f) => existsSync(new URL(`keys/${f}.json`, import.meta.url))).flatMap((f) => JSON.parse(readFileSync(new URL(`keys/${f}.json`, import.meta.url), 'utf8')).map((k) => [k.key, k])));
 
 // piece-level name scoring (rescore.mjs): a person leaks if ANY piece of the name survives
 const NOT_NAME = /^(?:Dr|Mr|Mrs|Ms|Miss|Coach|LPCC|CDCES|CCC|SLP|NCSP|OTR|MD|PhD|APRN|RN|BCBA|LCSW|MSW|EdS|Ed|DO|PA|NP|OT|PT|MA|MS|BS|The|And|Of|Papaw|Mamaw|Pawpaw|Mawmaw|Memaw|Aunt|Uncle|Granny|Grandma|Grandpa|Nana|Cousin|Brother|Sister|Pastor|ENT)$/;

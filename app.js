@@ -132,6 +132,8 @@ const HEALTH_TERMS = 'autism|autistic|Asperger(?:[\'’]s)?|ADHD|dyslexi[ac]|dys
 // records (Sept 2026): every one closed a measured leak or over-scrub.
 const MONTHS = 'January|February|March|April|May|June|July|August|September|Sept|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
 // dotted initials that are NOT people: degrees, times, places, therapies
+// two or three capitals that sit between a label and a date without being anyone's initials
+const SIGN_LINE_CODES = new Set(['OK', 'NA', 'AM', 'PM', 'KG', 'SP', 'IP', 'NP', 'NI', 'IEP', 'ARC', 'BIP', 'FBA', 'IHP', 'ESY', 'PT', 'OT', 'SLP', 'PE', 'RN', 'ELA', 'SS', 'PR']);
 const INITIALS_OK = new Set(['U.S.', 'U.K.', 'A.M.', 'P.M.', 'M.A.', 'M.S.', 'B.A.', 'B.S.', 'M.D.', 'D.O.', 'R.N.', 'L.P.N.', 'P.O.', 'N.A.', 'T.V.', 'O.T.', 'P.T.', 'S.L.P.', 'E.S.', 'A.A.', 'B.S.N.', 'M.S.W.', 'L.C.S.W.', 'U.S.A.', 'E.U.', 'R.S.V.P.']);
 const ROLE_WORDS = 'Aunt|Uncle|Mamaw|Papaw|Mawmaw|Pawpaw|Memaw|Granny|Grandma|Grandpa|Nana|Cousin|Coach|Mr\\.|Mrs\\.|Ms\\.|Miss|Dr\\.|Brother|Sister|Pastor|Deacon|Stepdad|Stepmom';
 // Named assessments, their scales and indices, and service descriptions.
@@ -221,6 +223,22 @@ const REGEX_RULES = [
   { type: 'PHONE', re: /(?<=\b(?:[Hh]ome|[Cc]ell|[Ww]ork|[Pp]hone|[Pp]h|[Tt]el|[Cc]all|[Tt]ext|[Ll]andline|[Mm]obile)\.?:?[ \t]{0,3})\d{3}[-.]\d{4}(?![\d-])/g },
   // an initials label: "School Nurse: Loretta Branch, RN   Initials: LB"
   { type: 'NAME', re: /(?<=\b(?:[Ii]nitials?|INITIALS?|[Ii]nit\.|INIT\.)[ \t]*:?[ \t]{1,3})[A-Z]{2,3}(?![A-Za-z])/g },
+  // a signature line's initials, between the name and the date that ends the
+  // line: "Rusty Blankenship, parent ........ RB   10/7/26", "Principal, OCE
+  // DS   9/30/26", "Procedural Safeguards: HB 10/7/26". A code in that spot
+  // on a progress report ("Q1:  SP  12/15/26") stays readable.
+  { type: 'NAME', re: /(?<=(?:\.{3,}|:|[ \t]{3})[ \t]*)[A-Z]{2,3}(?=[ \t]+\d{1,2}\/\d{1,2}\/\d{2,4}[ \t]*$)/gm,
+    keep: (m) => !SIGN_LINE_CODES.has(m) },
+  // …and a contact log's, at the end of an entry that starts with its date:
+  // "06/24/2026  Called mother; no answer, left voicemail. DKM"
+  { type: 'NAME', re: /(?<=^[ \t]*\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b.*[.)!?][ \t]+)[A-Z]{2,3}(?=[ \t]*$)/gm,
+    keep: (m) => !SIGN_LINE_CODES.has(m) },
+  // a labeled nickname: "Nickname: Spud", "Goes by: Birdie", "Preferred name: Jax"
+  { type: 'NAME', re: /(?<=\b(?:[Nn]ickname|NICKNAME|[Gg]oes by|GOES BY|[Pp]referred name|PREFERRED NAME)[ \t]*:?[ \t]*["“']?)\p{Lu}[\p{L}'’-]+/gu },
+  // a clinic or hospital by name: "Highland Low Vision Clinic", "Tinker Valley
+  // Pediatrics", "Kinnaird ENT Associates" (a sentence's "At" or "The" is not
+  // part of the name)
+  { type: 'ORG', re: /\b(?:(?!(?:The|At|In|To|From|By|For|Our|His|Her|Their|This|That)\b)[A-Z][a-z'’]+[ \t]){1,4}(?:Clinic|Hospital|Pediatrics|Medical Center|Health Center|Family Medicine|Family Practice|ENT)(?:[ \t](?:Associates|Group))?\b/g },
   // rural route and post office boxes: "RR 1 Box 88", "RR 2 Box 118-A", "P.O. Box 44"
   { type: 'ADDRESS', re: /\b(?:R\.?R\.?|Rural Route|HC|Route|P\.?\s?O\.?)\s*\d{0,3},?\s*Box\s+\d+(?:-?[A-Z])?\b/gi },
   // hollers and hollows are where people live: "Coon Holler", "Bunyan Hollow"
@@ -235,6 +253,21 @@ const REGEX_RULES = [
   { type: 'DATE', re: new RegExp(`\\b(?:${MONTHS})\\.?\\s+(?:\\d{1,2}(?:st|nd|rd|th)?[.,]?\\s+)?\\d{4}\\b|\\b(?:${MONTHS})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, 'g'),
     // history is not a birthday: "April 12, 1861" in a Civil War report stays put
     keep: (m) => { const y = m.match(/\d{4}$/); return !y || Number(y[0]) >= 1900; } },
+  // a school year: "the 2026-27 school year", "Period: 2025-2026", "SY 25-26".
+  // The two years must be a year apart, so ranges and codes stay readable.
+  { type: 'DATE', re: /(?<![\w\/-])(?:(?:19|20)\d{2}|(?<=\bSY[ \t]?)\d{2})[-–\/](?:(?:19|20)\d{2}|\d{2})(?![\w\/-])/g,
+    keep: (m) => { const [a, b] = m.split(/[-–\/]/).map(Number); return (a + 1) % 100 === b % 100; } },
+  // a year tied to something that happened: "moved back in 2016", "since the
+  // 2022 flood", "diagnosed in spring 2017". De-Identifier only, like the month
+  // rule below: in a student essay "in 2001" is usually history, not the student.
+  { type: 'DATE', re: /(?<=\b(?:[Ii]n|[Ss]ince|[Dd]uring|[Uu]ntil|[Ff]rom|[Bb]efore|[Aa]fter)[ \t]+(?:the[ \t]+|early[ \t]+|late[ \t]+|mid-)?)(?:19[5-9]\d|20[0-4]\d)(?![\w\/%-]|\.\d)/g,
+    keep: () => TOOL === 'deid' },
+  { type: 'DATE', re: /\b(?:[Ss]pring|[Ss]ummer|[Ff]all|[Aa]utumn|[Ww]inter)[ \t]+(?:of[ \t]+)?(?:19[5-9]\d|20[0-4]\d)(?![\w\/-])/g,
+    keep: () => TOOL === 'deid' },
+  // a month on its own: "since his mamaw passed in May", "the county fair last
+  // August" (a month with a day or year is the named-month rule above)
+  { type: 'DATE', re: /(?<=\b(?:[Ii]n|[Ll]ast|[Tt]his|[Nn]ext|[Ss]ince|[Uu]ntil|[Ee]arly|[Ll]ate|[Mm]id-|[Tt]hrough|[Dd]uring)[ \t]+)(?:January|February|March|April|May|June|July|August|September|October|November|December)\b(?![ \t]+\d)/g,
+    keep: () => TOOL === 'deid' },
   // "AGE: 10-6", "(age 6)" — the age next to a birth date survived on a scan
   { type: 'AGE', re: /(?<=\bage[:\s]\s*)\d{1,2}(?:[-;]\d{1,2})?\b/gi },
 ];
@@ -689,10 +722,17 @@ function initialsColumn(text) {
     if (/\bInit(?:\.|ials)[ \t]*$/.test(line)) inTable = true;
     else if (!line.trim()) inTable = false;
     else if (inTable) {
-      // data rows start with their date; "Progress Code: SP" ends the table
-      const m = /^[ \t]*\d/.test(line) && line.match(/[ \t]([A-Z]{2,3})[ \t]*$/);
-      if (m) out.push({ type: 'NAME', start: at + line.lastIndexOf(m[1]), end: at + line.lastIndexOf(m[1]) + m[1].length, score: 1, source: 'regex' });
-      else inTable = false;
+      // data rows start with their date or weekday ("Fri  Y  Y  6/6  OK  GS
+      // (self-check)"); "Progress Code: SP" ends the table, and a row with no
+      // initials ("Thu  -- absent --") does not
+      if (!/^[ \t]*(?:\d|(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b)/.test(line)) inTable = false;
+      else {
+        const m = line.match(/[ \t]([A-Z]{2,3})(?:[ \t]+\([^)\n]*\))?[ \t]*$/);
+        if (m && m[1] !== 'OK' && m[1] !== 'NA') {
+          const start = at + m.index + 1;
+          out.push({ type: 'NAME', start, end: start + m[1].length, score: 1, source: 'regex' });
+        }
+      }
     }
     at += line.length + 1;
   }

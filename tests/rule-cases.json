@@ -245,5 +245,96 @@
     "scrub": [
       "25-26"
     ]
+  },
+  {
+    "why": "initials on signature lines, after a leader, a colon or a wide gap (v80)",
+    "text": "ARC PARTICIPANTS                                  Init.     Date\nWanda Ritchie, parent ............................ WR        10/14/26\nCorey Amburgey, CCC-SLP .......................... CA        10/14/26\nReviewed by: P. Gayheart, Principal, LMS          PG        10/15/26\nParent received Procedural Safeguards: WR 10/14/26",
+    "keep": [
+      "CCC-SLP",
+      "Procedural Safeguards"
+    ],
+    "scrub": [
+      "WR",
+      "CA",
+      "PG"
+    ]
+  },
+  {
+    "why": "a progress code on a dated line is not initials (v80; the deep model may still call SP an activity)",
+    "text": "Goal 1 progress\nQ1:   SP   12/15/26\nQ2:   IP   3/9/27",
+    "keep": [
+      "IP"
+    ],
+    "scrub": []
+  },
+  {
+    "why": "a weekday log under an Init. column, past a row with no initials (v80)",
+    "text": "EQUIPMENT CHECK LOG - aide: Marcella Turner\nDay    Device    Status     Init.\nMon    FM        OK         MT\nTue    -- absent --\nWed    FM        OK         MT\nThu    FM        low        KH (self-check)\nNotes follow.",
+    "keep": [
+      "FM",
+      "Notes follow"
+    ],
+    "scrub": [
+      "MT",
+      "KH"
+    ]
+  },
+  {
+    "why": "school years written without SY, a year apart only (v80)",
+    "text": "Referred the first week of the 2026-27 school year. Services (2025-2026).",
+    "keep": [],
+    "scrub": [
+      "2026-27",
+      "2025-2026"
+    ]
+  },
+  {
+    "why": "years and months tied to an event; laws keep their years (v80)",
+    "text": "ADHD was diagnosed in 2020. The family moved back in spring 2018, after the house flooded, and lives with Papaw since the 2022 flood. Her grandmother passed in May; she showed calves at the fair last August. Services follow IDEA 2004 and Section 504 of the Rehabilitation Act of 1973.",
+    "keep": [
+      "IDEA 2004",
+      "Rehabilitation Act of 1973"
+    ],
+    "scrub": [
+      "2020",
+      "spring 2018",
+      "2022",
+      "May",
+      "August"
+    ]
+  },
+  {
+    "why": "a contact log's initials after the entry, on lines that start with a date (v80)",
+    "text": "CONTACT LOG\n07/02/2026  Called grandmother; consent meeting set. WPH\n07/09/2026  Consent signed at the board office. WPH\n07/15/2026  Sent ARC notice home. RJC",
+    "keep": [
+      "consent meeting set",
+      "ARC notice"
+    ],
+    "scrub": [
+      "WPH",
+      "RJC"
+    ]
+  },
+  {
+    "why": "a labeled nickname, and the same nickname later on (v80)",
+    "text": "Student: Corbin Lee Ritchie        Goes by: Tater\nTater reads 92 words per minute.",
+    "keep": [
+      "92 words per minute"
+    ],
+    "scrub": [
+      "Tater"
+    ]
+  },
+  {
+    "why": "a clinic or hospital by name, without the word before it (v80)",
+    "text": "At Clover Bottom Medical Center she saw Dr. Hale. Follow-up is at Upper Rockcastle Pediatrics.",
+    "keep": [
+      "she saw",
+      "Follow-up is at"
+    ],
+    "scrub": [
+      "Clover Bottom",
+      "Upper Rockcastle"
+    ]
   }
 ]

@@ -19,6 +19,9 @@ const SETS = [
   { name: 'heldout', key: here('keys/heldout.json'), dir: here('files/heldout/') },
   // written 30 Sep 2026 by an agent that never saw the rules: the honest check
   ...(existsSync(here('keys/fresh.json')) ? [{ name: 'fresh', key: here('keys/fresh.json'), dir: here('files/fresh/') }] : []),
+  // written 5 Oct 2026 the same way, before the v80 initials and date rules:
+  // the honest check once fresh had been read to write them
+  ...(existsSync(here('keys/fresh2.json')) ? [{ name: 'fresh2', key: here('keys/fresh2.json'), dir: here('files/fresh2/') }] : []),
 ];
 const setsIdx = flags.indexOf('--sets');
 if (setsIdx >= 0) { const want = flags[setsIdx + 1].split(','); SETS.splice(0, SETS.length, ...SETS.filter((s) => want.includes(s.name))); }
