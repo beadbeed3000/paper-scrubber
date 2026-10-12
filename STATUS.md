@@ -5,8 +5,18 @@ covers what the tool is and how it works; this file covers where the work
 stands. Last updated 12 October 2026, live version `paper-scrubber-v81`,
 desktop 1.4.2.
 
-## Where things stand now (5 October 2026)
+## Where things stand now (12 October 2026)
 
+- **Ready for a small school test drive** of the web version, once Alex has
+  done the hardware pass (to do 3). Desktop 1.4.2 has no downloads yet, so
+  nobody has installed the current build on a real Mac or Windows laptop.
+  The plan: one school, two or three reviewers, the web version (nothing to
+  install, no IT approval), the example before any real record, a person
+  reads every result, and misses reported by email as a sentence, never as
+  the record. The desktop program only where the district's IT accepts an
+  unsigned app. Say up front that it catches most identifiers, not all, and
+  that no one outside has audited it; never say it "guarantees FERPA
+  compliance".
 - **Live:** web `paper-scrubber-v81`; desktop 1.4.2 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
@@ -33,26 +43,34 @@ desktop 1.4.2.
   replacements of context hits (82 in Roberts when counted at v65: subjects,
   supports, the IQ score) are the known cost of Alex's scrub-everything
   decision, not an open item.
-- **Handout:** states the Mac Privacy & Security steps, the measured time, and
-  the fresh-set rate: every full name and about 89 of every 100 identifiers
-  on records the tool had never seen (conservative since v80). Step 3 tells
-  reviewers it misses initials and dates most often, which v80 cut back.
-- **Test-drive handout:** `test-drive.html` (live at /test-drive.html), one
-  page for a school trying the web version: setup, the steps for each
-  record, three rules, and how to report misses without sending a record.
-  Before the first school, Alex installs the current desktop build himself
-  (to do 3). The Mac box says it needs an Apple chip
-  (M1 or newer). PDF regenerated 5 October.
+- **Two one-page handouts.** `deid/handout.html` is for the review team: the
+  desktop install (the Mac box says it needs an Apple chip, M1 or newer, and
+  gives the Privacy & Security steps), the daily steps with the measured
+  time, and the promise of every full name and about 89 of every 100
+  identifiers (conservative since v80); PDF regenerated 5 October.
+  `test-drive.html` (live at /test-drive.html, outside `deid/` so it does
+  not rebuild the desktop app) is for a school's trial of the web version:
+  setup, the steps for each record, three rules, and how to report misses;
+  PDF made 12 October. PDFs come from `tests/print-pdf.mjs` and are not kept
+  in the repo.
+- **"Who scrubs the scrubber?"** The answer given when a district asked:
+  nothing leaves the computer (no server, account or log, and it works with
+  Wi-Fi off); the code is public; accuracy is measured against answer-keyed
+  records, including blind ones; every release re-runs those checks; and a
+  person reads every result last. The honest gap is that no one outside
+  KVEC has audited it. The test records and tools in `tests/` would let
+  someone do that.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
-  for Roberts, the tuning, held-out, fresh and fresh2 sets, the CDP benchmark and
-  grader (`bench.mjs`, `compare.mjs`), a regression suite of rule sentences
-  (`rule-cases.mjs`, 30 cases, also a CI release gate), and the web, iframe, offline and desktop-link
-  checks. Run the suite and the benchmark before shipping a detection change.
-- **Open:** a third blind set before quoting a new rate; what fresh still
-  leaks (two towns, a cooperative's acronym, three case numbers like
-  "KCS-MDR-26-0031", a counseling practice, an employer, one bare "9/10");
-  the real-hardware pass (to do 3); and the last audit item, the Docs
-  add-on's `#gdoc=` link (to do 8).
+  for Roberts, the tuning, held-out, fresh and fresh2 sets, the CDP benchmark
+  and grader (`bench.mjs`, `compare.mjs`), a regression suite of rule
+  sentences (`rule-cases.mjs`, 30 cases, also a CI release gate), and the
+  web, iframe, offline and desktop-link checks. Run the suite and the
+  benchmark before shipping a detection change.
+- **Open:** the hardware pass and then the test drive (to do 3); a third
+  blind set before quoting a new rate; what fresh still leaks (two towns, a
+  cooperative's acronym, three case numbers like "KCS-MDR-26-0031", a
+  counseling practice, an employer, one bare "9/10"); and the last audit
+  item, the Docs add-on's `#gdoc=` link (to do 8).
 
 ## v80 / desktop 1.4.2 (initials and dates)
 
@@ -982,9 +1000,13 @@ regex-only version wearing the name would be worse than none.
    notes are in `google-docs-addon/README.md` (~10 minutes, needs a Google
    login). Marketplace publishing needs Google's OAuth verification;
    `documents.currentonly` keeps that at the mildest tier.
-3. **Real-hardware pass** — five minutes each on a school Chromebook and an
-   iPhone: scrub the sample, take a photo of a typed page, try the photo
-   library and the Install button. Everything so far was tested in emulation.
+3. **Real-hardware pass, before the first school** — install desktop 1.4.2
+   from /releases/latest on a Mac (the Open Anyway steps) and a Windows
+   laptop (SmartScreen), and scrub the sample in each. Then five minutes each
+   on a school Chromebook and an iPhone with the web version: scrub the
+   sample, take a photo of a typed page, try the photo library and the
+   Install button. Everything so far was tested in CI or emulation. After
+   that, the school test drive with `test-drive.html`.
 4. **IEP deep check — BUILT v42, SPLIT INTO ITS OWN TOOL v43** (Alex's call:
    teachers and the review team get separate tools). Paper Scrubber
    (`index.html`, blue) has no deep check at all; the **De-Identifier**
