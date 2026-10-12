@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De-Identifier Test Drive</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --blue-deep: #12457c; --green: #6db544; --green-deep: #447a22;
+    --ink: #17293c; --soft: #5a6b7c; --paper: #fffdf8; --rule: #ded8ca; --wash: #eef6e7;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: #f4f1e9; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink); font-size: 14px; line-height: 1.5;
+  }
+  .sheet { max-width: 8.5in; margin: 0 auto; background: var(--paper); padding: 0 0 .35in; }
+  .head {
+    background: var(--green-deep); color: #fff; padding: .3in .5in .24in;
+    display: flex; justify-content: space-between; align-items: baseline; gap: .3in;
+  }
+  .head h1 { font-family: Georgia, serif; font-size: 27px; letter-spacing: -.01em; }
+  .head .tag { font-size: 13px; color: #d9ecd0; margin-top: 2px; }
+  .head .kvec { font-size: 11px; color: #d9ecd0; text-align: right; white-space: nowrap; }
+  .head .kvec strong { color: #fff; }
+  .fill {
+    background: var(--wash); border-bottom: 1px solid #c8e0b4;
+    padding: .14in .5in; font-size: 13px; color: var(--green-deep); font-weight: 600;
+    display: flex; gap: .35in; flex-wrap: wrap;
+  }
+  .fill span { white-space: nowrap; }
+  .fill i { display: inline-block; width: 1.5in; border-bottom: 1px solid var(--green-deep); margin-left: .06in; }
+  main { padding: .1in .5in 0; }
+  h2 {
+    font-family: Georgia, serif; font-size: 16.5px; color: var(--blue-deep);
+    margin: .2in 0 .07in; border-bottom: 2px solid var(--green); padding-bottom: 2px;
+  }
+  ol, ul { padding-left: 1.4em; }
+  li { margin-bottom: .05in; }
+  .link {
+    display: block; text-align: center; background: var(--blue-deep); color: #fff;
+    font-weight: 700; font-size: 15px; border-radius: 4px; padding: .1in;
+    margin: .08in 0 .1in; text-decoration: none;
+  }
+  .rules {
+    border-left: 4px solid var(--green); background: #fdf9ee; padding: .1in .18in .1in .42in; margin-top: .06in;
+  }
+  .rules li { margin-bottom: .04in; }
+  .ask { background: var(--wash); border: 1px solid #c8e0b4; border-radius: 4px; padding: .1in .18in; margin-top: .06in; }
+  .ask p { margin-top: .06in; }
+  .foot {
+    margin-top: .2in; padding: .1in .5in 0; border-top: 1px solid var(--rule);
+    font-size: 11px; color: var(--soft); display: flex; justify-content: space-between; gap: .3in;
+  }
+  @media (max-width: 600px) {
+    .head, main, .fill, .foot { padding-left: 16px; padding-right: 16px; }
+    .head, .foot { flex-direction: column; }
+    .head .kvec { text-align: left; }
+  }
+  @media print {
+    html, body { background: #fff; }
+    .sheet { max-width: none; }
+    @page { size: letter; margin: 0; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="head">
+    <div>
+      <h1>De-Identifier Test Drive</h1>
+      <div class="tag">Thank you for trying it. Everything you need is on this page.</div>
+    </div>
+    <div class="kvec"><strong>KVEC</strong> staff tool<br>Kentucky Valley Educational Cooperative</div>
+  </div>
+  <div class="fill">
+    <span>School:<i></i></span>
+    <span>Dates:<i></i></span>
+  </div>
+
+  <main>
+    <h2>What it does</h2>
+    <p>It takes the student's name and other identifying details out of an IEP or evaluation, so you can
+    use an AI to help with the review. It runs on your computer. The record is never uploaded.</p>
+
+    <h2>Get started (once)</h2>
+    <a class="link" href="https://beadbeed3000.github.io/paper-scrubber/deid/">beadbeed3000.github.io/paper-scrubber/deid</a>
+    <ol>
+      <li>On good Wi-Fi, open the link above in Chrome or Edge.</li>
+      <li>Click <strong>▶ Try an example first</strong>. The first time takes a few minutes while it downloads
+      its AI. After that it works without internet.</li>
+    </ol>
+
+    <h2>Every record</h2>
+    <ol>
+      <li>Click <strong>Choose records…</strong> (or paste the text), then <strong>De-identify this record</strong>.
+      A long IEP takes about 2 minutes.</li>
+      <li>Read the result. Look hardest at initials, dates and case numbers. Click any word to replace it or put it back.</li>
+      <li>Click <strong>📋 Copy de-identified text</strong> and paste it into the AI.</li>
+      <li>To get the real names back, paste the AI's answer into the box that says
+      <strong>Got the AI's reply?</strong></li>
+    </ol>
+
+    <h2>Three rules</h2>
+    <ul class="rules">
+      <li>Try the example before your first real record.</li>
+      <li>Read every result before it goes to an AI. The tool catches most details, not all of them.</li>
+      <li>Never paste the original record into an AI.</li>
+    </ul>
+
+    <h2>Tell Alex what you find</h2>
+    <div class="ask">
+      That is the point of the test drive. Send anything it left in, anything it took out that you needed,
+      and anything confusing or slow.
+      <p><strong>Email alex@theholler.org.</strong> Describe the problem in a sentence, like
+      "it left the case number in the header." Never send the record itself.</p>
+    </div>
+  </main>
+
+  <div class="foot">
+    <span>Questions: <strong>alex@theholler.org</strong></span>
+    <span>This page: beadbeed3000.github.io/paper-scrubber/test-drive.html</span>
+  </div>
+</div>
+</body>
+</html>

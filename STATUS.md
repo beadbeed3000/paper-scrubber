@@ -2,12 +2,12 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 5 October 2026, live version `paper-scrubber-v80`,
+stands. Last updated 12 October 2026, live version `paper-scrubber-v81`,
 desktop 1.4.2.
 
 ## Where things stand now (5 October 2026)
 
-- **Live:** web `paper-scrubber-v80`; desktop 1.4.2 on Electron 43, for
+- **Live:** web `paper-scrubber-v81`; desktop 1.4.2 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
@@ -36,7 +36,12 @@ desktop 1.4.2.
 - **Handout:** states the Mac Privacy & Security steps, the measured time, and
   the fresh-set rate: every full name and about 89 of every 100 identifiers
   on records the tool had never seen (conservative since v80). Step 3 tells
-  reviewers it misses initials and dates most often, which v80 cut back. The Mac box says it needs an Apple chip
+  reviewers it misses initials and dates most often, which v80 cut back.
+- **Test-drive handout:** `test-drive.html` (live at /test-drive.html), one
+  page for a school trying the web version: setup, the steps for each
+  record, three rules, and how to report misses without sending a record.
+  Before the first school, Alex installs the current desktop build himself
+  (to do 3). The Mac box says it needs an Apple chip
   (M1 or newer). PDF regenerated 5 October.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
   for Roberts, the tuning, held-out, fresh and fresh2 sets, the CDP benchmark and
