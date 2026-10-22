@@ -2,13 +2,13 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 22 October 2026, live version `paper-scrubber-v83`,
-desktop 1.4.3.
+stands. Last updated 22 October 2026, live version `paper-scrubber-v84`,
+desktop 1.4.4.
 
 ## Where things stand now (22 October 2026)
 
 - **Ready for a small school test drive** of the web version, once Alex has
-  done the hardware pass (to do 3). Desktop 1.4.3 (and 1.4.2 before it) has
+  done the hardware pass (to do 3). Desktop 1.4.4 (and 1.4.3 and 1.4.2 before it) has
   no downloads yet, so nobody has installed the current build on a real Mac
   or Windows laptop. That pass is the only thing between the tool and the
   first school.
@@ -19,7 +19,7 @@ desktop 1.4.3.
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v83`; desktop 1.4.3 on Electron 43, for
+- **Live:** web `paper-scrubber-v84`; desktop 1.4.4 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
@@ -1019,7 +1019,7 @@ regex-only version wearing the name would be worse than none.
    notes are in `google-docs-addon/README.md` (~10 minutes, needs a Google
    login). Marketplace publishing needs Google's OAuth verification;
    `documents.currentonly` keeps that at the mildest tier.
-3. **Real-hardware pass, before the first school** — install the latest desktop build (1.4.3)
+3. **Real-hardware pass, before the first school** — install the latest desktop build (1.4.4)
    from /releases/latest on a Mac (the Open Anyway steps) and a Windows
    laptop (SmartScreen), and scrub the sample in each. Then five minutes each
    on a school Chromebook and an iPhone with the web version: scrub the
