@@ -2,8 +2,8 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 12 October 2026, live version `paper-scrubber-v81`,
-desktop 1.4.2.
+stands. Last updated 22 October 2026, live version `paper-scrubber-v82`,
+desktop 1.4.3.
 
 ## Where things stand now (12 October 2026)
 
@@ -17,7 +17,7 @@ desktop 1.4.2.
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v81`; desktop 1.4.2 on Electron 43, for
+- **Live:** web `paper-scrubber-v82`; desktop 1.4.3 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
@@ -53,6 +53,14 @@ desktop 1.4.2.
   setup, the steps for each record, three rules, and how to report misses;
   PDF made 12 October. PDFs come from `tests/print-pdf.mjs` and are not kept
   in the repo.
+- **Feedback form (22 October).** "Paper Scrubber & De-Identifier
+  feedback", a Google Form in Alex's account, linked from both tools'
+  footers and both handouts. The handouts print the short address
+  /feedback (`feedback.html` forwards to the form). Its answers land in the
+  "Paper Scrubber & De-Identifier" tab of the "Holler tools feedback" sheet;
+  HollerChart's own form, unchanged, now fills that sheet's "HollerChart"
+  tab. Anyone with the link can answer; it asks for no student details and
+  doesn't collect email addresses on its own.
 - **"Who scrubs the scrubber?"** The answer given when a district asked:
   nothing leaves the computer (no server, account or log, and it works with
   Wi-Fi off); the code is public; accuracy is measured against answer-keyed
