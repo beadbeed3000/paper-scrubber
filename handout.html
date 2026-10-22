@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paper Scrubber — one-page guide for teachers</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --blue: #1b5ea8; --blue-deep: #12457c; --green: #6db544; --green-deep: #447a22;
+    --ink: #17293c; --soft: #5a6b7c; --paper: #fffdf8; --rule: #ded8ca; --wash: #eaf2fb;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: #f4f1e9; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink); font-size: 13.5px; line-height: 1.45;
+  }
+  .sheet { max-width: 8.5in; margin: 0 auto; background: var(--paper); padding: 0 0 .2in; }
+  .head {
+    background: var(--blue-deep); color: #fff; padding: .26in .5in .2in;
+    display: flex; justify-content: space-between; align-items: baseline; gap: .3in;
+  }
+  .head h1 { font-family: Georgia, serif; font-size: 28px; letter-spacing: -.01em; }
+  .head .tag { font-size: 13px; color: #d6e5f6; margin-top: 2px; }
+  .head .kvec { font-size: 11px; color: #d6e5f6; text-align: right; white-space: nowrap; }
+  .head .kvec strong { color: #fff; }
+  .strip {
+    background: var(--wash); border-bottom: 1px solid #c3d8ef;
+    padding: .11in .5in; font-size: 12.5px; font-weight: 600; color: var(--blue-deep);
+    display: flex; gap: .1in .35in; flex-wrap: wrap;
+  }
+  .strip span { white-space: nowrap; }
+  main { padding: .06in .5in 0; }
+  h2 {
+    font-family: Georgia, serif; font-size: 17px; color: var(--blue-deep);
+    margin: .13in 0 .06in; border-bottom: 2px solid var(--green); padding-bottom: 2px;
+  }
+  ol, ul { padding-left: 1.4em; }
+  li { margin-bottom: .05in; }
+  .link {
+    display: block; text-align: center; background: var(--blue-deep); color: #fff;
+    font-weight: 700; font-size: 15px; border-radius: 4px; padding: .1in;
+    margin: .02in 0 .1in; text-decoration: none;
+  }
+  .tag-demo {
+    background: #dce9f8; color: var(--blue-deep); font-weight: 700;
+    padding: 0 4px; border-radius: 3px; white-space: nowrap;
+  }
+  .uses { display: grid; grid-template-columns: 1fr 1fr; gap: .08in .2in; margin-top: .04in; }
+  .use { border: 1px solid var(--rule); border-top: 3px solid var(--blue); border-radius: 4px; padding: .07in .12in; }
+  .use strong { display: block; color: var(--blue-deep); }
+  .use:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .rules {
+    border-left: 4px solid var(--green); background: #fdf9ee;
+    padding: .1in .18in .1in .42in; margin-top: .06in;
+  }
+  .rules li { margin-bottom: .04in; }
+  .foot {
+    margin-top: .14in; padding: .08in .5in 0; border-top: 1px solid var(--rule);
+    font-size: 11px; color: var(--soft); display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 2px .3in;
+  }
+  .foot span { white-space: nowrap; }
+  @media (max-width: 600px) {
+    .head, main, .strip, .foot { padding-left: 16px; padding-right: 16px; }
+    .head { flex-direction: column; }
+    .head .kvec { text-align: left; }
+    .uses { grid-template-columns: 1fr; }
+    .foot span { white-space: normal; }
+  }
+  @media print {
+    html, body { background: #fff; }
+    .sheet { max-width: none; }
+    @page { size: letter; margin: 0; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="head">
+    <div>
+      <h1>Paper Scrubber</h1>
+      <div class="tag">Take the student's name out of a paper before you paste it into an AI.</div>
+    </div>
+    <div class="kvec">A free tool from <strong>KVEC</strong><br>Kentucky Valley Educational Cooperative</div>
+  </div>
+  <div class="strip">
+    <span>✓ Papers stay on your computer</span>
+    <span>✓ Works on a Chromebook</span>
+    <span>✓ Nothing to install</span>
+    <span>✓ No sign-in, no cost</span>
+  </div>
+
+  <main>
+    <h2>What it does</h2>
+    <p>It finds names, addresses, phone numbers, birthdays and other personal details in a student's paper
+    and swaps each one for a tag like <span class="tag-demo">[NAME 1]</span>. Then you can ask ChatGPT,
+    Gemini or Claude for help without giving away who wrote it.</p>
+
+    <h2>How to use it</h2>
+    <a class="link" href="https://beadbeed3000.github.io/paper-scrubber/">beadbeed3000.github.io/paper-scrubber</a>
+    <ol>
+      <li>Open the link in Chrome or Edge. The first time, click <strong>▶ Try an example first</strong>
+      and give it a minute to set up.</li>
+      <li>Paste a paper, or click <strong>Choose papers or photos…</strong> (Word, PDF or a photo of a typed page).
+      Then click <strong>Scrub this paper</strong>.</li>
+      <li>Read it over. If it covered up something it shouldn't have, like a book character,
+      click the tag to put the word back.</li>
+      <li>Click <strong>📋 Copy scrubbed text</strong> and paste it into the AI.</li>
+      <li>Want the names back in the AI's answer? Paste the answer into the box that says
+      <strong>Got the AI's reply?</strong></li>
+    </ol>
+
+    <h2>Five ways teachers use it</h2>
+    <div class="uses">
+      <div class="use"><strong>Feedback on an essay</strong>Ask the AI what's working and what to fix
+      next, then put it in your own words for the student.</div>
+      <div class="use"><strong>Check against your rubric</strong>Paste your rubric with the paper and ask
+      where it lands on each row.</div>
+      <div class="use"><strong>A whole class set</strong>Add every paper at once. Ask the AI what mistakes
+      show up the most, so you know what to reteach.</div>
+      <div class="use"><strong>Share a good example</strong>Show a strong paper to your PLC, another teacher
+      or the next class without the student's name on it.</div>
+      <div class="use"><strong>Help with a note home</strong>Scrub a draft email or write-up first, then ask
+      the AI to make it clearer or kinder.</div>
+    </div>
+
+    <h2>Three rules</h2>
+    <ul class="rules">
+      <li>Read every result before it goes to an AI. It catches most details, not all of them.</li>
+      <li>Never paste the original paper into an AI.</li>
+      <li>The AI gives ideas. You still do the grading.</li>
+    </ul>
+  </main>
+
+  <div class="foot">
+    <span>Something it missed? <strong>beadbeed3000.github.io/paper-scrubber/feedback</strong> or <strong>alex@theholler.org</strong></span>
+    <span>This page: beadbeed3000.github.io/paper-scrubber/handout.html</span>
+  </div>
+</div>
+</body>
+</html>
