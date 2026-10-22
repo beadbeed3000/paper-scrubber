@@ -2,22 +2,24 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 22 October 2026, live version `paper-scrubber-v82`,
+stands. Last updated 22 October 2026, live version `paper-scrubber-v83`,
 desktop 1.4.3.
 
-## Where things stand now (12 October 2026)
+## Where things stand now (22 October 2026)
 
 - **Ready for a small school test drive** of the web version, once Alex has
-  done the hardware pass (to do 3). Desktop 1.4.3 (and 1.4.2 before it) has no downloads yet, so
-  nobody has installed the current build on a real Mac or Windows laptop.
+  done the hardware pass (to do 3). Desktop 1.4.3 (and 1.4.2 before it) has
+  no downloads yet, so nobody has installed the current build on a real Mac
+  or Windows laptop. That pass is the only thing between the tool and the
+  first school.
   The plan: one school, two or three reviewers, the web version (nothing to
   install, no IT approval), the example before any real record, a person
-  reads every result, and misses reported by email as a sentence, never as
-  the record. The desktop program only where the district's IT accepts an
+  reads every result, and misses reported through the feedback form (or
+  email) as a sentence, never as the record. The desktop program only where the district's IT accepts an
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v82`; desktop 1.4.3 on Electron 43, for
+- **Live:** web `paper-scrubber-v83`; desktop 1.4.3 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
@@ -61,6 +63,15 @@ desktop 1.4.3.
   HollerChart's own form, unchanged, now fills that sheet's "HollerChart"
   tab. Anyone with the link can answer; it asks for no student details and
   doesn't collect email addresses on its own.
+- **Audit, 22 October, before the test drive.** Every live page (both
+  tools, both handouts, privacy, /feedback), the feedback form and the
+  release link answer; app.js, sw.js, the deep-check worker and the desktop
+  main process pass a syntax check; the 30 rule cases pass. One fix: the
+  privacy page gave Paper Scrubber's first download (about 100 MB) for both
+  tools, and said only one thing ever goes over the internet. It now gives
+  the De-Identifier's 500 MB and names the feedback form as the one other
+  thing, sent only when someone fills it in (v83). The desktop app still
+  carries the older privacy page; it changes with the next desktop build.
 - **"Who scrubs the scrubber?"** The answer given when a district asked:
   nothing leaves the computer (no server, account or log, and it works with
   Wi-Fi off); the code is public; accuracy is measured against answer-keyed
