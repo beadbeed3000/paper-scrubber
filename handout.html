@@ -14,60 +14,45 @@
   html, body { background: #f4f1e9; }
   body {
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    color: var(--ink); font-size: 13.5px; line-height: 1.45;
+    color: var(--ink); font-size: 18px; line-height: 1.45;
   }
-  .sheet { max-width: 8.5in; margin: 0 auto; background: var(--paper); padding: 0 0 .2in; }
-  .head {
-    background: var(--blue-deep); color: #fff; padding: .26in .5in .2in;
-    display: flex; justify-content: space-between; align-items: baseline; gap: .3in;
-  }
-  .head h1 { font-family: Georgia, serif; font-size: 28px; letter-spacing: -.01em; }
-  .head .tag { font-size: 13px; color: #d6e5f6; margin-top: 2px; }
-  .head .kvec { font-size: 11px; color: #d6e5f6; text-align: right; white-space: nowrap; }
-  .head .kvec strong { color: #fff; }
-  .strip {
-    background: var(--wash); border-bottom: 1px solid #c3d8ef;
-    padding: .11in .5in; font-size: 12.5px; font-weight: 600; color: var(--blue-deep);
-    display: flex; gap: .1in .35in; flex-wrap: wrap;
-  }
-  .strip span { white-space: nowrap; }
-  main { padding: .06in .5in 0; }
+  .sheet { max-width: 8.5in; margin: 0 auto; background: var(--paper); padding: 0 0 .35in; }
+  .head { background: var(--blue-deep); color: #fff; padding: .4in .6in .34in; }
+  .head h1 { font-family: Georgia, serif; font-size: 40px; letter-spacing: -.01em; }
+  .head p { font-size: 19px; color: #d6e5f6; margin-top: 4px; }
+  main { padding: 0 .6in; }
   h2 {
-    font-family: Georgia, serif; font-size: 17px; color: var(--blue-deep);
-    margin: .13in 0 .06in; border-bottom: 2px solid var(--green); padding-bottom: 2px;
+    font-family: Georgia, serif; font-size: 23px; color: var(--blue-deep);
+    margin: .32in 0 .12in;
   }
-  ol, ul { padding-left: 1.4em; }
-  li { margin-bottom: .05in; }
   .link {
-    display: block; text-align: center; background: var(--blue-deep); color: #fff;
-    font-weight: 700; font-size: 15px; border-radius: 4px; padding: .1in;
-    margin: .02in 0 .1in; text-decoration: none;
+    display: block; text-align: center; background: var(--wash); color: var(--blue-deep);
+    border: 2px solid var(--blue); border-radius: 6px;
+    font-weight: 700; font-size: 20px; padding: .14in; margin-top: .32in; text-decoration: none;
   }
-  .tag-demo {
-    background: #dce9f8; color: var(--blue-deep); font-weight: 700;
-    padding: 0 4px; border-radius: 3px; white-space: nowrap;
+  .steps { list-style: none; padding: 0; }
+  .steps li { display: flex; align-items: center; gap: .18in; margin-bottom: .14in; font-size: 20px; }
+  .steps .n {
+    flex: none; width: .44in; height: .44in; border-radius: 50%;
+    background: var(--blue-deep); color: #fff; font-weight: 700; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
   }
-  .uses { display: grid; grid-template-columns: 1fr 1fr; gap: .08in .2in; margin-top: .04in; }
-  .use { border: 1px solid var(--rule); border-top: 3px solid var(--blue); border-radius: 4px; padding: .07in .12in; }
-  .use strong { display: block; color: var(--blue-deep); }
-  .use:last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .rules {
-    border-left: 4px solid var(--green); background: #fdf9ee;
-    padding: .1in .18in .1in .42in; margin-top: .06in;
+  .uses { list-style: none; padding: 0; }
+  .uses li { padding-left: .3in; position: relative; margin-bottom: .07in; }
+  .uses li::before { content: "✓"; position: absolute; left: 0; color: var(--green-deep); font-weight: 700; }
+  .rule {
+    margin-top: .32in; border-left: 6px solid var(--green); background: #fdf9ee;
+    padding: .16in .22in; font-size: 19px;
   }
-  .rules li { margin-bottom: .04in; }
+  .rule strong { color: var(--green-deep); }
   .foot {
-    margin-top: .14in; padding: .08in .5in 0; border-top: 1px solid var(--rule);
-    font-size: 11px; color: var(--soft); display: flex; justify-content: space-between;
-    flex-wrap: wrap; gap: 2px .3in;
+    margin: .34in .6in 0; padding-top: .12in; border-top: 1px solid var(--rule);
+    font-size: 14px; color: var(--soft);
   }
-  .foot span { white-space: nowrap; }
   @media (max-width: 600px) {
-    .head, main, .strip, .foot { padding-left: 16px; padding-right: 16px; }
-    .head { flex-direction: column; }
-    .head .kvec { text-align: left; }
-    .uses { grid-template-columns: 1fr; }
-    .foot span { white-space: normal; }
+    .head, main { padding-left: 16px; padding-right: 16px; }
+    .foot { margin-left: 16px; margin-right: 16px; }
+    .head h1 { font-size: 32px; }
   }
   @media print {
     html, body { background: #fff; }
@@ -80,64 +65,36 @@
 <body>
 <div class="sheet">
   <div class="head">
-    <div>
-      <h1>Paper Scrubber</h1>
-      <div class="tag">Take the student's name out of a paper before you paste it into an AI.</div>
-    </div>
-    <div class="kvec">A free tool from <strong>KVEC</strong><br>Kentucky Valley Educational Cooperative</div>
-  </div>
-  <div class="strip">
-    <span>✓ Papers stay on your computer</span>
-    <span>✓ Works on a Chromebook</span>
-    <span>✓ Nothing to install</span>
-    <span>✓ No sign-in, no cost</span>
+    <h1>Paper Scrubber</h1>
+    <p>Takes the student's name out of a paper, so you can use AI safely.</p>
   </div>
 
   <main>
-    <h2>What it does</h2>
-    <p>It finds names, addresses, phone numbers, birthdays and other personal details in a student's paper
-    and swaps each one for a tag like <span class="tag-demo">[NAME 1]</span>. Then you can ask ChatGPT,
-    Gemini or Claude for help without giving away who wrote it.</p>
+    <a class="link" href="https://beadbeed3000.github.io/paper-scrubber/">beadbeed3000.github.io/paper-scrubber</a>
 
     <h2>How to use it</h2>
-    <a class="link" href="https://beadbeed3000.github.io/paper-scrubber/">beadbeed3000.github.io/paper-scrubber</a>
-    <ol>
-      <li>Open the link in Chrome or Edge. The first time, click <strong>▶ Try an example first</strong>
-      and give it a minute to set up.</li>
-      <li>Paste a paper, or click <strong>Choose papers or photos…</strong> (Word, PDF or a photo of a typed page).
-      Then click <strong>Scrub this paper</strong>.</li>
-      <li>Read it over. If it covered up something it shouldn't have, like a book character,
-      click the tag to put the word back.</li>
-      <li>Click <strong>📋 Copy scrubbed text</strong> and paste it into the AI.</li>
-      <li>Want the names back in the AI's answer? Paste the answer into the box that says
-      <strong>Got the AI's reply?</strong></li>
+    <ol class="steps">
+      <li><span class="n">1</span><span>Paste in a student's paper.</span></li>
+      <li><span class="n">2</span><span>Click <strong>Scrub this paper</strong>.</span></li>
+      <li><span class="n">3</span><span>Read it over, then copy it into the AI.</span></li>
     </ol>
 
-    <h2>Five ways teachers use it</h2>
-    <div class="uses">
-      <div class="use"><strong>Feedback on an essay</strong>Ask the AI what's working and what to fix
-      next, then put it in your own words for the student.</div>
-      <div class="use"><strong>Check against your rubric</strong>Paste your rubric with the paper and ask
-      where it lands on each row.</div>
-      <div class="use"><strong>A whole class set</strong>Add every paper at once. Ask the AI what mistakes
-      show up the most, so you know what to reteach.</div>
-      <div class="use"><strong>Share a good example</strong>Show a strong paper to your PLC, another teacher
-      or the next class without the student's name on it.</div>
-      <div class="use"><strong>Help with a note home</strong>Scrub a draft email or write-up first, then ask
-      the AI to make it clearer or kinder.</div>
-    </div>
-
-    <h2>Three rules</h2>
-    <ul class="rules">
-      <li>Read every result before it goes to an AI. It catches most details, not all of them.</li>
-      <li>Never paste the original paper into an AI.</li>
-      <li>The AI gives ideas. You still do the grading.</li>
+    <h2>Ways to use it</h2>
+    <ul class="uses">
+      <li>Get feedback on an essay</li>
+      <li>Check a paper against your rubric</li>
+      <li>See what a whole class needs retaught</li>
+      <li>Share a good example with other teachers</li>
+      <li>Get help wording a note home</li>
     </ul>
+
+    <div class="rule"><strong>One rule:</strong> always read it before you paste it.<br>
+    It catches most names, not every one.</div>
   </main>
 
   <div class="foot">
-    <span>Something it missed? <strong>beadbeed3000.github.io/paper-scrubber/feedback</strong> or <strong>alex@theholler.org</strong></span>
-    <span>This page: beadbeed3000.github.io/paper-scrubber/handout.html</span>
+    Free from KVEC. Nothing leaves your computer. No sign-in.<br>
+    Something it missed? beadbeed3000.github.io/paper-scrubber/feedback or alex@theholler.org
   </div>
 </div>
 </body>

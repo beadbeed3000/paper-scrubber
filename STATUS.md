@@ -2,7 +2,7 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 22 October 2026, live version `paper-scrubber-v85`,
+stands. Last updated 22 October 2026, live version `paper-scrubber-v86`,
 desktop 1.4.4.
 
 ## Where things stand now (22 October 2026)
@@ -19,7 +19,7 @@ desktop 1.4.4.
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v85`; desktop 1.4.4 on Electron 43, for
+- **Live:** web `paper-scrubber-v86`; desktop 1.4.4 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
@@ -46,9 +46,10 @@ desktop 1.4.4.
   supports, the IQ score) are the known cost of Alex's scrub-everything
   decision, not an open item.
 - **Three one-page handouts.** `handout.html` (22 October) is Paper
-  Scrubber's, for teachers: what it does, five steps, five ways to use it
+  Scrubber's, for teachers, kept deliberately sparse at Alex's request
+  (large type, few words): the link, three steps, five ways to use it
   (essay feedback, a rubric check, a class set, sharing an example, a note
-  home), three rules; linked from the page under the privacy link.
+  home) and one rule; linked from the page under the privacy link.
   `deid/handout.html` is for the review team: the
   desktop install (the Mac box says it needs an Apple chip, M1 or newer, and
   gives the Privacy & Security steps), the daily steps with the measured
