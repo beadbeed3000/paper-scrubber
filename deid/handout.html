@@ -14,61 +14,50 @@
   html, body { background: #f4f1e9; }
   body {
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    color: var(--ink); font-size: 12.5px; line-height: 1.45;
+    color: var(--ink); font-size: 18px; line-height: 1.45;
   }
-  .sheet {
-    max-width: 8.5in; margin: 0 auto; background: var(--paper);
-    padding: 0 0 .35in;
-  }
-  .head {
-    background: var(--green-deep); color: #fff; padding: .28in .45in .22in;
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-  .head h1 { font-family: Georgia, serif; font-size: 25px; letter-spacing: -.01em; }
-  .head .tag { font-size: 12px; color: #d9ecd0; }
-  .head .kvec { font-size: 11px; color: #d9ecd0; text-align: right; }
-  .head .kvec strong { color: #fff; }
-  .strip {
-    background: var(--wash); border-bottom: 1px solid #c8e0b4;
-    padding: .1in .45in; font-size: 11.5px; font-weight: 600; color: var(--green-deep);
-  }
-  .strip span { margin-right: .3in; }
-  main { padding: .22in .45in 0; }
+  .sheet { max-width: 8.5in; margin: 0 auto; background: var(--paper); padding: 0 0 .35in; }
+  .head { background: var(--green-deep); color: #fff; padding: .4in .6in .34in; }
+  .head h1 { font-family: Georgia, serif; font-size: 40px; letter-spacing: -.01em; }
+  .head p { font-size: 19px; color: #d9ecd0; margin-top: 4px; }
+  main { padding: 0 .6in; }
   h2 {
-    font-family: Georgia, serif; font-size: 15px; color: var(--blue-deep);
-    margin: .16in 0 .06in; border-bottom: 2px solid var(--green); padding-bottom: 2px;
+    font-family: Georgia, serif; font-size: 23px; color: var(--green-deep);
+    margin: .3in 0 .12in;
   }
-  p, li { color: var(--ink); }
-  ul, ol { padding-left: 1.35em; margin: .04in 0; }
-  li { margin-bottom: .035in; }
-  .cols { display: flex; gap: .3in; }
-  .cols > div { flex: 1; }
-  .plat {
-    border: 1px solid var(--rule); border-top: 3px solid var(--blue);
-    border-radius: 4px; padding: .1in .14in; margin-top: .06in;
+  .get { display: flex; gap: .2in; margin-top: .3in; }
+  .get > div {
+    flex: 1; background: var(--wash); border: 2px solid var(--green-deep); border-radius: 6px;
+    padding: .12in .16in; text-align: center;
   }
-  .plat h3 { font-size: 12.5px; color: var(--blue-deep); margin-bottom: .04in; }
-  .link {
-    display: block; text-align: center; background: var(--blue-deep); color: #fff;
-    font-weight: 700; font-size: 13.5px; border-radius: 4px; padding: .09in;
-    margin: .08in 0; text-decoration: none; letter-spacing: .01em;
+  .get .label { font-size: 15px; color: var(--soft); }
+  .get a { display: block; font-weight: 700; font-size: 16px; color: var(--green-deep); text-decoration: none; }
+  .first { font-size: 14px; color: var(--soft); margin-top: .1in; }
+  .steps { list-style: none; padding: 0; }
+  .steps li { display: flex; align-items: center; gap: .18in; margin-bottom: .14in; font-size: 20px; }
+  .steps .n {
+    flex: none; width: .44in; height: .44in; border-radius: 50%;
+    background: var(--green-deep); color: #fff; font-weight: 700; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
   }
-  .promise {
-    background: var(--wash); border: 1px solid #c8e0b4; border-radius: 4px;
-    padding: .1in .14in; margin-top: .08in;
+  .uses { list-style: none; padding: 0; }
+  .uses li { padding-left: .3in; position: relative; margin-bottom: .07in; }
+  .uses li::before { content: "✓"; position: absolute; left: 0; color: var(--green-deep); font-weight: 700; }
+  .rule {
+    margin-top: .3in; border-left: 6px solid var(--green); background: #fdf9ee;
+    padding: .16in .22in; font-size: 19px;
   }
-  .promise strong { color: var(--green-deep); }
-  .rule-box {
-    border-left: 4px solid var(--green); background: #fdf9ee;
-    padding: .08in .14in; margin-top: .08in; font-size: 12.5px;
-  }
+  .rule strong { color: var(--green-deep); }
   .foot {
-    margin-top: .16in; padding: .1in .45in 0; border-top: 1px solid var(--rule);
-    font-size: 10.5px; color: var(--soft); display: flex; justify-content: space-between;
-    flex-wrap: wrap; gap: 2px .3in;
+    margin: .32in .6in 0; padding-top: .12in; border-top: 1px solid var(--rule);
+    font-size: 14px; color: var(--soft);
   }
-  .foot span { white-space: nowrap; }
-  em { color: var(--soft); }
+  @media (max-width: 600px) {
+    .head, main { padding-left: 16px; padding-right: 16px; }
+    .foot { margin-left: 16px; margin-right: 16px; }
+    .head h1 { font-size: 32px; }
+    .get { flex-direction: column; }
+  }
   @media print {
     html, body { background: #fff; }
     .sheet { max-width: none; }
@@ -80,68 +69,43 @@
 <body>
 <div class="sheet">
   <div class="head">
-    <div>
-      <h1>De-Identifier</h1>
-      <div class="tag">Take the student out of the record — before the record goes to an AI.</div>
-    </div>
-    <div class="kvec"><strong>KVEC</strong> staff tool<br>Kentucky Valley Educational Cooperative</div>
-  </div>
-  <div class="strip">
-    <span>✓ Nothing leaves your laptop</span>
-    <span>✓ Works with no internet</span>
-    <span>✓ No sign-in, no cost</span>
-    <span>✓ No settings to fiddle with</span>
+    <h1>De-Identifier</h1>
+    <p>Takes the student out of an IEP or eval, so you can use AI safely.</p>
   </div>
 
   <main>
-    <h2>What it does</h2>
-    <p>Drop in an IEP or eval report — Word file, PDF, or a scan — and it hands back the same document with the
-    student removed: names, ID numbers, birthdays, dates, school, address, family details, health details, even
-    hobbies and interests that could give a kid away in a small school. Everything happens automatically.
-    The goals, services, and data you need to review stay readable.</p>
-
-    <h2>Set it up (once, takes five minutes)</h2>
-    <a class="link" href="https://github.com/beadbeed3000/paper-scrubber/releases/latest">github.com/beadbeed3000/paper-scrubber/releases/latest</a>
-    <div class="cols">
-      <div class="plat">
-        <h3> On a Mac with an Apple chip (M1 or newer)</h3>
-        <ol>
-          <li>Download the file ending in <strong>.dmg</strong>, open it, drag <strong>De-Identifier</strong> into Applications.</li>
-          <li>First time only: open it, and click <strong>Done</strong> when the Mac refuses. Then go to <strong>System Settings → Privacy &amp; Security</strong>, scroll down, click <strong>Open Anyway</strong>, and confirm. (It's ours, not from the App Store, so the Mac asks once.)</li>
-        </ol>
-      </div>
-      <div class="plat">
-        <h3>⊞ On Windows</h3>
-        <ol>
-          <li>Download <strong>De-Identifier-Setup</strong> (.exe) and run it. No admin password needed.</li>
-          <li>If Windows says "protected your PC": click <strong>More info → Run anyway</strong>. (Same reason — it's ours, once.)</li>
-        </ol>
-      </div>
+    <div class="get">
+      <div><span class="label">In your browser</span>
+        <a href="https://beadbeed3000.github.io/paper-scrubber/deid/">beadbeed3000.github.io/<br>paper-scrubber/deid</a></div>
+      <div><span class="label">As a program (Mac or Windows)</span>
+        <a href="https://github.com/beadbeed3000/paper-scrubber/releases/latest">github.com/beadbeed3000/<br>paper-scrubber/releases/latest</a></div>
     </div>
+    <p class="first">Program, first time only: on a Mac, go to System Settings → Privacy &amp; Security → Open Anyway.
+    On Windows, click More info → Run anyway.</p>
 
-    <h2>Every day</h2>
-    <ol>
-      <li><strong>Drop the records in</strong> — one or a whole stack. Scanning a pile? Click <em>📠 Watch a scans folder</em> once and every new scan handles itself.</li>
-      <li><strong>Let it work.</strong> A long IEP takes about 2 minutes, a short eval about 1 (longer on an older laptop). Start it, get your coffee.</li>
-      <li><strong>Give the result a one-minute read.</strong> The tool finds; you're the last set of eyes. It misses initials and dates most often. Click anything it got wrong to fix just that word.</li>
-      <li><strong>Copy it into ChatGPT, Claude, or Gemini</strong> and do your review. The AI sees <em>[NAME 1]</em> — never the student. Paste the AI's reply back into the tool and the real names return, on your machine.</li>
+    <h2>How to use it</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><span>Drop in the IEP or eval (Word, PDF or a scan).</span></li>
+      <li><span class="n">2</span><span>Wait about 2 minutes.</span></li>
+      <li><span class="n">3</span><span>Read it over, then copy it into the AI.</span></li>
     </ol>
 
-    <div class="promise">
-      <strong>The privacy promise, in one sentence:</strong> the record never leaves your laptop, and in testing on
-      records it had never seen, the tool took out every full name and about 89 of every 100 identifiers before
-      anything reached the AI.
-    </div>
+    <h2>Ways to use it</h2>
+    <ul class="uses">
+      <li>Summarize a long eval report</li>
+      <li>Check that IEP goals are measurable</li>
+      <li>Compare the services to the eval's recommendations</li>
+      <li>Write a plain-language summary for parents</li>
+      <li>Get ready for an ARC meeting</li>
+    </ul>
 
-    <div class="rule-box">
-      <strong>The one rule:</strong> no software catches 100% — anyone who promises that is selling something.
-      That's why step 3 exists. The tool does the work; a person reads last. One minute, every time.
-    </div>
+    <div class="rule"><strong>One rule:</strong> always read it before you paste it.<br>
+    It catches most details, not every one.</div>
   </main>
 
   <div class="foot">
-    <span>Misses, ideas: <strong>beadbeed3000.github.io/paper-scrubber/feedback</strong> or <strong>alex@theholler.org</strong></span>
-    <span>This page: beadbeed3000.github.io/paper-scrubber/deid/handout.html</span>
+    Free from KVEC. Nothing leaves your computer. No sign-in.<br>
+    Something it missed? beadbeed3000.github.io/paper-scrubber/feedback or alex@theholler.org
   </div>
 </div>
 </body>
