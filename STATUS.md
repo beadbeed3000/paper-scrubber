@@ -8,7 +8,7 @@ desktop 1.4.3.
 ## Where things stand now (12 October 2026)
 
 - **Ready for a small school test drive** of the web version, once Alex has
-  done the hardware pass (to do 3). Desktop 1.4.2 has no downloads yet, so
+  done the hardware pass (to do 3). Desktop 1.4.3 (and 1.4.2 before it) has no downloads yet, so
   nobody has installed the current build on a real Mac or Windows laptop.
   The plan: one school, two or three reviewers, the web version (nothing to
   install, no IT approval), the example before any real record, a person
@@ -1008,7 +1008,7 @@ regex-only version wearing the name would be worse than none.
    notes are in `google-docs-addon/README.md` (~10 minutes, needs a Google
    login). Marketplace publishing needs Google's OAuth verification;
    `documents.currentonly` keeps that at the mildest tier.
-3. **Real-hardware pass, before the first school** — install desktop 1.4.2
+3. **Real-hardware pass, before the first school** — install the latest desktop build (1.4.3)
    from /releases/latest on a Mac (the Open Anyway steps) and a Windows
    laptop (SmartScreen), and scrub the sample in each. Then five minutes each
    on a school Chromebook and an iPhone with the web version: scrub the
