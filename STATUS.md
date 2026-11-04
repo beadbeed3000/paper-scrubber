@@ -2,7 +2,7 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 22 October 2026, live version `paper-scrubber-v87`,
+stands. Last updated 22 October 2026, live version `paper-scrubber-v88`,
 desktop 1.4.5.
 
 ## Where things stand now (22 October 2026)
@@ -19,7 +19,7 @@ desktop 1.4.5.
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v87`; desktop 1.4.5 on Electron 43, for
+- **Live:** web `paper-scrubber-v88`; desktop 1.4.5 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
   30 rule cases.
