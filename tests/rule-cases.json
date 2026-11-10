@@ -336,5 +336,90 @@
       "Clover Bottom",
       "Upper Rockcastle"
     ]
+  },
+  {
+    "why": "a town read off an address line, and the same town later in the prose (v89)",
+    "text": "Mailing: P.O. Box 61, Kelsa, KY 41659\nHer father took a job driving a log truck in Kelsa. She reads at grade level.",
+    "keep": [
+      "reads at grade level"
+    ],
+    "scrub": [
+      "Kelsa"
+    ]
+  },
+  {
+    "why": "a bare month/day that was caught as a date elsewhere in the record; a count stays (v89)",
+    "text": "On 9/10 Grace chose to present to her class.\n- Functional Listening Evaluation, classroom, 9/10: quiet/close 92%; noise/far 60%.\nShe got 4/5 trials correct.",
+    "keep": [
+      "quiet/close 92%",
+      "4/5 trials"
+    ],
+    "scrub": [
+      "9/10:",
+      "On 9/10"
+    ]
+  },
+  {
+    "why": "a cooperative or district named in full, then by its initials (v89)",
+    "text": "HIGHLAND RIVERS EDUCATIONAL COOPERATIVE (HREC)\nAnnual report\nThe HREC itinerant teacher visits weekly. Her Individualized Education Program (IEP) is current, and the Functional Listening Evaluation (FLE) was repeated.",
+    "keep": [
+      "(IEP)",
+      "(FLE)",
+      "itinerant teacher visits weekly"
+    ],
+    "scrub": [
+      "HREC",
+      "HIGHLAND RIVERS"
+    ]
+  },
+  {
+    "why": "a counseling office or pharmacy by name (v89)",
+    "text": "Outside counseling: Dustin Pelphrey, LCSW, Hilltop Family Counseling, weekly. His prescriptions are filled at Bluegrass Pharmacy.",
+    "keep": [
+      "His prescriptions are filled at"
+    ],
+    "scrub": [
+      "Hilltop",
+      "Bluegrass"
+    ]
+  },
+  {
+    "why": "an employer after 'works for' or 'employed at' (v89)",
+    "text": "Mrs. Kilgore works days for Trinity Home Health and asked for calls after 4:00. His father is employed at Conley's Market.",
+    "keep": [
+      "asked for calls after 4:00"
+    ],
+    "scrub": [
+      "Trinity",
+      "Conley"
+    ]
+  },
+  {
+    "why": "case and referral numbers with two hyphens; test names and citations stay (v89)",
+    "text": "MDR No.: KCS-MDR-26-0031        Discipline Ref.: DR-26-04471\nDeputy Maynard filed a juvenile complaint (CDW-26-1187) with the court designated worker. The WISC-V and BASC-3 were given under 707 KAR 1:340.",
+    "keep": [
+      "WISC-V",
+      "BASC-3",
+      "707 KAR 1:340"
+    ],
+    "scrub": [
+      "KCS-MDR-26-0031",
+      "DR-26-04471",
+      "CDW-26-1187"
+    ]
+  },
+  {
+    "why": "the year that closes a range; a score range stays (v89)",
+    "text": "He received First Steps speech services from 2018 to 2019. He was homeschooled between 2020 and 2022. Standard scores ranged from 85 to 115.",
+    "keep": [
+      "from 85 to 115",
+      "First Steps speech services"
+    ],
+    "scrub": [
+      "2018",
+      "2019",
+      "2020",
+      "2022"
+    ]
   }
 ]

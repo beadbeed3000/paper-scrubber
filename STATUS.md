@@ -2,13 +2,13 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 10 November 2026, live version `paper-scrubber-v88`,
-desktop 1.4.5.
+stands. Last updated 10 November 2026, live version `paper-scrubber-v89`,
+desktop 1.4.6.
 
 ## Where things stand now (22 October 2026)
 
 - **Ready for a small school test drive** of the web version, once Alex has
-  done the hardware pass (to do 3). Desktop 1.4.5 (and every build before it) has
+  done the hardware pass (to do 3). Desktop 1.4.6 (and every build before it) has
   no downloads yet, so nobody has installed the current build on a real Mac
   or Windows laptop. That pass is the only thing between the tool and the
   first school.
@@ -19,10 +19,10 @@ desktop 1.4.5.
   unsigned app. Say up front that it catches most identifiers, not all, and
   that no one outside has audited it; never say it "guarantees FERPA
   compliance".
-- **Live:** web `paper-scrubber-v88`; desktop 1.4.5 on Electron 43, for
+- **Live:** web `paper-scrubber-v89`; desktop 1.4.6 on Electron 43, for
   Apple Silicon Macs on macOS 12 or newer (ad-hoc signed) and Windows
   (unsigned). All three CI release gates pass: boot, a real scrub, and the
-  30 rule cases.
+  37 rule cases.
 - **Size:** the deep model is 386 MB (was 553), its vocabulary cut to the
   Latin alphabet with identical output on English text; the De-Identifier's
   first-use download is about 500 MB. Details in v74.
@@ -35,9 +35,10 @@ desktop 1.4.5.
   the fresh set (v76) and about 97 in 100 on the fresh2 set (v80, before its
   misses were read). No full name got through either time. fresh2 was the
   easier set (v79 already removed 97 in 100 there), so 89 stays the
-  conservative figure. Since v80, on the sets the rules have now seen: fresh
-  11 of 356 through (9 in fact, see v80), fresh2 0 of 322, the old sets 1 of
-  744. Quasi-identifiers removed: tuning 66 of 102, held-out 52 of 75, fresh
+  conservative figure. Since v89, on the sets the rules have now seen: fresh
+  2 of 356 through, both of them the grader's doing and not leaks ("PT"
+  inside "PTA", "CH" inside the tag "[CHURCH 6]"), fresh2 0 of 322, the old
+  sets 0 of 744. Quasi-identifiers removed: tuning 66 of 102, held-out 52 of 75, fresh
   47 of 68, fresh2 42 of 69. Readable terms kept: Roberts 40 of 50 (all 50
   on the web), tuning 47 of 50, held-out 45 of 60, fresh 49 of 72, fresh2
   58 of 70.
@@ -87,14 +88,56 @@ desktop 1.4.5.
 - **Test tooling is in `tests/`** (see its README): answer keys and records
   for Roberts, the tuning, held-out, fresh and fresh2 sets, the CDP benchmark
   and grader (`bench.mjs`, `compare.mjs`), a regression suite of rule
-  sentences (`rule-cases.mjs`, 30 cases, also a CI release gate), and the
+  sentences (`rule-cases.mjs`, 37 cases, also a CI release gate), and the
   web, iframe, offline and desktop-link checks. Run the suite and the
   benchmark before shipping a detection change.
 - **Open:** the hardware pass and then the test drive (to do 3); a third
-  blind set before quoting a new rate; what fresh still leaks (two towns, a
-  cooperative's acronym, three case numbers like "KCS-MDR-26-0031", a
-  counseling practice, an employer, one bare "9/10"); and the last audit
+  blind set before quoting a new rate (every set here has now been read to
+  write rules, so "0 leaks" on them is not a rate); and the last audit
   item, the Docs add-on's `#gdoc=` link (to do 8).
+
+## v89 / desktop 1.4.6 (the last known leaks get rules)
+
+Alex's call after the bake-off: close the known misses with rules and keep
+the tool light, with "read it before you paste it" as the backstop. Ten real
+leaks were left on the test records (the other two the grader counted were
+never leaks). All ten are fixed, on the desktop and on the web:
+
+- **A town read off an address line.** "P.O. Box 61, Kelsa, KY 41659" and
+  "RR 4 Box 309-B, Garnet, KY 41630": the word before ", KY 41659" is the
+  town, and it is scrubbed there and wherever it stands in the prose ("a job
+  in Kelsa"). It lives in `propagatePlaces`, which only adds where nothing
+  was found, because a small regex finding inside a larger model finding
+  would replace it (`resolveOverlaps` lets regex win).
+- **A bare month/day caught elsewhere as a date.** "On 9/10 Grace chose…"
+  makes "FLE, classroom, 9/10:" a date too (`dateSiblings`). The rule leaves a count or a
+  score alone: "9/10 trials", "scored 9/10".
+- **A cooperative or district named in full, then by its initials.**
+  "HIGHLAND RIVERS EDUCATIONAL COOPERATIVE (HREC)": the full name and every
+  standalone "HREC" (`orgAcronyms`). Only for names ending in Cooperative,
+  Co-op, Schools, District or Consortium, and never an `ACRONYM_OK` term, so
+  "Individualized Education Program (IEP)" stays.
+- **A counseling office, home-health agency, pharmacy or dentist by name.**
+  "Hilltop Family Counseling", "Trinity Home Health", "Twin Poplar
+  Counseling"; and "Ear, Nose & Throat" joins the clinic words. The name
+  needs a word of its own (`SERVICE_WORDS`), so "Family Counseling" and
+  "Mental Health Counseling" are not businesses.
+- **Case and referral numbers.** "KCS-MDR-26-0031", "DR-26-04471",
+  "CDW-26-1187": capital letters, at least two hyphens, a last group of
+  three or more digits. "WISC-V", "BASC-3" and a school year do not fit.
+- **The year that closes a range.** "from 2018 to 2019", "between 2020 and
+  2022". De-Identifier only, like the other bare-year rules.
+- **An employer after "works for" or "employed at"** (`employers`). It runs
+  last and only where nothing was found: run earlier, it covered "Adkins
+  Excavating & Septic" before the surname echo reached it, and on the web
+  (where an employer is only underlined) the stepfather's surname showed.
+
+Checked the usual way, with the deep model's spans replayed (the bake-off
+harness; identical to a real run): desktop leaks 12 to 2 (the grader's two),
+web 27 to 14, no new leak, no quasi-identifier lost, no readable term lost
+under either behavior; web also gained "Cordell" (a town) and one
+quasi-identifier. 37 of 37 rule cases pass (7 new). What the web still shows
+is by design: categories it underlines for the reader's judgement.
 
 ## 10 November 2026: deep-model bake-off (no change; the current model stays)
 
@@ -1079,7 +1122,7 @@ regex-only version wearing the name would be worse than none.
    notes are in `google-docs-addon/README.md` (~10 minutes, needs a Google
    login). Marketplace publishing needs Google's OAuth verification;
    `documents.currentonly` keeps that at the mildest tier.
-3. **Real-hardware pass, before the first school** — install the latest desktop build (1.4.5)
+3. **Real-hardware pass, before the first school** — install the latest desktop build (1.4.6)
    from /releases/latest on a Mac (the Open Anyway steps) and a Windows
    laptop (SmartScreen), and scrub the sample in each. Then five minutes each
    on a school Chromebook and an iPhone with the web version: scrub the

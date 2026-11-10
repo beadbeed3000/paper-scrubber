@@ -164,6 +164,10 @@ const EPONYM_OK = new Set(['Wilson', 'Montessori', 'Frayer', 'Venn', 'Cornell', 
 // common IEP acronyms that a school's initials must never be confused with
 const ACRONYM_OK = new Set(['ARC', 'IEP', 'SLD', 'OHI', 'EBD', 'SDI', 'LRE', 'FBA', 'BIP', 'ADHD', 'SLP', 'ESY', 'KSA', 'MAP', 'ILP', 'FAPE', 'IDEA', 'KDE', 'DCBS', 'OVR', 'FFA', 'GPA', 'ELA', 'MTSS', 'RTI', 'ESL', 'ELL', 'SSN', 'DOB', 'OTR', 'PBIS', 'CCC', 'NCSP', 'BCBA', 'KY', 'USA', 'THE', 'AND']);
 
+// words that make a service, not a business name: "Family Counseling",
+// "Mental Health Counseling", "School Based Behavioral Health"
+const SERVICE_WORDS = new Set(['Individual', 'Group', 'School', 'Family', 'Outside', 'Mental', 'Health', 'Guidance', 'Grief', 'Behavioral', 'Career', 'Vocational', 'Rehabilitation', 'Rehab', 'Speech', 'Physical', 'Occupational', 'Related', 'Weekly', 'Monthly', 'Daily', 'Private', 'Community', 'Home', 'Public', 'Local', 'County', 'Outpatient', 'Inpatient', 'Student', 'Parent', 'Crisis', 'Substance', 'Abuse', 'Marriage', 'Pastoral', 'Christian', 'Peer', 'Academic', 'College', 'Transition', 'Based', 'And', 'With', 'Of', 'Through', 'Receives', 'Attends', 'Continue', 'Continued', 'Recommend', 'Recommended', 'Provide', 'Provides', 'Needs', 'Service', 'Services', 'Counseling', 'Pediatric', 'General', 'Emergency', 'Retail', 'No', 'Additional', 'Ongoing', 'Short', 'Long', 'Term']);
+
 const REGEX_RULES = [
   { type: 'EMAIL', re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
   // an extension is part of the number: "(606) 555-0172 ext. 218" leaked the "ext. 218"
@@ -236,9 +240,21 @@ const REGEX_RULES = [
   // a labeled nickname: "Nickname: Spud", "Goes by: Birdie", "Preferred name: Jax"
   { type: 'NAME', re: /(?<=\b(?:[Nn]ickname|NICKNAME|[Gg]oes by|GOES BY|[Pp]referred name|PREFERRED NAME)[ \t]*:?[ \t]*["“']?)\p{Lu}[\p{L}'’-]+/gu },
   // a clinic or hospital by name: "Highland Low Vision Clinic", "Tinker Valley
-  // Pediatrics", "Kinnaird ENT Associates" (a sentence's "At" or "The" is not
-  // part of the name)
-  { type: 'ORG', re: /\b(?:(?!(?:The|At|In|To|From|By|For|Our|His|Her|Their|This|That)\b)[A-Z][a-z'’]+[ \t]){1,4}(?:Clinic|Hospital|Pediatrics|Medical Center|Health Center|Family Medicine|Family Practice|ENT)(?:[ \t](?:Associates|Group))?\b/g },
+  // Pediatrics", "Kinnaird ENT Associates", "Garnet Ear, Nose & Throat" (a
+  // sentence's "At" or "The" is not part of the name)
+  { type: 'ORG', re: /\b(?:(?!(?:The|At|In|To|From|By|For|Our|His|Her|Their|This|That)\b)[A-Z][a-z'’]+[ \t]){1,4}(?:Clinic|Hospital|Pediatrics|Medical Center|Health Center|Family Medicine|Family Practice|ENT|Ear,? Nose,? (?:&|and) Throat)(?:[ \t](?:Associates|Group))?\b/g },
+  // …and a counseling office, home-health agency, pharmacy or dentist:
+  // "Hilltop Family Counseling", "Trinity Home Health". The name needs a word
+  // of its own, so a service ("Family Counseling", "Mental Health Counseling")
+  // stays readable.
+  { type: 'ORG', re: /\b(?:(?!(?:The|At|In|To|From|By|For|Our|His|Her|Their|This|That)\b)[A-Z][a-z'’]+[ \t]){1,4}(?:Counseling(?:[ \t](?:Center|Services|Associates))?|Home Health(?:[ \t]Care)?|Behavioral Health|Pharmacy|Dental(?:[ \t]Care)?|Dentistry|Orthodontics|Eye Care|Urgent Care)\b/g,
+    keep: (m) => m.replace(/[ \t](?:Counseling|Home Health|Behavioral Health|Pharmacy|Dental|Dentistry|Orthodontics|Eye Care|Urgent Care)\b.*$/, '').split(/[ \t]+/).some((w) => !SERVICE_WORDS.has(w)) },
+  // a case or referral number, whatever its label: "MDR No.: KCS-MDR-26-0031",
+  // "Discipline Ref.: DR-26-04471", "a juvenile complaint (CDW-26-1187)". Two
+  // hyphens and a run of three or more digits, so test names ("WISC-V",
+  // "BASC-3") and school years stay readable.
+  { type: 'ID', re: /\b[A-Z]{2,6}(?:-[A-Z0-9]{1,6}){1,3}-\d{3,6}\b/g,
+    keep: (m) => !/^PL-/.test(m) && !/-(?:19|20)\d{2}$/.test(m) },
   // rural route and post office boxes: "RR 1 Box 88", "RR 2 Box 118-A", "P.O. Box 44"
   { type: 'ADDRESS', re: /\b(?:R\.?R\.?|Rural Route|HC|Route|P\.?\s?O\.?)\s*\d{0,3},?\s*Box\s+\d+(?:-?[A-Z])?\b/gi },
   // hollers and hollows are where people live: "Coon Holler", "Bunyan Hollow"
@@ -260,9 +276,12 @@ const REGEX_RULES = [
   // a year tied to something that happened: "moved back in 2016", "since the
   // 2022 flood", "diagnosed in spring 2017". De-Identifier only, like the month
   // rule below: in a student essay "in 2001" is usually history, not the student.
-  { type: 'DATE', re: /(?<=\b(?:[Ii]n|[Ss]ince|[Dd]uring|[Uu]ntil|[Ff]rom|[Bb]efore|[Aa]fter)[ \t]+(?:the[ \t]+|early[ \t]+|late[ \t]+|mid-)?)(?:19[5-9]\d|20[0-4]\d)(?![\w\/%-]|\.\d)/g,
+  { type: 'DATE', re: /(?<=\b(?:[Ii]n|[Ss]ince|[Dd]uring|[Uu]ntil|[Ff]rom|[Bb]efore|[Aa]fter|[Bb]etween)[ \t]+(?:the[ \t]+|early[ \t]+|late[ \t]+|mid-)?)(?:19[5-9]\d|20[0-4]\d)(?![\w\/%-]|\.\d)/g,
     keep: () => TOOL === 'deid' },
   { type: 'DATE', re: /\b(?:[Ss]pring|[Ss]ummer|[Ff]all|[Aa]utumn|[Ww]inter)[ \t]+(?:of[ \t]+)?(?:19[5-9]\d|20[0-4]\d)(?![\w\/-])/g,
+    keep: () => TOOL === 'deid' },
+  // …and the year that closes a range: "from 2018 to 2019", "between 2020 and 2022"
+  { type: 'DATE', re: /(?<=\b(?:19[5-9]\d|20[0-4]\d)[ \t]+(?:to|through|thru|until)[ \t]+|\b[Bb]etween[ \t]+(?:19[5-9]\d|20[0-4]\d)[ \t]+and[ \t]+)(?:19[5-9]\d|20[0-4]\d)(?![\w\/%-]|\.\d)/g,
     keep: () => TOOL === 'deid' },
   // a month on its own: "since his mamaw passed in May", "the county fair last
   // August" (a month with a day or year is the named-month rule above)
@@ -391,6 +410,41 @@ function schoolAcronyms(text, list) {
     }
   }
   return found;
+}
+// An agency named in full and then by its initials: "HIGHLAND RIVERS EDUCATIONAL
+// COOPERATIVE (HREC)", "Kinnard County Schools (KCS)". The initials point to
+// the same place, there and wherever they stand alone later. Only cooperatives,
+// districts and the like: "Individualized Education Program (IEP)" is no place.
+function orgAcronyms(text) {
+  const found = [];
+  const re = /((?:\p{Lu}[\p{L}'’-]*[ \t]+(?:(?:of|for|and|the)[ \t]+)?){1,6}(?:Cooperative|COOPERATIVE|Co-op|CO-OP|Schools|SCHOOLS|District|DISTRICT|Consortium|CONSORTIUM))[ \t]*\(([A-Z]{3,6})\)/gu;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const acr = m[2];
+    const words = [...m[1].matchAll(/\p{Lu}[\p{L}'’-]*/gu)];
+    if (ACRONYM_OK.has(acr) || words.length < acr.length) continue;
+    const tail = words.slice(-acr.length);
+    if (tail.map((w) => w[0][0]).join('') !== acr) continue;
+    found.push({ type: 'ORG', start: m.index + tail[0].index, end: m.index + m[1].length, score: 0.95, source: 'regex' });
+    const each = new RegExp(`(?<![A-Za-z])${acr}(?![A-Za-z])`, 'g');
+    let a;
+    while ((a = each.exec(text)) !== null) found.push({ type: 'ORG', start: a.index, end: a.index + acr.length, score: 0.95, source: 'regex' });
+  }
+  return found;
+}
+// An employer named after "works for" or "works at": "works days for Trinity
+// Home Health", "employed at Conley's Market". Only where nothing was found
+// already, so a person ("works for Jody Hatcher") stays a name.
+function employers(text, list) {
+  const extra = [];
+  const re = /(?<=\b(?:[Ww]orks?|[Ww]orked|[Ww]orking|[Ee]mployed)[ \t]+(?:(?:days|nights|evenings|weekends|mornings|part[- ]time|full[- ]time|(?:first|second|third|night|day)[ \t]shift)[ \t]+)?(?:for|at|by)[ \t]+(?:the[ \t]+)?)\p{Lu}[\p{L}\p{N}'’&-]*(?:[ \t](?:\p{Lu}[\p{L}\p{N}'’&-]*|&)){0,4}(?:(?<=[ \t](?:Co|Inc|Corp|Ltd))\.)?/gu;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (/^(?:Mr|Mrs|Ms|Miss|Dr|Coach|Home|School)\b/.test(m[0])) continue;
+    const start = m.index, end = m.index + m[0].length;
+    if (!list.some((f) => f.start < end && f.end > start)) extra.push({ type: 'WORK', start, end, score: 0.95, source: 'regex' });
+  }
+  return extra;
 }
 // drop findings that sit inside named assessments, scales, and services
 function dropKeepTerms(text, list) {
@@ -757,6 +811,25 @@ function dateSiblings(text, list) {
     if (pts.filter((p) => p.covered).length < 2) continue;
     for (const p of pts) if (!p.covered && !list.some((f) => f.start < p.e && f.end > p.s)) extra.push({ type: 'DATE', start: p.s, end: p.e, score: 0.95, source: 'regex' });
   }
+  // A bare "9/10" is a date when the same "9/10" was caught as one elsewhere in
+  // the record: "On 9/10 Grace chose…", then "FLE, classroom, 9/10: quiet/close
+  // 92%". A score ("scored 9/10", "9/10 trials") stays readable.
+  const caught = new Set();
+  for (const f of list) {
+    if (f.type !== 'DATE' && f.type !== 'DOB') continue;
+    const t = text.slice(f.start, f.end).trim();
+    if (/^\d{1,2}\/\d{1,2}$/.test(t)) caught.add(t);
+  }
+  for (const d of caught) {
+    const each = new RegExp(`(?<![\\d\\/.])${d}(?![\\d\\/])`, 'g');
+    while ((m = each.exec(text)) !== null) {
+      const f = { start: m.index, end: m.index + d.length };
+      if (list.some((g) => g.start < f.end && g.end > f.start) || looksLikeFraction(text, f)) continue;
+      if (/\b(?:scor(?:ed?|es|ing)|earned|got|received|made|answered|completed|read|spelled|with|at|of|was|were|is|averag\w+|accuracy)[ \t]+$/i.test(text.slice(Math.max(0, f.start - 24), f.start))) continue;
+      if (/^[ \t]*(?:\(\d+%\)|=|accuracy|correct|words|on[ \t]+(?:the|a|an|his|her|their)\b)/i.test(text.slice(f.end, f.end + 20))) continue;
+      extra.push({ type: 'DATE', ...f, score: 0.95, source: 'regex' });
+    }
+  }
   return extra;
 }
 // A town caught once, usually in the address ("Redbud, KY 41799"), is the same
@@ -768,6 +841,11 @@ function propagatePlaces(text, list) {
     const w = text.slice(f.start, f.end).replace(/[.,;:]+$/, '').trim();
     if (/^\p{Lu}[\p{L}'’-]{3,}(?: \p{Lu}[\p{L}'’-]+){0,2}$/u.test(w)) places.add(w);
   }
+  // …and a town the models stepped over, read straight off an address line:
+  // "RR 4 Box 309-B, Garnet, KY 41630"
+  const town = /(?:^|,)[ \t]{0,2}(\p{Lu}[\p{L}'’-]{3,}(?:[ \t]\p{Lu}[\p{L}'’-]+){0,2}),[ \t]{0,2}[A-Z]{2}[ \t]{1,2}\d{5}\b/gmu;
+  let t;
+  while ((t = town.exec(text)) !== null) places.add(t[1]);
   const extra = [];
   for (const w of places) {
     const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(w)}(?![\\p{L}\\p{N}])`, 'gu');
@@ -954,7 +1032,7 @@ async function detectText(text, ui, paperName = '', paper = null) {
     if (!list.some((g) => g.start < end && g.end > start)) nicks.push({ type: 'NAME', start, end, score: 0.95, source: 'regex' });
   }
   if (nicks.length) list = mergeAdjacent(resolveOverlaps([...list, ...nicks]), text);
-  const acr = schoolAcronyms(text, list);
+  const acr = [...schoolAcronyms(text, list), ...orgAcronyms(text)];
   if (acr.length) list = mergeAdjacent(resolveOverlaps([...list, ...acr]), text);
   const siblings = dateSiblings(text, list), places = propagatePlaces(text, list);
   if (siblings.length || places.length) list = mergeAdjacent(resolveOverlaps([...list, ...siblings, ...places]), text);
@@ -966,6 +1044,10 @@ async function detectText(text, ui, paperName = '', paper = null) {
     list = mergeAdjacent(resolveOverlaps([...list, ...echoes]), text);
     list = mergeAdjacent(extendEntities(text, list), text);
   }
+  // employers go last: a surname echoed into a business name ("Adkins
+  // Excavating") must stay a name, which the web version scrubs
+  const jobs = employers(text, list);
+  if (jobs.length) list = mergeAdjacent(resolveOverlaps([...list, ...jobs]), text);
   // one-character findings are usually stray letters — but "age 6" is an age
   list = list.filter((f) => text.slice(f.start, f.end).trim().length >= 2 || f.type === 'AGE');
 
