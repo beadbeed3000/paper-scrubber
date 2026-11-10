@@ -2,7 +2,7 @@
 
 Working notes so this project can be picked up from any machine. The README
 covers what the tool is and how it works; this file covers where the work
-stands. Last updated 22 October 2026, live version `paper-scrubber-v88`,
+stands. Last updated 10 November 2026, live version `paper-scrubber-v88`,
 desktop 1.4.5.
 
 ## Where things stand now (22 October 2026)
@@ -95,6 +95,61 @@ desktop 1.4.5.
   cooperative's acronym, three case numbers like "KCS-MDR-26-0031", a
   counseling practice, an employer, one bare "9/10"); and the last audit
   item, the Docs add-on's `#gdoc=` link (to do 8).
+
+## 10 November 2026: deep-model bake-off (no change; the current model stays)
+
+Alex asked whether the models are still the lightest and the best. Five
+newer models were tested as replacements for the deep check, on all 21
+answer-keyed records, inside the real tool: each candidate's spans were
+computed in Python on the exact pieces the worker would send (same labels,
+one sentence per call) and fed to the app in place of the worker's answer,
+so the rules, the first-pass model and the grader all ran as usual.
+Replaying the current model's own spans this way reproduces the v80 numbers
+exactly, which is the check that the method is sound.
+
+Desktop behavior, all sets (1,422 identifiers, 323 quasi-identifiers, 302
+readable terms). The cutoff is the score threshold that gave each candidate
+about the current model's span count.
+
+| Deep model (fp16 size) | Leaks | Quasi removed | Readable kept |
+|---|---|---|---|
+| **Current: gliner_multi_pii-v1, Latin vocab (386 MB)** | **12** | **214** | **239** |
+| Knowledgator gliner-pii-edge, cutoff 0.45 (91 MB) | 17 | 199 | 225 |
+| Knowledgator gliner-pii-small, cutoff 0.40 (164 MB) | 10 | 214 | 220 |
+| Knowledgator gliner-pii-base, cutoff 0.35 (333 MB) | 17 | 207 | 234 |
+| Fastino GLiNER2-PII, cutoff 0.50 (about 615 MB) | 15 | 215 | 238 |
+| Fastino GLiNER2 base, cutoff 0.45 (about 420 MB) | 12 | 258 | 206 |
+| Current + Knowledgator small 0.45 (about 550 MB) | 6 | 240 | 210 |
+
+- **Every candidate, used alone, lets a student's first name through** that
+  the current model catches: "Journey" in all of them, and "Hope", "Tash" or
+  "L. Crase" in the Knowledgator ones. A name leak is the worst kind, so no
+  candidate replaces the current model, whatever its totals.
+- **None is both lighter and as good.** The two that are much smaller (edge,
+  small) leak names; GLiNER2-PII is bigger than what ships, slower in these
+  runs, and its 42 labels are standard PII (no health, family, church or
+  hobby labels, which is the deep check's whole job here). The public
+  benchmark that made it look twice as good scores the model alone on legal
+  and medical text; inside this tool, the rules already cover that ground.
+- **A caveat on fairness:** the rules were written around the current
+  model's misses on these same records, so it has a home advantage. A new
+  blind set would be the honest tiebreak, but the name leaks decide it anyway.
+- **What the candidates did catch** of the 12 known leaks: the two clinics
+  and employers ("Hilltop Family Counseling", "Trinity Home Health"), the
+  cooperative acronym "HREC", the case numbers "KCS-MDR-26-0031" and
+  "DR-26-04471", the town "Kelsa", and the initials "PT" and "CH". Those are
+  the open items already listed; rules can close most of them without a
+  second model.
+- **The one option that did help** is running a second small model beside the
+  current one: leaks 12 to 6 and quasi-identifiers 214 to 240, at the cost of
+  29 more readable terms scrubbed, about 164 MB more to download and a longer
+  deep check. Not done; it is Alex's call, and it cuts against "lightest".
+- Paper Scrubber's 64 MB first-pass model was not retested; nothing found is
+  both smaller and better documented. OpenAI's Privacy Filter (April 2026) is
+  about 2 GB and out of reach for a Chromebook.
+- The harness is `tests/bakeoff.py` (run a model over the pieces, grade it
+  alone, write an injection file) and `tests/inject-spans.mjs` (make the dev
+  app answer its deep check from that file; then `bench.mjs --no-reload`).
 
 ## v80 / desktop 1.4.2 (initials and dates)
 

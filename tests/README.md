@@ -73,6 +73,23 @@ committed.
 They replace `shell.openExternal` in the main process with a logger, and they
 refuse to click anything unless that replacement took.
 
+## Trying a different deep model
+
+`bakeoff.py` and `inject-spans.mjs` test a candidate model inside the real
+tool without writing any browser code for it. From a scratch folder holding
+the models in `m/<name>/` (a Python environment with `gliner` and `gliner2`):
+
+```bash
+python tests/bakeoff.py run kedge app tests/results/<a bench output>.json   # spans for every piece, down to score 0.2
+python tests/bakeoff.py grade spans/kedge__app.json 0.45                    # the model alone, no rules
+python tests/bakeoff.py inject spans/kedge__app.json 0.45 kedge45.json      # document text -> spans
+node tests/inject-spans.mjs 9334 kedge45.json                               # the dev app now answers from the file
+node tests/bench.mjs 9334 inj-kedge45 tests/results/inj-kedge45.json --no-reload
+```
+
+Replay the current model's own spans first; the grades must match a normal
+run. Results of the November 2026 bake-off are in STATUS.md.
+
 ## Other tools
 
 `drop-file.mjs` (one file through the tool, e.g. the scanned PDF),
